@@ -622,21 +622,53 @@ const ST={
 };
 
 /* ══════════════════ PRICES ══════════════════ */
+// CryptoCompare pricemultifull: prices, 24h change, mcap, volume — CORS-safe
 async function loadPrices(){
   try{
-    const ids=ST.wl.map(c=>c.id).join(',');
-    const data=await apiFetch(`/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=50&page=1&sparkline=false`,45000);
-    const map={};data.forEach(d=>map[d.id]=d);
-    const prev={};ST.wl.forEach(c=>prev[c.id]=c.price||0);
-    ST.wl.forEach(c=>{
-      const d=map[c.id];if(!d)return;
-      c.price=d.current_price;c.change=d.price_change_percentage_24h||0;
-      c.mcap=d.market_cap;c.vol=d.total_volume;c.image=d.image;
-      c.symbol=d.symbol.toUpperCase();c.ath=d.ath;
-      if(c.id===ST.coin.id){Object.assign(ST.coin,c);updateHdr(c);}
+    const syms = ST.wl.map(c => CC_SYM[c.id] || c.symbol.toUpperCase()).join(',');
+    const url  = `${CC_TOP}/pricemultifull?fsyms=${syms}&tsyms=USD`;
+    const res  = await fetch(url, {headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error(res.status);
+    const json = await res.json();
+    const raw  = json.RAW || {};
+    const prev = {};
+    ST.wl.forEach(c => prev[c.id] = c.price || 0);
+    ST.wl.forEach(c => {
+      const sym  = CC_SYM[c.id] || c.symbol.toUpperCase();
+      const data = raw[sym]?.USD;
+      if(!data) return;
+      c.price  = data.PRICE        || 0;
+      c.change = data.CHANGEPCT24HOUR || 0;
+      c.mcap   = data.MKTCAP        || 0;
+      c.vol    = data.VOLUME24HOURTO || 0;
+      // Keep existing image if we have one; CC doesn't return images here
+      if(!c.image && data.IMAGEURL)
+        c.image = 'https://www.cryptocompare.com' + data.IMAGEURL;
+      if(c.id === ST.coin.id){ Object.assign(ST.coin, c); updateHdr(c); }
     });
+    setDot('ok');
     renderWL(prev);
-  }catch(e){console.warn('Price load failed',e);}
+  }catch(e){
+    console.warn('loadPrices failed:', e);
+    setDot('err');
+  }
+}
+
+// Fetch price + basic info for a single symbol from CryptoCompare
+async function fetchCCPrice(sym){
+  const url = `${CC_TOP}/pricemultifull?fsyms=${sym}&tsyms=USD`;
+  const res = await fetch(url, {headers:{'Accept':'application/json'}});
+  if(!res.ok) throw new Error(res.status);
+  const json = await res.json();
+  const data = json.RAW?.[sym]?.USD;
+  if(!data) throw new Error('no_data');
+  return {
+    price : data.PRICE            || 0,
+    change: data.CHANGEPCT24HOUR  || 0,
+    mcap  : data.MKTCAP           || 0,
+    vol   : data.VOLUME24HOURTO   || 0,
+    image : data.IMAGEURL ? 'https://www.cryptocompare.com'+data.IMAGEURL : '',
+  };
 }
 
 /* ══════════════════ CHART DATA ══════════════════ */
@@ -645,7 +677,10 @@ async function loadPrices(){
 // • Free tier: no key required for public endpoints, full history back to 2013
 // • Up to 2000 candles per request, unlimited history via pagination
 // • Covers 5000+ coins
-const CC = 'https://min-api.cryptocompare.com/data/v2';
+const CC     = 'https://min-api.cryptocompare.com/data/v2';
+const CC_TOP = 'https://min-api.cryptocompare.com/data';
+// CoinGecko is kept only for search/trending (still has CORS on those endpoints)
+const CG     = 'https://api.coingecko.com/api/v3';
 
 // Map CoinGecko coin ID → CryptoCompare symbol
 const CC_SYM = {
@@ -782,41 +817,69 @@ function setupSearch(){
 }
 
 async function doSearch(q){
-  const dd=document.getElementById('sbDrop');
+  const dd = document.getElementById('sbDrop');
   try{
-    const sr=await apiFetch(`/search?query=${encodeURIComponent(q)}`,30000);
-    const coins=(sr.coins||[]).slice(0,12);
-    if(!coins.length){dd.innerHTML='<div class="sd-msg">No results found for "'+q+'"</div>';return;}
-    // Fetch prices for found coins
-    const ids=coins.map(c=>c.id).join(',');
-    let pm={};
-    try{
-      const pd=await apiFetch(`/coins/markets?vs_currency=usd&ids=${ids}&per_page=15&page=1&sparkline=false`,45000);
-      pd.forEach(p=>pm[p.id]=p);
-    }catch(e){}
-    const inWL=new Set(ST.wl.map(c=>c.id));
-    dd.innerHTML=`<div class="sd-hdr"><span>${coins.length} results</span><span>Click name to view chart</span></div>`+
-      coins.map(c=>{
-        const p=pm[c.id];const inW=inWL.has(c.id);
-        const col=rc(c.symbol||'');
-        const img=c.thumb?`<img class="sd-img" src="${c.thumb}" alt="" onerror="this.outerHTML='<div class=sd-fb style=background:${col}22;color:${col};>${(c.symbol||'?').substring(0,3).toUpperCase()}</div>'">`:`<div class="sd-fb" style="background:${col}22;color:${col};">${(c.symbol||'?').substring(0,3).toUpperCase()}</div>`;
-        const chg=p?p.price_change_percentage_24h:null;
-        return`<div class="sd-r">
-          <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer;" onclick="selectCoin('${c.id}','${esc(c.name)}','${(c.symbol||'').toUpperCase()}','${c.thumb||''}')">
+    // Search CC coinlist for matching names/symbols
+    const url  = `${CC_TOP}/all/coinlist?summary=true`;
+    const res  = await fetch(url, {headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error(res.status);
+    const json = await res.json();
+    const qlo  = q.toLowerCase();
+    const all  = Object.values(json.Data || {});
+    // Find coins where symbol or name contains query — prefer exact symbol matches first
+    const matched = all
+      .filter(c => c.Symbol?.toLowerCase().includes(qlo) || c.CoinName?.toLowerCase().includes(qlo))
+      .sort((a,b2) => {
+        const as = a.Symbol?.toLowerCase() === qlo ? -2 : a.Symbol?.toLowerCase().startsWith(qlo) ? -1 : 0;
+        const bs = b2.Symbol?.toLowerCase() === qlo ? -2 : b2.Symbol?.toLowerCase().startsWith(qlo) ? -1 : 0;
+        return as - bs;
+      })
+      .slice(0, 15);
+
+    if(!matched.length){ dd.innerHTML='<div class="sd-msg">No results for "'+q+'"</div>'; return; }
+
+    // Fetch live prices for matched coins
+    const syms = matched.map(c=>c.Symbol).join(',');
+    const pr   = await fetch(`${CC_TOP}/pricemultifull?fsyms=${syms}&tsyms=USD`, {headers:{'Accept':'application/json'}});
+    const raw  = pr.ok ? (await pr.json()).RAW || {} : {};
+    const inWL = new Set(ST.wl.map(c => CC_SYM[c.id] || c.symbol.toUpperCase()));
+
+    dd.innerHTML = `<div class="sd-hdr"><span>${matched.length} results</span><span>Click to view chart</span></div>` +
+      matched.map(c => {
+        const sym  = c.Symbol;
+        const d    = raw[sym]?.USD || {};
+        const inW  = inWL.has(sym);
+        const col  = rc(sym);
+        const img  = c.ImageUrl
+          ? `<img class="sd-img" src="https://www.cryptocompare.com${c.ImageUrl}" alt="" onerror="this.outerHTML='<div class=sd-fb style=background:${col}22;color:${col};>${sym.substring(0,3)}</div>'">`
+          : `<div class="sd-fb" style="background:${col}22;color:${col};">${sym.substring(0,3)}</div>`;
+        const price  = d.PRICE;
+        const change = d.CHANGEPCT24HOUR;
+        const coinId = sym.toLowerCase();
+        return `<div class="sd-r">
+          <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer;"
+               onclick="selectCoin('${coinId}','${esc(c.CoinName||sym)}','${sym}','${c.ImageUrl?'https://www.cryptocompare.com'+c.ImageUrl:''}')">
             ${img}
-            <div class="sd-info"><div class="sd-name">${c.name}</div><div class="sd-sym">${(c.symbol||'').toUpperCase()}</div></div>
-            ${c.market_cap_rank?`<span class="sd-rank">#${c.market_cap_rank}</span>`:''}
+            <div class="sd-info">
+              <div class="sd-name">${c.CoinName||sym}</div>
+              <div class="sd-sym">${sym}</div>
+            </div>
             <div class="sd-right">
-              ${p?`<span class="sd-price">$${fP(p.current_price)}</span>`:''}
-              ${chg!=null?`<span class="sd-chg ${chg>=0?'pos':'neg'}">${chg>=0?'+':''}${chg.toFixed(2)}%</span>`:''}
+              ${price  ? `<span class="sd-price">$${fP(price)}</span>` : ''}
+              ${change != null ? `<span class="sd-chg ${change>=0?'pos':'neg'}">${change>=0?'+':''}${change.toFixed(2)}%</span>` : ''}
             </div>
           </div>
-          <button class="sd-add${inW?' done':''}" onclick="sbAddWL('${c.id}','${esc(c.name)}','${(c.symbol||'').toUpperCase()}','${c.thumb||''}',this)">${inW?'✓ Added':'+ WL'}</button>
+          <button class="sd-add${inW?' done':''}"
+                  onclick="sbAddWL('${coinId}','${esc(c.CoinName||sym)}','${sym}','${c.ImageUrl?'https://www.cryptocompare.com'+c.ImageUrl:''}',this)">
+            ${inW?'✓ Added':'+ WL'}
+          </button>
         </div>`;
       }).join('');
-  }catch(e){dd.innerHTML='<div class="sd-msg">Search failed — please try again</div>';}
+  }catch(e){
+    console.warn('doSearch failed:', e);
+    dd.innerHTML = '<div class="sd-msg">Search failed — please try again</div>';
+  }
 }
-
 function clearSearch(){
   document.getElementById('sbIn').value='';
   document.getElementById('sbDrop').classList.remove('show');
@@ -829,30 +892,35 @@ async function sbAddWL(id,name,sym,img,btn){
 }
 
 /* ══════════════════ COIN SELECT & WATCHLIST ══════════════════ */
-async function selectCoin(id,name,sym,img){
+async function selectCoin(id, name, sym, img){
   clearSearch();
-  // Clear Time Machine result when switching coins
-  const tmRes=document.getElementById('tmResult');
-  if(tmRes){tmRes.classList.remove('show');tmRes.innerHTML='';}
-  // Fetch fresh data for this coin
-  let coin={id,name,symbol:sym||'',image:img||'',price:0,change:0,mcap:0,vol:0,ath:0};
+  const tmRes = document.getElementById('tmResult');
+  if(tmRes){ tmRes.classList.remove('show'); tmRes.innerHTML=''; }
+
+  const ccSym = CC_SYM[id] || (sym||id).toUpperCase().split('-')[0];
+  let coin = {id, name, symbol: ccSym, image: img||'', price:0, change:0, mcap:0, vol:0, ath:0};
   try{
-    const d=await apiFetch(`/coins/markets?vs_currency=usd&ids=${id}&sparkline=false`,30000);
-    if(d&&d[0]){const r=d[0];Object.assign(coin,{price:r.current_price,change:r.price_change_percentage_24h||0,mcap:r.market_cap,vol:r.total_volume,image:r.image||img,symbol:r.symbol.toUpperCase(),ath:r.ath});}
-  }catch(e){}
-  Object.assign(ST.coin,coin);
+    const p = await fetchCCPrice(ccSym);
+    Object.assign(coin, p);
+    if(!coin.image && img) coin.image = img;
+  }catch(e){ console.warn('selectCoin price fetch failed:', e); }
+
+  Object.assign(ST.coin, coin);
   updateHdr(ST.coin);
   renderWL({});
-  await loadChart(id,ST.tf);
+  await loadChart(id, ST.tf);
 }
 
-async function addToWL(id,name,sym,img){
-  if(ST.wl.find(c=>c.id===id)){await selectCoin(id,name,sym,img);return;}
-  ST.wl.push({id,name,symbol:sym||'',image:img||'',price:0,change:0,mcap:0,vol:0});
+async function addToWL(id, name, sym, img){
+  if(ST.wl.find(c=>c.id===id)){ await selectCoin(id,name,sym,img); return; }
+  const ccSym = CC_SYM[id] || (sym||id).toUpperCase().split('-')[0];
+  ST.wl.push({id, name, symbol:ccSym, image:img||'', price:0, change:0, mcap:0, vol:0});
   renderWL({});
+  // Fetch live price for the new coin and update
   try{
-    const d=await apiFetch(`/coins/markets?vs_currency=usd&ids=${id}&sparkline=false`,30000);
-    if(d&&d[0]){const r=d[0],i=ST.wl.findIndex(c=>c.id===id);if(i>-1)Object.assign(ST.wl[i],{price:r.current_price,change:r.price_change_percentage_24h||0,mcap:r.market_cap,vol:r.total_volume,image:r.image||img,symbol:r.symbol.toUpperCase()});}
+    const p = await fetchCCPrice(ccSym);
+    const i = ST.wl.findIndex(c=>c.id===id);
+    if(i>-1) Object.assign(ST.wl[i], p, {symbol:ccSym, image: p.image||img||''});
     renderWL({});
   }catch(e){}
 }
@@ -895,95 +963,245 @@ function updateHdr(c){
 /* ══════════════════ TRENDING ══════════════════ */
 async function loadTrending(){
   try{
-    const d=await apiFetch('/search/trending',300000);
-    document.getElementById('trList').innerHTML=(d.coins||[]).slice(0,7).map((c,i)=>`
-      <div class="tr-r" onclick="selectCoin('${c.item.id}','${esc(c.item.name)}','${c.item.symbol.toUpperCase()}','${c.item.small||''}')">
+    // Use CC top gainers over 24h as "trending"
+    const url = `${CC_TOP}/top/mktcapfull?limit=7&tsym=USD`;
+    const res = await fetch(url, {headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error(res.status);
+    const json = await res.json();
+    const items = (json.Data||[]).slice(0,7);
+    document.getElementById('trList').innerHTML = items.map((item,i) => {
+      const info = item.CoinInfo || {};
+      const raw  = item.RAW?.USD  || {};
+      const sym  = info.Name || '';
+      const img  = info.ImageUrl ? 'https://www.cryptocompare.com'+info.ImageUrl : '';
+      const ch   = raw.CHANGEPCT24HOUR;
+      const id   = sym.toLowerCase();
+      return `<div class="tr-r" onclick="selectCoin('${id}','${esc(info.FullName||sym)}','${sym}','${img}')">
         <span class="tr-n">${i+1}</span>
-        <img class="tr-img" src="${c.item.small||''}" alt="" onerror="this.style.display='none'">
-        <span class="tr-name">${c.item.name}</span>
-        <span class="tr-sym">${c.item.symbol.toUpperCase()}</span>
-        <span class="tr-f">🔥${c.item.score+1}</span>
-      </div>`).join('');
-  }catch(e){document.getElementById('trList').innerHTML='<div style="padding:10px;text-align:center;color:var(--text3);font-size:.75rem;">Unavailable</div>';}
+        <img class="tr-img" src="${img}" alt="" onerror="this.style.display='none'">
+        <span class="tr-name">${info.FullName||sym}</span>
+        <span class="tr-sym">${sym}</span>
+        ${ch!=null?`<span class="tr-f ${ch>=0?'pos':'neg'}">${ch>=0?'▲':'▼'}${Math.abs(ch).toFixed(1)}%</span>`:''}
+      </div>`;
+    }).join('');
+  }catch(e){
+    document.getElementById('trList').innerHTML='<div style="padding:10px;text-align:center;color:var(--text3);font-size:.75rem;">Unavailable</div>';
+  }
 }
 
 /* ══════════════════ GLOBAL TICKER ══════════════════ */
 async function loadTicker(){
   try{
-    const[g,top]=await Promise.all([
-      apiFetch('/global',300000),
-      apiFetch('/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=false',60000)
-    ]);
-    const gd=g.data;
-    const items=[
-      {n:'Global MCap',v:'$'+fL(gd.total_market_cap.usd)},
-      {n:'24h Vol',v:'$'+fL(gd.total_volume.usd)},
-      {n:'BTC Dom',v:gd.market_cap_percentage.btc.toFixed(1)+'%'},
-      {n:'Coins',v:gd.active_cryptocurrencies.toLocaleString()},
-      ...top.map(c=>({n:c.symbol.toUpperCase(),v:'$'+fP(c.current_price),ch:c.price_change_percentage_24h,img:c.image}))
-    ];
-    const html=items.map(it=>`<div class="ti">${it.img?`<img src="${it.img}" style="width:12px;height:12px;border-radius:50%;" onerror="this.remove()"> `:''}<b>${it.n}</b> ${it.v}${it.ch!=null?` <span class="${it.ch>=0?'pos':'neg'}">${it.ch>=0?'+':''}${it.ch.toFixed(2)}%</span>`:''}</div>`).join('');
-    document.getElementById('tickerTrack').innerHTML=html+html;
+    const url = `${CC_TOP}/top/mktcapfull?limit=20&tsym=USD`;
+    const res = await fetch(url, {headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error(res.status);
+    const json = await res.json();
+    const items = json.Data || [];
+    const html2 = items.map(item => {
+      const info = item.CoinInfo || {};
+      const raw  = item.RAW?.USD  || {};
+      const sym  = info.Name || '';
+      const img  = info.ImageUrl ? 'https://www.cryptocompare.com'+info.ImageUrl : '';
+      const pr   = raw.PRICE;
+      const ch   = raw.CHANGEPCT24HOUR;
+      return `<div class="ti">
+        ${img?`<img src="${img}" style="width:12px;height:12px;border-radius:50%;flex-shrink:0;" onerror="this.remove()"> `:''}
+        <b>${sym}</b> ${pr?'$'+fP(pr):'—'}
+        ${ch!=null?`<span class="${ch>=0?'pos':'neg'}">${ch>=0?'+':''}${ch.toFixed(2)}%</span>`:''}
+      </div>`;
+    }).join('');
+    document.getElementById('tickerTrack').innerHTML = html2 + html2;
   }catch(e){}
 }
 
 /* ══════════════════ MODAL BROWSER ══════════════════ */
-function openModal(){document.getElementById('modalBg').classList.remove('hide');document.getElementById('mSrch').value='';ST.mb.q='';ST.mb.page=1;fetchModal();}
-function closeModal(){document.getElementById('modalBg').classList.add('hide');}
-function mBgClick(e){if(e.target===document.getElementById('modalBg'))closeModal();}
-function setMCat(btn,cat){document.querySelectorAll('.mc').forEach(b=>b.classList.remove('on'));btn.classList.add('on');ST.mb.cat=cat;ST.mb.page=1;fetchModal();}
-function setMSort(btn,sort){document.querySelectorAll('.msb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');ST.mb.sort=sort;ST.mb.page=1;fetchModal();}
+function openModal(){ document.getElementById('modalBg').classList.remove('hide'); document.getElementById('mSrch').value=''; ST.mb.q=''; ST.mb.page=1; fetchModal(); }
+function closeModal(){ document.getElementById('modalBg').classList.add('hide'); }
+function mBgClick(e){ if(e.target===document.getElementById('modalBg')) closeModal(); }
+function setMCat(btn,cat){ document.querySelectorAll('.mc').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); ST.mb.cat=cat; ST.mb.page=1; fetchModal(); }
+function setMSort(btn,sort){ document.querySelectorAll('.msb').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); ST.mb.sort=sort; ST.mb.page=1; fetchModal(); }
 
-// Setup modal search
 function setupModalSearch(){
-  document.getElementById('mSrch').addEventListener('input',function(){
-    ST.mb.q=this.value.trim();ST.mb.page=1;
-    clearTimeout(ST.mbt);ST.mbt=setTimeout(fetchModal,400);
+  document.getElementById('mSrch').addEventListener('input', function(){
+    ST.mb.q = this.value.trim(); ST.mb.page = 1;
+    clearTimeout(ST.mbt); ST.mbt = setTimeout(fetchModal, 350);
   });
 }
 
+// Category → top CC symbols to show
+const CAT_SYMS = {
+  '':              null, // use top list
+  'layer-1':       ['BTC','ETH','SOL','BNB','ADA','AVAX','DOT','NEAR','ATOM','ALGO','FTM','ONE','EGLD','HBAR','VET'],
+  'layer-2':       ['MATIC','ARB','OP','IMX','LRC','METIS','BOBA','SKL','CELR','ZKS'],
+  'decentralized-finance-defi': ['UNI','AAVE','MKR','CRV','COMP','SNX','GRT','BAL','YFI','SUSHI','1INCH','DYDX','LDO','RUNE'],
+  'meme-token':    ['DOGE','SHIB','PEPE','FLOKI','BONK','WIF','MEME','BABYDOGE','KISHU'],
+  'gaming':        ['AXS','SAND','MANA','GALA','ENJ','FLOW','GODS','SLP','TLM','ALICE','PVU','ILV'],
+  'artificial-intelligence': ['FET','AGIX','OCEAN','RNDR','GRT','NMR','CTXC','DBC','MATRIX'],
+  'stablecoins':   ['USDT','USDC','BUSD','DAI','FRAX','TUSD','USDP','GUSD'],
+  'real-world-assets-rwa': ['MKR','ONDO','MPL','TRU','CPOOL','RIO'],
+  'non-fungible-tokens-nft': ['ENJ','CHZ','FLOW','MANA','SAND','AXS','GALA','IMX','LOOKS'],
+};
+
+// Sort options mapped to CC sort fields
+const SORT_MAP = {
+  'market_cap_desc':    {sort:'MKTCAP',  dir:'desc'},
+  'market_cap_asc':     {sort:'MKTCAP',  dir:'asc'},
+  'volume_desc':        {sort:'VOLUME24HOURTO', dir:'desc'},
+  'gecko_desc':         {sort:'SCORE',   dir:'desc'},
+  'price_change_desc_24h': {sort:'CHANGEPCT24HOUR', dir:'desc'},
+  'price_change_asc_24h':  {sort:'CHANGEPCT24HOUR', dir:'asc'},
+};
+
 async function fetchModal(){
-  const tg=document.getElementById('tGrid');
-  tg.innerHTML='<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-family:\'Share Tech Mono\',monospace;"><div class="spin" style="margin:0 auto 12px;"></div>Loading…</div>';
-  document.getElementById('mPg').innerHTML='';
-  const b=ST.mb;
+  const tg = document.getElementById('tGrid');
+  tg.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-family:\'Share Tech Mono\',monospace;"><div class="spin" style="margin:0 auto 12px;"></div>Loading tokens…</div>';
+  document.getElementById('mPg').innerHTML = '';
+  const b = ST.mb;
+
   try{
-    let data;
-    if(b.q.length>=2){
-      const sr=await apiFetch(`/search?query=${encodeURIComponent(b.q)}`,30000);
-      const all=sr.coins||[];
-      b.total=all.length;
-      const page=all.slice((b.page-1)*b.per,b.page*b.per);
-      if(!page.length){tg.innerHTML='<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);">No results</div>';return;}
-      try{
-        const ids=page.map(c=>c.id).join(',');
-        const pd=await apiFetch(`/coins/markets?vs_currency=usd&ids=${ids}&per_page=${b.per}&page=1&sparkline=false`,45000);
-        const pm={};pd.forEach(d=>pm[d.id]=d);
-        data=page.map(c=>pm[c.id]||{id:c.id,name:c.name,symbol:c.symbol,image:c.thumb,market_cap_rank:c.market_cap_rank,current_price:null,price_change_percentage_24h:null,market_cap:null});
-      }catch(e){data=page.map(c=>({id:c.id,name:c.name,symbol:c.symbol,image:c.thumb,market_cap_rank:c.market_cap_rank,current_price:null}));}
-    }else{
-      const cat=b.cat?`&category=${b.cat}`:'';
-      data=await apiFetch(`/coins/markets?vs_currency=usd${cat}&order=${b.sort}&per_page=${b.per}&page=${b.page}&sparkline=false`,45000);
-      b.total=b.cat?500:18000;
+    let coins = []; // array of {name, symbol, price, change24h, mcap, vol, image}
+
+    if(b.q.length >= 2){
+      // ── Search: use CC /data/all/coinlist to find matching symbols ──────
+      const url = `${CC_TOP}/all/coinlist?summary=true`;
+      const res = await fetch(url, {headers:{'Accept':'application/json'}});
+      if(!res.ok) throw new Error('coinlist_' + res.status);
+      const json = await res.json();
+      const q = b.q.toLowerCase();
+      // Filter coins where name or symbol matches query
+      const allCoins = Object.values(json.Data || {});
+      const matched = allCoins.filter(c =>
+        c.Symbol?.toLowerCase().includes(q) ||
+        c.CoinName?.toLowerCase().includes(q)
+      ).slice(0, 200); // cap at 200 before sorting
+      b.total = matched.length;
+      const page = matched.slice((b.page-1)*b.per, b.page*b.per);
+      if(!page.length){
+        tg.innerHTML='<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);">No results found for "'+b.q+'"</div>';
+        return;
+      }
+      // Fetch live prices for the matched page
+      const syms = page.map(c=>c.Symbol).join(',');
+      const priceUrl = `${CC_TOP}/pricemultifull?fsyms=${syms}&tsyms=USD`;
+      const pr = await fetch(priceUrl, {headers:{'Accept':'application/json'}});
+      const prJson = pr.ok ? await pr.json() : {RAW:{}};
+      const raw = prJson.RAW || {};
+      coins = page.map(c => {
+        const d = raw[c.Symbol]?.USD || {};
+        return {
+          id:      c.Symbol.toLowerCase(),
+          name:    c.CoinName || c.Symbol,
+          symbol:  c.Symbol,
+          price:   d.PRICE           || null,
+          change:  d.CHANGEPCT24HOUR || null,
+          mcap:    d.MKTCAP          || null,
+          vol:     d.VOLUME24HOURTO  || null,
+          image:   c.ImageUrl ? 'https://www.cryptocompare.com'+c.ImageUrl : '',
+          rank:    d.MKTCAPRANK      || null,
+        };
+      });
+    } else {
+      // ── Browse: use CC top-list endpoint ─────────────────────────────────
+      const catSyms = CAT_SYMS[b.cat] || null;
+      const sortCfg = SORT_MAP[b.sort] || SORT_MAP['market_cap_desc'];
+      const limit   = b.per;
+      const page    = b.page - 1;
+
+      let url;
+      if(catSyms){
+        // For categories: fetch prices for fixed symbol list
+        const page_syms = catSyms.slice(page*limit, (page+1)*limit);
+        if(!page_syms.length){
+          tg.innerHTML='<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);">No more results in this category.</div>';
+          return;
+        }
+        const priceUrl = `${CC_TOP}/pricemultifull?fsyms=${page_syms.join(',')}&tsyms=USD`;
+        const pr = await fetch(priceUrl, {headers:{'Accept':'application/json'}});
+        if(!pr.ok) throw new Error('price_' + pr.status);
+        const raw = (await pr.json()).RAW || {};
+        b.total = catSyms.length;
+        coins = page_syms.map(sym => {
+          const d = raw[sym]?.USD || {};
+          return {
+            id: sym.toLowerCase(), name: d.FROMSYMBOL||sym, symbol: sym,
+            price: d.PRICE||null, change: d.CHANGEPCT24HOUR||null,
+            mcap:  d.MKTCAP||null, vol: d.VOLUME24HOURTO||null,
+            image: d.IMAGEURL ? 'https://www.cryptocompare.com'+d.IMAGEURL : '',
+            rank:  d.MKTCAPRANK||null,
+          };
+        });
+      } else {
+        // General top list
+        url = `${CC_TOP}/top/mktcapfull?limit=${limit}&page=${page}&tsym=USD&ascending=${sortCfg.dir==='asc'}`;
+        const res = await fetch(url, {headers:{'Accept':'application/json'}});
+        if(!res.ok) throw new Error('toplist_' + res.status);
+        const json = await res.json();
+        b.total = 5000;
+        coins = (json.Data || []).map(item => {
+          const info = item.CoinInfo  || {};
+          const raw2 = item.RAW?.USD  || {};
+          const disp = item.DISPLAY?.USD || {};
+          return {
+            id:     info.Name?.toLowerCase() || '',
+            name:   info.FullName  || info.Name || '',
+            symbol: info.Name      || '',
+            price:  raw2.PRICE            || null,
+            change: raw2.CHANGEPCT24HOUR  || null,
+            mcap:   raw2.MKTCAP           || null,
+            vol:    raw2.VOLUME24HOURTO   || null,
+            image:  info.ImageUrl ? 'https://www.cryptocompare.com'+info.ImageUrl : '',
+            rank:   raw2.MKTCAPRANK       || null,
+          };
+        });
+      }
     }
-    b.data=data;
-    document.getElementById('mCnt').textContent=b.q?`${b.total} results`:`Page ${b.page}`;
-    renderModal();renderMPg();
-  }catch(e){tg.innerHTML='<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-family:\'Share Tech Mono\',monospace;">⚠ Request failed — please wait a moment and try again.</div>';}
+
+    // Sort if needed (for search results)
+    if(b.q.length >= 2){
+      const sortCfg = SORT_MAP[b.sort] || SORT_MAP['market_cap_desc'];
+      const key = sortCfg.sort === 'MKTCAP' ? 'mcap' : sortCfg.sort === 'CHANGEPCT24HOUR' ? 'change' : 'vol';
+      coins.sort((a,b2) => {
+        const av = a[key]||0, bv = b2[key]||0;
+        return sortCfg.dir === 'desc' ? bv-av : av-bv;
+      });
+    }
+
+    b.data = coins;
+    document.getElementById('mCnt').textContent = b.q ? `${b.total} results` : `Page ${b.page}`;
+    renderModal();
+    renderMPg();
+  }catch(err){
+    console.error('fetchModal failed:', err);
+    tg.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-family:\'Share Tech Mono\',monospace;">⚠ Request failed — please wait a moment and try again.</div>';
+  }
 }
 
 function renderModal(){
-  const inWL=new Set(ST.wl.map(c=>c.id));
-  document.getElementById('tGrid').innerHTML=ST.mb.data.map(c=>{
-    const inW=inWL.has(c.id),col=rc(c.symbol||'');
-    const img=c.image?`<img class="tc-img" src="${c.image}" alt="" onerror="this.outerHTML='<div class=tc-fb style=background:${col}22;color:${col};>${(c.symbol||'?').substring(0,3).toUpperCase()}</div>'">`:`<div class="tc-fb" style="background:${col}22;color:${col};">${(c.symbol||'?').substring(0,3).toUpperCase()}</div>`;
-    const ch=c.price_change_percentage_24h;
-    return`<div class="tc${inW?' wl':''}">
-      <div class="tc-t">${img}<div><div class="tc-nm">${c.name}</div><div class="tc-sy">${(c.symbol||'').toUpperCase()}</div>${c.market_cap_rank?`<div class="tc-rk">#${c.market_cap_rank}</div>`:''}</div></div>
-      <div class="tc-b"><div><div class="tc-pr">${c.current_price!=null?'$'+fP(c.current_price):'—'}</div><div class="tc-mc">${c.market_cap?'$'+fL(c.market_cap):''}</div></div>${ch!=null?`<div class="tc-ch ${ch>=0?'pos':'neg'}">${ch>=0?'+':''}${ch.toFixed(2)}%</div>`:''}</div>
+  const inWL = new Set(ST.wl.map(c => CC_SYM[c.id] || c.symbol.toUpperCase()));
+  document.getElementById('tGrid').innerHTML = ST.mb.data.map(c => {
+    const sym  = (c.symbol||'').toUpperCase();
+    const inW  = inWL.has(sym);
+    const col  = rc(sym);
+    const img  = c.image
+      ? `<img class="tc-img" src="${c.image}" alt="" onerror="this.outerHTML='<div class=tc-fb style=background:${col}22;color:${col};>${sym.substring(0,3)}</div>'">`
+      : `<div class="tc-fb" style="background:${col}22;color:${col};">${sym.substring(0,3)}</div>`;
+    const ch = c.change;
+    return `<div class="tc${inW?' wl':''}">
+      <div class="tc-t">${img}<div>
+        <div class="tc-nm">${c.name}</div>
+        <div class="tc-sy">${sym}</div>
+        ${c.rank ? `<div class="tc-rk">#${c.rank}</div>` : ''}
+      </div></div>
+      <div class="tc-b">
+        <div>
+          <div class="tc-pr">${c.price!=null ? '$'+fP(c.price) : '—'}</div>
+          <div class="tc-mc">${c.mcap ? '$'+fL(c.mcap) : ''}</div>
+        </div>
+        ${ch!=null ? `<div class="tc-ch ${ch>=0?'pos':'neg'}">${ch>=0?'+':''}${ch.toFixed(2)}%</div>` : ''}
+      </div>
       <div class="tc-btns">
-        <button class="tc-view" onclick="selectCoin('${c.id}','${esc(c.name)}','${(c.symbol||'').toUpperCase()}','${c.image||''}');closeModal()">📊 Chart</button>
-        <button class="tc-add${inW?' done':''}" id="tadd_${c.id}" onclick="mAdd('${c.id}','${esc(c.name)}','${(c.symbol||'').toUpperCase()}','${c.image||''}')">${inW?'✓ Added':'+ Watch'}</button>
+        <button class="tc-view" onclick="selectCoin('${c.id}','${esc(c.name)}','${sym}','${c.image||''}');closeModal()">📊 Chart</button>
+        <button class="tc-add${inW?' done':''}" id="tadd_${c.id}" onclick="mAdd('${c.id}','${esc(c.name)}','${sym}','${c.image||''}')">${inW?'✓ Added':'+ Watch'}</button>
       </div>
     </div>`;
   }).join('');
