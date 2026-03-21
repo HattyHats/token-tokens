@@ -465,6 +465,7 @@ button{cursor:pointer;font-family:inherit;}
 <!-- ═════ APP ═════ -->
 <div id="app">
 
+<div class="toast-container" id="toastContainer"></div>
 <div class="ticker-bar">
   <div class="ticker-lbl">◈ LIVE</div>
   <div class="ticker-wrap"><div class="ticker-track" id="tickerTrack"><div class="ti"><b>Loading market data…</b></div></div></div>
@@ -478,6 +479,7 @@ button{cursor:pointer;font-family:inherit;}
   </nav>
   <div class="hdr-r">
     <div class="api-dot wait" id="apiDot"><div class="spin" style="width:9px;height:9px;border-width:1.5px;"></div>&nbsp;connecting</div>
+    <button class="settings-btn" onclick="showSettingsToast()">⚙ Settings</button>
     <button class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
   </div>
 </header>
@@ -504,7 +506,7 @@ button{cursor:pointer;font-family:inherit;}
     <!-- FEAR & GREED INDEX -->
     <div class="fg-widget" id="fgWidget">
       <div class="fg-title">
-        <span>😱 FEAR &amp; GREED INDEX</span>
+        <span>😱 CRYPTO FEAR &amp; GREED</span>
         <span id="fgUpdated" style="font-size:.58rem;color:var(--text3);"></span>
       </div>
       <div class="fg-gauge-wrap">
@@ -534,6 +536,7 @@ button{cursor:pointer;font-family:inherit;}
       <div class="fg-bar">
         <div class="fg-needle" id="fgBarNeedle" style="left:50%"></div>
       </div>
+      <div style="font-size:.58rem;color:var(--text3);margin-top:5px;font-family:'Share Tech Mono',monospace;">Crypto index · alternative.me</div>
     </div>
   </aside>
 
@@ -633,6 +636,31 @@ button{cursor:pointer;font-family:inherit;}
       <span class="draw-count" id="drawCount"></span>
     </div>
     <div class="measure-tip" id="measureTip"></div>
+
+    <!-- PRICE ALERTS -->
+    <div class="alert-panel" id="alertPanel">
+      <div class="alert-panel-hdr" onclick="toggleAlertPanel()">
+        <div class="alert-panel-title">
+          🔔 PRICE ALERTS
+          <span class="alert-badge" id="alertBadge">0</span>
+        </div>
+        <span class="alert-toggle" id="alertToggle">▼</span>
+      </div>
+      <div class="alert-body" id="alertBody">
+        <div class="alert-add-row">
+          <span class="alert-coin-name" id="alertCoinName">BTC</span>
+          <select class="alert-dir" id="alertDir">
+            <option value="above">↑ Above</option>
+            <option value="below">↓ Below</option>
+          </select>
+          <input class="alert-price-in" id="alertPrice" type="number" placeholder="Target price…" min="0" step="any">
+          <button class="alert-add-btn" onclick="addAlert()">+ Add Alert</button>
+        </div>
+        <div class="alert-list" id="alertList">
+          <div class="alert-empty">No alerts set. Add one above!</div>
+        </div>
+      </div>
+    </div>
 
     <!-- TIME MACHINE -->
     <div class="tm-bar">
@@ -1329,6 +1357,7 @@ function undoDraw() {
   DRW.pending = null;
   updateDrawCount();
   renderChart();
+  saveState();
 }
 
 function clearDrawings() {
@@ -1336,6 +1365,7 @@ function clearDrawings() {
   DRW.pending  = null;
   updateDrawCount();
   renderChart();
+  saveState();
 }
 
 function updateDrawCount() {
@@ -1636,8 +1666,10 @@ async function selectCoin(id, name, sym, img){
 
   Object.assign(ST.coin, coin);
   updateHdr(ST.coin);
+  updateAlertCoinName();
   renderWL({});
   await loadChart(id, ST.tf);
+  saveState();
 }
 
 async function addToWL(id, name, sym, img){
@@ -1645,6 +1677,7 @@ async function addToWL(id, name, sym, img){
   const ccSym = CC_SYM[id] || (sym||id).toUpperCase().split('-')[0];
   ST.wl.push({id, name, symbol:ccSym, image:img||'', price:0, change:0, mcap:0, vol:0});
   renderWL({});
+  saveState();
   // Fetch live price for the new coin and update
   try{
     const p = await fetchCCPrice(ccSym);
@@ -1657,6 +1690,7 @@ async function addToWL(id, name, sym, img){
 function removeFromWL(id,e){
   e.stopPropagation();if(ST.wl.length<=1)return;
   ST.wl=ST.wl.filter(c=>c.id!==id);
+  saveState();
   if(ST.coin.id===id)selectCoinByIdx(0);else renderWL({});
 }
 
@@ -2400,7 +2434,8 @@ function calcMACD(candles,fast,slow,sig){
 /* ══════════════════ FEAR & GREED ══════════════════════ */
 async function loadFearGreed(){
   try{
-    const res  = await fetch('https://api.alternative.me/fng/?limit=2&format=json');
+    // alternative.me is the Crypto Fear & Greed Index (NOT CNN's stock market index)
+    const res  = await fetch('https://api.alternative.me/fng/?limit=2&format=json&t='+Date.now());
     if(!res.ok) throw new Error(res.status);
     const json = await res.json();
     const cur  = json.data[0];
@@ -2773,6 +2808,240 @@ document.addEventListener('DOMContentLoaded', ()=>{
   }, true);
 });
 
+
+/* ══════════════════ LOCAL STORAGE PERSISTENCE ══════════════ */
+// Everything saved under 'tt_' prefix to avoid conflicts
+const LS_KEY = 'tt_v1';
+
+function saveState(){
+  try{
+    const data = {
+      wl:   ST.wl.map(c=>({id:c.id,name:c.name,symbol:c.symbol,image:c.image||''})),
+      coin: {id:ST.coin.id,name:ST.coin.name,symbol:ST.coin.symbol,image:ST.coin.image||''},
+      tf:   ST.tf,
+      ct:   ST.ct,
+      inds: [...ST.inds],
+      theme: document.documentElement.getAttribute('data-theme')||'dark',
+      alerts: ALERTS,
+      drawings: DRW.drawings,
+      drawColor: DRW.color,
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+  }catch(e){ console.warn('saveState failed:',e); }
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+
+    // Restore watchlist
+    if(data.wl && data.wl.length){
+      ST.wl = data.wl.map(c=>({...c, price:0, change:0, mcap:0, vol:0}));
+    }
+    // Restore active coin
+    if(data.coin && data.coin.id){
+      Object.assign(ST.coin, data.coin);
+    }
+    // Restore timeframe + chart type
+    if(data.tf) ST.tf = data.tf;
+    if(data.ct) ST.ct = data.ct;
+    // Restore indicators
+    if(data.inds) data.inds.forEach(i=>ST.inds.add(i));
+    // Restore drawings
+    if(data.drawings) DRW.drawings = data.drawings;
+    if(data.drawColor) DRW.color = data.drawColor;
+    // Restore alerts
+    if(data.alerts) ALERTS = data.alerts;
+    // Restore theme
+    if(data.theme === 'light'){
+      lm = false; toggleTheme(); // toggleTheme flips lm, so flip back
+    }
+    return true;
+  }catch(e){
+    console.warn('loadState failed:',e);
+    return false;
+  }
+}
+
+function clearSavedState(){
+  localStorage.removeItem(LS_KEY);
+  showToast('🗑 Settings Cleared','Your saved watchlist, alerts, and drawings have been cleared. Refresh to reset.','info');
+}
+
+/* ══════════════════ PRICE ALERTS ══════════════════════════ */
+let ALERTS = []; // [{id, coinId, symbol, dir:'above'|'below', price, active:true, triggered:false}]
+let ALERT_CHECK_INTERVAL = null;
+
+function toggleAlertPanel(){
+  const body = document.getElementById('alertBody');
+  const tog  = document.getElementById('alertToggle');
+  const open = body.classList.toggle('open');
+  tog.classList.toggle('open', open);
+}
+
+function updateAlertCoinName(){
+  const el = document.getElementById('alertCoinName');
+  if(el) el.textContent = ST.coin.symbol || 'BTC';
+}
+
+function addAlert(){
+  const priceIn = document.getElementById('alertPrice');
+  const dirIn   = document.getElementById('alertDir');
+  const targetPrice = parseFloat(priceIn.value);
+  if(!targetPrice || targetPrice <= 0){ showToast('⚠ Invalid Price','Please enter a valid price greater than 0.','warn'); return; }
+
+  const alert = {
+    id:       Date.now(),
+    coinId:   ST.coin.id,
+    symbol:   ST.coin.symbol || ST.coin.name,
+    name:     ST.coin.name,
+    dir:      dirIn.value,
+    price:    targetPrice,
+    active:   true,
+    triggered:false,
+  };
+
+  // Check if price is already past target
+  const cur = ST.coin.price;
+  if(cur > 0){
+    if(alert.dir === 'above' && cur >= targetPrice){
+      showToast('⚠ Already Above','Current price ($'+fP(cur)+') is already above your target.','warn'); return;
+    }
+    if(alert.dir === 'below' && cur <= targetPrice){
+      showToast('⚠ Already Below','Current price ($'+fP(cur)+') is already below your target.','warn'); return;
+    }
+  }
+
+  ALERTS.push(alert);
+  priceIn.value = '';
+  renderAlerts();
+  saveState();
+  // Request notification permission if not already granted
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+  showToast('🔔 Alert Set','Will notify when '+alert.symbol+' goes '+alert.dir+' $'+fP(targetPrice),'success');
+}
+
+function deleteAlert(id){
+  ALERTS = ALERTS.filter(a=>a.id!==id);
+  renderAlerts();
+  saveState();
+}
+
+function renderAlerts(){
+  const list    = document.getElementById('alertList');
+  const badge   = document.getElementById('alertBadge');
+  const active  = ALERTS.filter(a=>a.active && !a.triggered).length;
+  if(badge){ badge.textContent = ALERTS.length; badge.style.display = ALERTS.length?'inline':'none'; }
+  if(!ALERTS.length){
+    list.innerHTML = '<div class="alert-empty">No alerts set. Add one above!</div>';
+    return;
+  }
+  list.innerHTML = ALERTS.map(a=>`
+    <div class="alert-item${a.triggered?' triggered':''}">
+      <span class="alert-item-sym">${a.symbol}</span>
+      <span class="alert-item-dir">${a.dir==='above'?'↑':'↓'}</span>
+      <span class="alert-item-price">$${fP(a.price)}</span>
+      <span class="alert-item-status ${a.triggered?'hit':'active'}">${a.triggered?'✓ HIT':'active'}</span>
+      <span class="alert-del" onclick="deleteAlert(${a.id})" title="Remove">✕</span>
+    </div>
+  `).join('');
+}
+
+function checkAlerts(){
+  if(!ALERTS.length) return;
+  let changed = false;
+  ALERTS.forEach(a=>{
+    if(!a.active || a.triggered) return;
+    // Find current price from watchlist or ST.coin
+    let cur = 0;
+    if(a.coinId === ST.coin.id) cur = ST.coin.price;
+    else {
+      const wlEntry = ST.wl.find(c=>c.id===a.coinId);
+      if(wlEntry) cur = wlEntry.price;
+    }
+    if(!cur) return;
+    const hit = (a.dir==='above' && cur >= a.price) || (a.dir==='below' && cur <= a.price);
+    if(hit){
+      a.triggered = true;
+      changed = true;
+      triggerAlert(a, cur);
+    }
+  });
+  if(changed){ renderAlerts(); saveState(); }
+}
+
+function triggerAlert(alert, currentPrice){
+  const msg = `${alert.symbol} is now ${alert.dir} $${fP(alert.price)}! Current: $${fP(currentPrice)}`;
+  // Browser notification
+  if('Notification' in window && Notification.permission === 'granted'){
+    new Notification('🔔 Token-Tokens Alert', {
+      body: msg,
+      icon: 'chart.png',
+      tag:  'tt-alert-'+alert.id,
+    });
+  }
+  // In-app toast
+  showToast(
+    `🔔 ${alert.symbol} Alert Triggered!`,
+    `Price ${alert.dir === 'above' ? 'crossed above' : 'dropped below'} $${fP(alert.price)}\nCurrent: $${fP(currentPrice)}`,
+    'success'
+  );
+}
+
+/* ══════════════════ TOAST SYSTEM ════════════════════════════ */
+function showToast(title, msg, type='info', duration=5000){
+  const container = document.getElementById('toastContainer');
+  if(!container) return;
+  const id   = 'toast_'+Date.now();
+  const div  = document.createElement('div');
+  div.className = `toast ${type}`;
+  div.id = id;
+  const icons = {success:'✅', warn:'⚠️', info:'ℹ️'};
+  div.innerHTML = `
+    <span class="toast-icon">${icons[type]||'ℹ️'}</span>
+    <div class="toast-body">
+      <div class="toast-title">${title}</div>
+      <div class="toast-msg">${msg.replace(/\n/g,'<br>')}</div>
+    </div>
+    <span class="toast-close" onclick="closeToast('${id}')">✕</span>
+  `;
+  container.appendChild(div);
+  if(duration > 0){
+    setTimeout(()=>closeToast(id), duration);
+  }
+}
+
+function closeToast(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.animation = 'toastOut .25s ease forwards';
+  setTimeout(()=>el.remove(), 260);
+}
+
+/* ══════════════════ SETTINGS TOAST ══════════════════════════ */
+function showSettingsToast(){
+  const wlCount   = ST.wl.length;
+  const alCount   = ALERTS.length;
+  const drwCount  = DRW.drawings.length;
+  const saved     = localStorage.getItem(LS_KEY);
+  const savedKB   = saved ? (saved.length/1024).toFixed(1) : '0';
+  showToast(
+    '⚙ Your Settings',
+    `<b>Watchlist:</b> ${wlCount} tokens saved<br>`+
+    `<b>Alerts:</b> ${alCount} active<br>`+
+    `<b>Drawings:</b> ${drwCount} saved<br>`+
+    `<b>Storage:</b> ${savedKB} KB used<br><br>`+
+    `<small style="color:var(--text3)">All data is saved locally in your browser.<br>`+
+    `<span style="cursor:pointer;color:var(--red);text-decoration:underline;" onclick="clearSavedState();closeToast(this.closest('.toast').id)">Clear all saved data</span></small>`,
+    'info',
+    0  // don't auto-dismiss settings panel
+  );
+}
+
 /* ══════════════════ CHART INTERACTION ══════════════════ */
 document.getElementById('priceCanvas').addEventListener('wheel',e=>{
   e.preventDefault();
@@ -2802,7 +3071,7 @@ document.getElementById('priceCanvas').addEventListener('mousedown',e=>{
   if(DRW.tool === 'hline'){
     DRW.drawings.push({type:'hline', color:DRW.color, p1:{gi:ci.globalIdx, price}});
     DRW.pending = null;
-    updateDrawCount(); renderChart(); return;
+    updateDrawCount(); renderChart(); saveState(); return;
   }
 
   if(DRW.tool === 'note'){
@@ -2819,7 +3088,7 @@ document.getElementById('priceCanvas').addEventListener('mousedown',e=>{
     DRW.pending.p2 = {gi:ci.globalIdx, price};
     DRW.drawings.push({...DRW.pending});
     DRW.pending = null;
-    updateDrawCount(); renderChart();
+    updateDrawCount(); renderChart(); saveState();
   }
 });
 
@@ -2886,9 +3155,9 @@ document.getElementById('priceCanvas').addEventListener('mousemove',function(e){
 document.getElementById('priceCanvas').addEventListener('mouseleave',()=>document.getElementById('cTip').style.opacity=0);
 
 /* ══════════════════ CONTROLS ══════════════════ */
-async function setTF(btn,tf){document.querySelectorAll('.tf').forEach(b=>b.classList.remove('on'));btn.classList.add('on');ST.tf=tf;await loadChart(ST.coin.id,tf);}
-function setCT(t){ST.ct=t;document.getElementById('candleBtn').classList.toggle('on',t==='candle');document.getElementById('lineBtn').classList.toggle('on',t==='line');renderChart();}
-function toggleInd(n){ST.inds.has(n)?ST.inds.delete(n):ST.inds.add(n);document.getElementById('i'+n.toUpperCase()).classList.toggle('on');renderChart();}
+async function setTF(btn,tf){document.querySelectorAll('.tf').forEach(b=>b.classList.remove('on'));btn.classList.add('on');ST.tf=tf;await loadChart(ST.coin.id,tf);saveState();}
+function setCT(t){ST.ct=t;document.getElementById('candleBtn').classList.toggle('on',t==='candle');document.getElementById('lineBtn').classList.toggle('on',t==='line');renderChart();saveState();}
+function toggleInd(n){ST.inds.has(n)?ST.inds.delete(n):ST.inds.add(n);document.getElementById('i'+n.toUpperCase()).classList.toggle('on');renderChart();saveState();}
 async function doRefresh(){
   // CryptoCompare chart data is fetched fresh each time (no cache for chart data)
   await loadChart(ST.coin.id, ST.tf);
@@ -3126,23 +3395,51 @@ function enterApp(){
 }
 
 async function initApp(){
+  // ── Restore saved state first ───────────────────────────
+  const hadSaved = loadState();
+
   setupSearch();
   setupModalSearch();
   initTimeMachine();
+  updateAlertCoinName();
+  renderAlerts();
+
+  // Sync UI to restored state
+  document.querySelectorAll('.tf').forEach(b=>{
+    const tfMap={'1':'1d','7':'7d','30':'30d','90':'90d','365':'1y','1825':'5y','max':'MAX'};
+    b.classList.toggle('on', b.textContent === (tfMap[ST.tf]||'30d'));
+  });
+  document.getElementById('candleBtn')?.classList.toggle('on', ST.ct==='candle');
+  document.getElementById('lineBtn')?.classList.toggle('on',   ST.ct==='line');
+  ST.inds.forEach(n=>{
+    document.getElementById('i'+n.toUpperCase())?.classList.add('on');
+  });
+
   setDot('wait');
-  // Stagger loads to stay within rate limits
   await loadPrices();
   await sleep(300);
   await loadTrending();
   await sleep(300);
-  loadTicker(); // non-blocking
+  loadTicker();
   await sleep(300);
   await loadChart(ST.coin.id, ST.tf);
+
+  // ── Auto-save on changes ────────────────────────────────
+  // Save when watchlist changes, alerts change, etc.
+  setInterval(saveState, 30000); // autosave every 30s
   setInterval(loadPrices, 90000);
   setInterval(loadTicker, 240000);
-  // Load Fear & Greed (refresh hourly)
+  setInterval(checkAlerts, 15000); // check alerts every 15s
+
+  // ── Fear & Greed ────────────────────────────────────────
   loadFearGreed();
   setInterval(loadFearGreed, 3600000);
+
+  if(hadSaved){
+    showToast('👋 Welcome back!',
+      `Restored your ${ST.wl.length} watchlist tokens and ${ALERTS.length} alert${ALERTS.length!==1?'s':''}.`,
+      'info', 3500);
+  }
 }
 </script>
 </body>
