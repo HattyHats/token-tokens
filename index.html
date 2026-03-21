@@ -62,121 +62,6 @@ button{cursor:pointer;font-family:inherit;}
 .hdr-nav{display:flex;gap:3px;align-items:center;}
 
 
-/* ══════════════════ COIN INFO POPUP ══════════════════════ */
-let _cipTimeout=null, _cipHideTimeout=null, _cipCurrentId=null;
-
-async function showCoinInfo(e, id, name, symbol, image){
-  e.stopPropagation();
-  clearTimeout(_cipHideTimeout);
-  const popup=document.getElementById('coinInfoPopup');
-  if(!popup)return;
-
-  // Position popup
-  const rect=e.target.getBoundingClientRect();
-  let left=rect.right+10, top=rect.top-10;
-  if(left+270>window.innerWidth) left=rect.left-275;
-  if(top+400>window.innerHeight) top=window.innerHeight-420;
-  popup.style.left=Math.max(8,left)+'px';
-  popup.style.top=Math.max(8,top)+'px';
-
-  // Set header immediately with what we know
-  const col=rc(symbol||'');
-  const cipHdr=document.getElementById('cipHdr');
-  if(image){
-    document.getElementById('cipImgFb').outerHTML=`<img class="cip-img" id="cipImgEl" src="${image}" alt="" onerror="this.outerHTML='<div class=cip-img-fb id=cipImgFb style=background:${col}22;color:${col};>${(symbol||'?').substring(0,3)}</div>'">`;
-  }else{
-    const fb=document.getElementById('cipImgFb');
-    if(fb){fb.style.background=col+'22';fb.style.color=col;fb.textContent=(symbol||'?').substring(0,3);}
-  }
-  document.getElementById('cipName').textContent=name||'—';
-  document.getElementById('cipSym').textContent=(symbol||'—')+' / USD';
-  document.getElementById('cipBody').innerHTML='<div class="cip-loading"><div class="spin" style="display:inline-block;width:12px;height:12px;border-width:1.5px;vertical-align:middle;margin-right:6px;"></div>Loading info…</div>';
-  popup.classList.add('show');
-  _cipCurrentId=id;
-
-  // Fetch coin detail (cached)
-  if(_cipTimeout)clearTimeout(_cipTimeout);
-  _cipTimeout=setTimeout(async()=>{
-    if(_cipCurrentId!==id)return;
-    try{
-      const data=await apiFetch(`/coins/${encodeURIComponent(id)}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`,120000);
-      if(_cipCurrentId!==id)return;
-      renderCoinInfoPopup(data);
-    }catch(err){
-      if(_cipCurrentId!==id)return;
-      document.getElementById('cipBody').innerHTML='<div class="cip-loading" style="color:var(--red);">⚠ Could not load data</div>';
-    }
-  }, 300);
-}
-
-function renderCoinInfoPopup(d){
-  const m=d.market_data||{};
-  const price=m.current_price?.usd;
-  const change24=m.price_change_percentage_24h;
-  const change7=m.price_change_percentage_7d;
-  const change30=m.price_change_percentage_30d;
-  const ath=m.ath?.usd;
-  const athDate=m.ath_date?.usd;
-  const atl=m.atl?.usd;
-  const mcap=m.market_cap?.usd;
-  const vol=m.total_volume?.usd;
-  const supply=m.circulating_supply;
-  const maxSupply=m.max_supply;
-  const rank=d.market_cap_rank;
-  const genesis=d.genesis_date;
-  const desc=(d.description?.en||'').replace(/<[^>]+>/g,'').substring(0,150);
-  const categories=(d.categories||[]).filter(Boolean).slice(0,3).join(', ');
-  const website=(d.links?.homepage||[]).filter(Boolean)[0]||'';
-  const athPct=ath&&price?((price-ath)/ath*100):null;
-  const athDateStr=athDate?new Date(athDate).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
-
-  const row=(lbl,val,cls='')=>`<div class="cip-row"><span class="cip-lbl">${lbl}</span><span class="cip-val${cls?' '+cls:''}">${val}</span></div>`;
-  const chCls=v=>v==null?'':(v>=0?' pos':' neg');
-  const chStr=v=>v==null?'—':`${v>=0?'+':''}${v.toFixed(2)}%`;
-
-  let body='';
-  if(rank)         body+=row('Market Cap Rank','#'+rank,'accent');
-  body+=row('Current Price',price?'$'+fP(price):'—','accent');
-  if(change24!=null) body+=row('24h Change',chStr(change24),chCls(change24));
-  if(change7!=null)  body+=row('7d Change', chStr(change7), chCls(change7));
-  if(change30!=null) body+=row('30d Change',chStr(change30),chCls(change30));
-  if(mcap)           body+=row('Market Cap','$'+fL(mcap));
-  if(vol)            body+=row('24h Volume','$'+fL(vol));
-  if(ath)            body+=row('All-Time High','$'+fP(ath));
-  if(athPct!=null)   body+=row('From ATH',chStr(athPct),chCls(athPct));
-  if(athDate)        body+=row('ATH Date',athDateStr);
-  if(atl)            body+=row('All-Time Low','$'+fP(atl));
-  if(supply)         body+=row('Circulating',fL(supply)+' '+d.symbol?.toUpperCase());
-  if(maxSupply)      body+=row('Max Supply',fL(maxSupply));
-  if(genesis)        body+=row('Launch Date',new Date(genesis).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}));
-  if(categories)     body+=row('Categories',categories);
-
-  document.getElementById('cipBody').innerHTML=body;
-
-  // Footer: short description or website
-  const footer=document.getElementById('cipFooter');
-  if(footer){
-    if(desc) footer.innerHTML=`<span style="line-height:1.5;display:block;">${desc}${desc.length>=150?'…':''}</span>`;
-    else if(website) footer.innerHTML=`<a href="${website}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">${website.replace(/https?:\/\//,'').split('/')[0]}</a>`;
-    else footer.textContent='Hover away to close';
-  }
-}
-
-function hideCoinInfo(){
-  _cipHideTimeout=setTimeout(()=>{
-    const popup=document.getElementById('coinInfoPopup');
-    if(popup)popup.classList.remove('show');
-    _cipCurrentId=null;
-    clearTimeout(_cipTimeout);
-  },120);
-}
-// Keep popup visible when mouse moves over it
-document.addEventListener('DOMContentLoaded',()=>{
-  const popup=document.getElementById('coinInfoPopup');
-  if(!popup)return;
-  popup.addEventListener('mouseenter',()=>clearTimeout(_cipHideTimeout));
-  popup.addEventListener('mouseleave',hideCoinInfo);
-});
 
 /* ── HATTY LINKS DROPDOWN ─────────────────────────────── */
 .hatty-drop-wrap{position:relative;}
@@ -2334,20 +2219,6 @@ async function loadTicker(){
   }catch(e){}
 }
 
-/* ══════════════════ MODAL BROWSER ══════════════════ */
-function openModal(){ document.getElementById('modalBg').classList.remove('hide'); document.getElementById('mSrch').value=''; ST.mb.q=''; ST.mb.page=1; fetchModal(); }
-function closeModal(){ document.getElementById('modalBg').classList.add('hide'); }
-function mBgClick(e){ if(e.target===document.getElementById('modalBg')) closeModal(); }
-function setMCat(btn,cat){ document.querySelectorAll('.mc').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); ST.mb.cat=cat; ST.mb.page=1; fetchModal(); }
-function setMSort(btn,sort){ document.querySelectorAll('.msb').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); ST.mb.sort=sort; ST.mb.page=1; fetchModal(); }
-
-function setupModalSearch(){
-  document.getElementById('mSrch').addEventListener('input', function(){
-    ST.mb.q = this.value.trim(); ST.mb.page = 1;
-    clearTimeout(ST.mbt); ST.mbt = setTimeout(fetchModal, 350);
-  });
-}
-
 // Category → top CC symbols to show
 // ─── TOKEN BROWSER: CoinGecko-powered ──────────────────────────────────────
 // Maps our sort button values → CoinGecko /coins/markets "order" param
@@ -2448,14 +2319,21 @@ async function fetchModal(){
         };
       });
     } else {
-      // ── BROWSE via CoinGecko /coins/markets with optional category + sort ──
-      const cat  = CG_CATS[b.cat] || '';
-      const sort = CG_SORT_MAP[b.sort] || 'market_cap_desc';
+      // ── BROWSE via CoinGecko /coins/markets ──────────────────────────────
+      // Gainers/Losers: free tier doesn't support price_change sort server-side.
+      // We fetch by market_cap_desc and sort client-side for those modes.
+      const cat = CG_CATS[b.cat] || '';
       const catParam = cat ? `&category=${encodeURIComponent(cat)}` : '';
-      const url=`/coins/markets?vs_currency=usd${catParam}&order=${sort}&per_page=${b.per}&page=${b.page}&sparkline=false&price_change_percentage=24h`;
-      const raw=await apiFetch(url, 45000);
-      b.total = cat ? (raw.length < b.per ? (b.page-1)*b.per+raw.length : b.page*b.per+1) : 18000;
-      data=raw.map(d=>({
+      const needsClientSort = b.sort === 'price_change_desc_24h' || b.sort === 'price_change_asc_24h';
+      // For client-side sort we fetch a larger pool (250 coins) then sort + paginate
+      const fetchSort  = needsClientSort ? 'market_cap_desc' : (CG_SORT_MAP[b.sort] || 'market_cap_desc');
+      const fetchPer   = needsClientSort ? 250 : b.per;
+      const fetchPage  = needsClientSort ? 1   : b.page;
+      const url = `/coins/markets?vs_currency=usd${catParam}&order=${fetchSort}&per_page=${fetchPer}&page=${fetchPage}&sparkline=false&price_change_percentage=24h`;
+      // Use longer cache TTL for browse (2 min), shorter for sort changes
+      let raw = await apiFetch(url, needsClientSort ? 120000 : 45000);
+
+      const mapCoin = d => ({
         id:     d.id,
         name:   d.name,
         symbol: (d.symbol||'').toUpperCase(),
@@ -2465,11 +2343,23 @@ async function fetchModal(){
         vol:    d.total_volume     ?? null,
         image:  d.image            || '',
         rank:   d.market_cap_rank  || null,
-        ath:    d.ath              || null,
-        atl:    d.atl              || null,
         high24: d.high_24h         || null,
         low24:  d.low_24h          || null,
-      }));
+      });
+
+      if(needsClientSort){
+        // Sort the full pool client-side then paginate
+        raw.sort((a,z) => {
+          const av = a.price_change_percentage_24h ?? (b.sort==='price_change_desc_24h' ? -Infinity : Infinity);
+          const zv = z.price_change_percentage_24h ?? (b.sort==='price_change_desc_24h' ? -Infinity : Infinity);
+          return b.sort === 'price_change_desc_24h' ? zv - av : av - zv;
+        });
+        b.total = raw.length;
+        raw = raw.slice((b.page-1)*b.per, b.page*b.per);
+      } else {
+        b.total = cat ? (raw.length < b.per ? (b.page-1)*b.per+raw.length : b.page*b.per+b.per) : 18000;
+      }
+      data = raw.map(mapCoin);
     }
 
     b.data=data;
@@ -4192,6 +4082,7 @@ async function initApp(){
 
   setupSearch();
   setupModalSearch();
+  initCoinInfoPopup();
   initTimeMachine();
   updateAlertCoinName();
   renderAlerts();
@@ -4246,6 +4137,122 @@ async function initApp(){
       `Restored your ${ST.wl.length} watchlist tokens and ${ALERTS.length} alert${ALERTS.length!==1?'s':''}.`,
       'info', 3500);
   }
+}
+
+/* ══════════════════ COIN INFO POPUP ══════════════════════ */
+let _cipTimeout=null, _cipHideTimeout=null, _cipCurrentId=null;
+
+async function showCoinInfo(e, id, name, symbol, image){
+  e.stopPropagation();
+  clearTimeout(_cipHideTimeout);
+  const popup=document.getElementById('coinInfoPopup');
+  if(!popup)return;
+
+  // Position popup
+  const rect=e.target.getBoundingClientRect();
+  let left=rect.right+10, top=rect.top-10;
+  if(left+270>window.innerWidth) left=rect.left-275;
+  if(top+400>window.innerHeight) top=window.innerHeight-420;
+  popup.style.left=Math.max(8,left)+'px';
+  popup.style.top=Math.max(8,top)+'px';
+
+  // Set header immediately with what we know
+  const col=rc(symbol||'');
+  const cipHdr=document.getElementById('cipHdr');
+  if(image){
+    document.getElementById('cipImgFb').outerHTML=`<img class="cip-img" id="cipImgEl" src="${image}" alt="" onerror="this.outerHTML='<div class=cip-img-fb id=cipImgFb style=background:${col}22;color:${col};>${(symbol||'?').substring(0,3)}</div>'">`;
+  }else{
+    const fb=document.getElementById('cipImgFb');
+    if(fb){fb.style.background=col+'22';fb.style.color=col;fb.textContent=(symbol||'?').substring(0,3);}
+  }
+  document.getElementById('cipName').textContent=name||'—';
+  document.getElementById('cipSym').textContent=(symbol||'—')+' / USD';
+  document.getElementById('cipBody').innerHTML='<div class="cip-loading"><div class="spin" style="display:inline-block;width:12px;height:12px;border-width:1.5px;vertical-align:middle;margin-right:6px;"></div>Loading info…</div>';
+  popup.classList.add('show');
+  _cipCurrentId=id;
+
+  // Fetch coin detail (cached)
+  if(_cipTimeout)clearTimeout(_cipTimeout);
+  _cipTimeout=setTimeout(async()=>{
+    if(_cipCurrentId!==id)return;
+    try{
+      const data=await apiFetch(`/coins/${encodeURIComponent(id)}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`,120000);
+      if(_cipCurrentId!==id)return;
+      renderCoinInfoPopup(data);
+    }catch(err){
+      if(_cipCurrentId!==id)return;
+      document.getElementById('cipBody').innerHTML='<div class="cip-loading" style="color:var(--red);">⚠ Could not load data</div>';
+    }
+  }, 300);
+}
+
+function renderCoinInfoPopup(d){
+  const m=d.market_data||{};
+  const price=m.current_price?.usd;
+  const change24=m.price_change_percentage_24h;
+  const change7=m.price_change_percentage_7d;
+  const change30=m.price_change_percentage_30d;
+  const ath=m.ath?.usd;
+  const athDate=m.ath_date?.usd;
+  const atl=m.atl?.usd;
+  const mcap=m.market_cap?.usd;
+  const vol=m.total_volume?.usd;
+  const supply=m.circulating_supply;
+  const maxSupply=m.max_supply;
+  const rank=d.market_cap_rank;
+  const genesis=d.genesis_date;
+  const desc=(d.description?.en||'').replace(/<[^>]+>/g,'').substring(0,150);
+  const categories=(d.categories||[]).filter(Boolean).slice(0,3).join(', ');
+  const website=(d.links?.homepage||[]).filter(Boolean)[0]||'';
+  const athPct=ath&&price?((price-ath)/ath*100):null;
+  const athDateStr=athDate?new Date(athDate).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
+
+  const row=(lbl,val,cls='')=>`<div class="cip-row"><span class="cip-lbl">${lbl}</span><span class="cip-val${cls?' '+cls:''}">${val}</span></div>`;
+  const chCls=v=>v==null?'':(v>=0?' pos':' neg');
+  const chStr=v=>v==null?'—':`${v>=0?'+':''}${v.toFixed(2)}%`;
+
+  let body='';
+  if(rank)         body+=row('Market Cap Rank','#'+rank,'accent');
+  body+=row('Current Price',price?'$'+fP(price):'—','accent');
+  if(change24!=null) body+=row('24h Change',chStr(change24),chCls(change24));
+  if(change7!=null)  body+=row('7d Change', chStr(change7), chCls(change7));
+  if(change30!=null) body+=row('30d Change',chStr(change30),chCls(change30));
+  if(mcap)           body+=row('Market Cap','$'+fL(mcap));
+  if(vol)            body+=row('24h Volume','$'+fL(vol));
+  if(ath)            body+=row('All-Time High','$'+fP(ath));
+  if(athPct!=null)   body+=row('From ATH',chStr(athPct),chCls(athPct));
+  if(athDate)        body+=row('ATH Date',athDateStr);
+  if(atl)            body+=row('All-Time Low','$'+fP(atl));
+  if(supply)         body+=row('Circulating',fL(supply)+' '+d.symbol?.toUpperCase());
+  if(maxSupply)      body+=row('Max Supply',fL(maxSupply));
+  if(genesis)        body+=row('Launch Date',new Date(genesis).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}));
+  if(categories)     body+=row('Categories',categories);
+
+  document.getElementById('cipBody').innerHTML=body;
+
+  // Footer: short description or website
+  const footer=document.getElementById('cipFooter');
+  if(footer){
+    if(desc) footer.innerHTML=`<span style="line-height:1.5;display:block;">${desc}${desc.length>=150?'…':''}</span>`;
+    else if(website) footer.innerHTML=`<a href="${website}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">${website.replace(/https?:\/\//,'').split('/')[0]}</a>`;
+    else footer.textContent='Hover away to close';
+  }
+}
+
+function hideCoinInfo(){
+  _cipHideTimeout=setTimeout(()=>{
+    const popup=document.getElementById('coinInfoPopup');
+    if(popup)popup.classList.remove('show');
+    _cipCurrentId=null;
+    clearTimeout(_cipTimeout);
+  },120);
+}
+// Attach popup hover listeners - called from initApp after DOM is ready
+function initCoinInfoPopup(){
+  const popup=document.getElementById('coinInfoPopup');
+  if(!popup)return;
+  popup.addEventListener('mouseenter',()=>clearTimeout(_cipHideTimeout));
+  popup.addEventListener('mouseleave',hideCoinInfo);
 }
 
 /* ── HATTY LINKS DROPDOWN ─────────────────────────────── */
