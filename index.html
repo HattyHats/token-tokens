@@ -703,78 +703,148 @@ async function loadPrices(){
 }
 
 /* ══════════════════ CHART DATA ══════════════════ */
-// CoinGecko auto-granularity:
-//   days=1      → ~5-minute points
-//   days=2-90   → hourly points
-//   days=91+    → daily points
-//   days=max    → daily from coin launch to today (full history)
+// ── Binance API (no key, no limits, free, proper OHLCV) ──
+// CoinGecko free tier only returns 365 days — Binance has no such limit
+const BNAPI = 'https://api.binance.com/api/v3';
+const BNAPI2 = 'https://api.binance.us/api/v3'; // US fallback
+
+// Map CoinGecko IDs → Binance trading pair symbols
+const BN_MAP = {
+  'bitcoin':'BTCUSDT','ethereum':'ETHUSDT','solana':'SOLUSDT',
+  'binancecoin':'BNBUSDT','ripple':'XRPUSDT','dogecoin':'DOGEUSDT',
+  'cardano':'ADAUSDT','polkadot':'DOTUSDT','avalanche-2':'AVAXUSDT',
+  'chainlink':'LINKUSDT','polygon':'MATICUSDT','uniswap':'UNIUSDT',
+  'litecoin':'LTCUSDT','stellar':'XLMUSDT','cosmos':'ATOMUSDT',
+  'monero':'XMRUSDT','tron':'TRXUSDT','ethereum-classic':'ETCUSDT',
+  'near':'NEARUSDT','algorand':'ALGOUSDT','fantom':'FTMUSDT',
+  'hedera-hashgraph':'HBARUSDT','vechain':'VETUSDT','filecoin':'FILUSDT',
+  'aave':'AAVEUSDT','maker':'MKRUSDT','compound-governance-token':'COMPUSDT',
+  'the-sandbox':'SANDUSDT','decentraland':'MANASUDT','axie-infinity':'AXSUSDT',
+  'shiba-inu':'SHIBUSDT','pepe':'PEPEUSDT','floki':'FLOKIUSDT',
+  'bitcoin-cash':'BCHUSDT','bitcoin-sv':'BSVUSDT','eos':'EOSUSDT',
+  'dash':'DASHUSDT','zcash':'ZECUSDT','iota':'IOTAUSDT',
+  'the-open-network':'TONUSDT','sui':'SUIUSDT','aptos':'APTUSDT',
+  'arbitrum':'ARBUSDT','optimism':'OPUSDT','injective-protocol':'INJUSDT',
+  'sei-network':'SEIUSDT','celestia':'TIAUSDT','worldcoin-wld':'WLDUSDT',
+  'render-token':'RENDERUSDT','fetch-ai':'FETUSDT','singularitynet':'AGIXUSDT',
+  'ocean-protocol':'OCEANUSDT','akash-network':'AKTUSDT',
+  'blur':'BLURUSDT','gala':'GALAUSDT','immutable-x':'IMXUSDT',
+  'flow':'FLOWUSDT','chiliz':'CHZUSDT','enjincoin':'ENJUSDT',
+};
+
+// Binance interval map: our TF → Binance interval + limit
+// Binance max per request: 1000 candles
+const BN_INTERVALS = {
+  '1':  {iv:'5m',  lim:288},   // 1d  = 288×5m
+  '7':  {iv:'1h',  lim:168},   // 7d  = 168×1h
+  '30': {iv:'4h',  lim:180},   // 30d = 180×4h
+  '90': {iv:'1d',  lim:90},    // 90d = 90×1d
+  '365':{iv:'1d',  lim:365},   // 1y  = 365×1d
+  '1825':{iv:'3d', lim:608},   // 5y  ≈ 608×3d
+  'max':{iv:'1w',  lim:1000},  // max = 1000 weeks (~19 years)
+};
+
+// Fetch OHLCV from Binance — returns proper candles with real O/H/L/C/V
+async function fetchBinanceChart(symbol, tf) {
+  const cfg = BN_INTERVALS[tf] || BN_INTERVALS['30'];
+  const url = `${BNAPI}/klines?symbol=${symbol}&interval=${cfg.iv}&limit=${cfg.lim}`;
+  // Try global Binance, fallback to .us
+  let res = await fetch(url, {headers:{'Accept':'application/json'}});
+  if(!res.ok) {
+    const url2 = `${BNAPI2}/klines?symbol=${symbol}&interval=${cfg.iv}&limit=${cfg.lim}`;
+    res = await fetch(url2, {headers:{'Accept':'application/json'}});
+  }
+  if(!res.ok) throw new Error('binance_'+res.status);
+  const raw = await res.json();
+  // Binance kline: [openTime,open,high,low,close,volume,closeTime,...]
+  return raw.map(k => ({
+    t: k[0],
+    o: parseFloat(k[1]),
+    h: parseFloat(k[2]),
+    l: parseFloat(k[3]),
+    c: parseFloat(k[4]),
+    v: parseFloat(k[5])
+  }));
+}
+
+// Fetch from CoinGecko (fallback for coins not on Binance)
+async function fetchCGChart(id, days) {
+  const dParam = (days==='max') ? 'max' : String(days);
+  const path = `/coins/${id}/market_chart?vs_currency=usd&days=${dParam}`;
+  const mc = await apiFetchDirect(path, 300000, 2);
+  if(!mc||!mc.prices||!mc.prices.length) throw new Error('cg_empty');
+
+  const prices = mc.prices;
+  const vols   = mc.total_volumes||[];
+  const sv = [...vols].sort((a,b)=>a[0]-b[0]);
+  function nearestVol(ts){
+    if(!sv.length) return 0;
+    let lo=0,hi=sv.length-1;
+    while(lo<hi){const m=(lo+hi)>>1;if(sv[m][0]<ts)lo=m+1;else hi=m;}
+    const d1=Math.abs(sv[lo][0]-ts),d2=lo>0?Math.abs(sv[lo-1][0]-ts):Infinity;
+    return d2<d1?sv[lo-1][1]:sv[lo][1];
+  }
+
+  const n=prices.length;
+  const spanMs=n>1?prices[n-1][0]-prices[0][0]:86400000;
+  const avgGapMs=n>1?spanMs/(n-1):86400000;
+  const isIntraday=avgGapMs<7200000;
+  const candles=[];
+
+  if(isIntraday){
+    for(let i=0;i<n;i++){
+      const [ts,px]=prices[i],prevPx=i>0?prices[i-1][1]:px;
+      candles.push({t:ts,o:prevPx,h:Math.max(prevPx,px),l:Math.min(prevPx,px),c:px,v:nearestVol(ts)});
+    }
+  } else {
+    const dayMap=new Map();
+    for(const[ts,px] of prices){
+      const d=new Date(ts);
+      const key=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');
+      if(!dayMap.has(key)) dayMap.set(key,{firstTs:ts,pxArr:[]});
+      const e=dayMap.get(key);e.pxArr.push(px);if(ts<e.firstTs)e.firstTs=ts;
+    }
+    for(const[,{firstTs,pxArr}] of dayMap){
+      candles.push({t:firstTs,o:pxArr[0],h:Math.max(...pxArr),l:Math.min(...pxArr),c:pxArr[pxArr.length-1],v:nearestVol(firstTs)});
+    }
+    candles.sort((a,b)=>a.t-b.t);
+  }
+  return candles;
+}
+
 async function loadChart(id, days){
   document.getElementById('cLoad').style.display='flex';
   ST.candles=[];
   try{
-    const dParam = (days==='max') ? 'max' : String(days);
-    // Direct fetch — bypasses queue so charts respond immediately
-    const path = `/coins/${id}/market_chart?vs_currency=usd&days=${dParam}`;
-    const mc = await apiFetchDirect(path, 300000, 3);
-    if(!mc||!mc.prices||!mc.prices.length) throw new Error('empty response');
+    const bnSym = BN_MAP[id];
+    let candles = null;
 
-    const prices = mc.prices;            // [[ts_ms, price], ...]
-    const vols   = mc.total_volumes||[]; // [[ts_ms, vol],   ...]
-
-    // Sorted volume array for fast binary-search nearest-vol lookup
-    const sv = [...vols].sort((a,b)=>a[0]-b[0]);
-    function nearestVol(ts){
-      if(!sv.length) return 0;
-      let lo=0,hi=sv.length-1;
-      while(lo<hi){const m=(lo+hi)>>1; if(sv[m][0]<ts) lo=m+1; else hi=m;}
-      const d1=Math.abs(sv[lo][0]-ts);
-      const d2=lo>0?Math.abs(sv[lo-1][0]-ts):Infinity;
-      return d2<d1?sv[lo-1][1]:sv[lo][1];
+    if(bnSym){
+      // ── Primary: Binance (no key, no 365-day cap, real OHLCV) ──
+      try{
+        candles = await fetchBinanceChart(bnSym, days);
+        setDot('ok');
+      }catch(bnErr){
+        console.warn('Binance failed, trying CoinGecko:', bnErr.message);
+      }
     }
 
-    // Detect granularity from actual data point spacing
-    const n         = prices.length;
-    const spanMs    = n>1 ? prices[n-1][0]-prices[0][0] : 86400000;
-    const avgGapMs  = n>1 ? spanMs/(n-1) : 86400000;
-    const isIntraday = avgGapMs < 7200000; // <2h gap = intraday/hourly
-
-    if(isIntraday){
-      // 1d/7d/30d: many points, each becomes a candle using prev close as open
-      for(let i=0;i<n;i++){
-        const [ts,px] = prices[i];
-        const prevPx  = i>0 ? prices[i-1][1] : px;
-        ST.candles.push({
-          t:ts, o:prevPx,
-          h:Math.max(prevPx,px), l:Math.min(prevPx,px),
-          c:px, v:nearestVol(ts)
-        });
+    if(!candles || !candles.length){
+      // ── Fallback: CoinGecko (limited to 365d on free key) ──
+      try{
+        candles = await fetchCGChart(id, days);
+        setDot('ok');
+      }catch(cgErr){
+        console.warn('CoinGecko also failed:', cgErr.message);
+        throw new Error('all_sources_failed');
       }
-    } else {
-      // 90d/1y/5y/max: daily data — group strictly by UTC calendar date
-      const dayMap = new Map();
-      for(const [ts,px] of prices){
-        const d   = new Date(ts);
-        const key = d.getUTCFullYear()+'-'
-                  + String(d.getUTCMonth()+1).padStart(2,'0')+'-'
-                  + String(d.getUTCDate()).padStart(2,'0');
-        if(!dayMap.has(key)) dayMap.set(key,{firstTs:ts, pxArr:[]});
-        const e = dayMap.get(key);
-        e.pxArr.push(px);
-        if(ts<e.firstTs) e.firstTs=ts;
-      }
-      for(const[,{firstTs,pxArr}] of dayMap){
-        ST.candles.push({
-          t:firstTs, o:pxArr[0],
-          h:Math.max(...pxArr), l:Math.min(...pxArr),
-          c:pxArr[pxArr.length-1], v:nearestVol(firstTs)
-        });
-      }
-      ST.candles.sort((a,b)=>a.t-b.t);
     }
 
-    if(!ST.candles.length) throw new Error('no candles built');
+    if(!candles || !candles.length) throw new Error('empty_candles');
 
-    // Show last 120 candles; drag/scroll left to see older history
+    ST.candles = candles;
+
+    // Show last 120 candles; drag left to see older history
     const view = Math.min(120, ST.candles.length);
     ST.zoom = {s:Math.max(0,ST.candles.length-view), r:view};
     renderChart();
@@ -1414,10 +1484,10 @@ async function setTF(btn,tf){document.querySelectorAll('.tf').forEach(b=>b.class
 function setCT(t){ST.ct=t;document.getElementById('candleBtn').classList.toggle('on',t==='candle');document.getElementById('lineBtn').classList.toggle('on',t==='line');renderChart();}
 function toggleInd(n){ST.inds.has(n)?ST.inds.delete(n):ST.inds.add(n);document.getElementById('i'+n.toUpperCase()).classList.toggle('on');renderChart();}
 async function doRefresh(){
-  // Clear all cached entries for this coin's chart data
   const id=ST.coin.id;
-  Object.keys(CACHE.store).forEach(k=>{if(k.includes('/'+id+'/market_chart'))CACHE.del(k);});
-  await loadChart(id,ST.tf);
+  // Clear all cached CG chart entries for this coin
+  Object.keys(CACHE.store).forEach(k=>{ if(k.includes('/'+id+'/')) CACHE.del(k); });
+  await loadChart(id, ST.tf);
 }
 
 /* indicator info tooltips */
@@ -1445,55 +1515,103 @@ function initTimeMachine(){
 async function runTimeMachine(){
   const inp     = document.getElementById('tmDate');
   const dateStr = inp.value;  // "YYYY-MM-DD"
-  if(!dateStr){ showTMError('Please pick a date first.'); return; }
+  if(!dateStr){ showTMError('Please pick a date.'); return; }
 
-  // Parse date parts and build UTC noon to avoid timezone boundary issues
   const [yyyy, mm0, dd] = dateStr.split('-').map(Number);
-  const mm = mm0 - 1; // 0-based month
+  const mm = mm0 - 1;
   const targetTs = Date.UTC(yyyy, mm, dd, 12, 0, 0);
-  const now      = Date.now();
 
-  if(targetTs > now){ showTMError('Cannot look up a future date!'); return; }
-  if(yyyy < 2010)   { showTMError('Price history is not available before 2010.'); return; }
+  if(targetTs > Date.now()){ showTMError('Cannot look up a future date!'); return; }
+  if(yyyy < 2010){ showTMError('Price history is not available before 2010.'); return; }
 
-  // CoinGecko /history endpoint needs dd-mm-yyyy format
-  const cgDate     = String(dd).padStart(2,'0')+'-'+String(mm+1).padStart(2,'0')+'-'+String(yyyy);
-  const MON        = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const displayDate= MON[mm]+' '+dd+', '+yyyy;
+  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const displayDate = MON[mm]+' '+dd+', '+yyyy;
 
   const loadEl = document.getElementById('tmLoading');
   const resEl  = document.getElementById('tmResult');
   loadEl.classList.add('show');
   resEl.classList.remove('show'); resEl.innerHTML='';
 
-  // ── Strategy 1: /coins/{id}/history?date=DD-MM-YYYY (most precise) ──────
+  // ── Strategy 1: Binance klines (most reliable, no key needed) ──────────────
+  const bnSym = BN_MAP[ST.coin.id];
+  if(bnSym){
+    try{
+      // Fetch a 1-day window of 1-hour candles around the target date
+      const startMs = targetTs - 43200000; // -12h
+      const endMs   = targetTs + 43200000; // +12h
+      const url = `${BNAPI}/klines?symbol=${bnSym}&interval=1h&startTime=${startMs}&endTime=${endMs}&limit=24`;
+      const res = await fetch(url, {headers:{'Accept':'application/json'}});
+      if(res.ok){
+        const raw = await res.json();
+        if(raw && raw.length){
+          // Find candle closest to noon
+          const best = raw.reduce((b,k)=>Math.abs(k[0]-targetTs)<Math.abs(b[0]-targetTs)?k:b);
+          const bestTs = best[0];
+          const price  = parseFloat(best[4]); // close price
+          const vol    = parseFloat(best[5]);
+          const bd  = new Date(bestTs);
+          const bds = MON[bd.getUTCMonth()]+' '+bd.getUTCDate()+', '+bd.getUTCFullYear()
+                    +' '+String(bd.getUTCHours()).padStart(2,'0')+':00 UTC';
+          loadEl.classList.remove('show');
+          showTMSuccess(price, bds, null, vol, 'Binance');
+          scrollChartToDate(bestTs);
+          return;
+        }
+      }
+    }catch(e){ console.warn('Binance TM failed:', e); }
+  }
+
+  // ── Strategy 2: Binance daily kline (wider window) ─────────────────────────
+  if(bnSym){
+    try{
+      const startMs = targetTs - 86400000*3;
+      const endMs   = targetTs + 86400000*3;
+      const url = `${BNAPI}/klines?symbol=${bnSym}&interval=1d&startTime=${startMs}&endTime=${endMs}&limit=7`;
+      const res = await fetch(url, {headers:{'Accept':'application/json'}});
+      if(res.ok){
+        const raw = await res.json();
+        if(raw && raw.length){
+          const best = raw.reduce((b,k)=>Math.abs(k[0]-targetTs)<Math.abs(b[0]-targetTs)?k:b);
+          const price = parseFloat(best[4]);
+          const vol   = parseFloat(best[5]);
+          const bd  = new Date(best[0]);
+          const bds = MON[bd.getUTCMonth()]+' '+bd.getUTCDate()+', '+bd.getUTCFullYear();
+          loadEl.classList.remove('show');
+          showTMSuccess(price, bds, null, vol, 'Binance');
+          scrollChartToDate(best[0]);
+          return;
+        }
+      }
+    }catch(e){ console.warn('Binance daily TM failed:', e); }
+  }
+
+  // ── Strategy 3: CoinGecko /history endpoint ────────────────────────────────
   try{
-    const hPath = `/coins/${ST.coin.id}/history?date=${cgDate}&localization=false`;
-    // Always clear cache for history lookups so we don't replay a stale 404
+    const cgDate  = String(dd).padStart(2,'0')+'-'+String(mm+1).padStart(2,'0')+'-'+String(yyyy);
+    const hPath   = `/coins/${ST.coin.id}/history?date=${cgDate}&localization=false`;
     CACHE.del(getUrl(hPath));
     const hist = await apiFetchDirect(hPath, 86400000, 2);
-    if(hist && hist.market_data && hist.market_data.current_price && hist.market_data.current_price.usd != null){
+    if(hist && hist.market_data && hist.market_data.current_price?.usd != null){
       loadEl.classList.remove('show');
       showTMSuccess(
         hist.market_data.current_price.usd, displayDate,
         hist.market_data.market_cap?.usd,
         hist.market_data.total_volume?.usd,
-        'CoinGecko History'
+        'CoinGecko'
       );
       scrollChartToDate(targetTs);
       return;
     }
-    throw new Error('no_price');
-  }catch(e1){
-    if(e1.message==='404'){
+    throw new Error('no_price_in_response');
+  }catch(e){
+    if(e.message==='404'){
       loadEl.classList.remove('show');
       showTMError(`${ST.coin.name} did not exist on ${displayDate}. It may have launched after this date.`);
       return;
     }
-    // 429 or network error → fall through to strategy 2
   }
 
-  // ── Strategy 2: market_chart/range — fetch ±2 day window ────────────────
+  // ── Strategy 4: CoinGecko market_chart/range ───────────────────────────────
   try{
     const fromTs = Math.floor((targetTs - 86400000*2)/1000);
     const toTs   = Math.floor((targetTs + 86400000*2)/1000);
@@ -1501,44 +1619,36 @@ async function runTimeMachine(){
     CACHE.del(getUrl(rPath));
     const mc = await apiFetchDirect(rPath, 86400000, 2);
     if(mc && mc.prices && mc.prices.length){
-      // Find the price closest to target noon UTC
       const best = mc.prices.reduce((b,p)=>Math.abs(p[0]-targetTs)<Math.abs(b[0]-targetTs)?p:b);
       const bd   = new Date(best[0]);
-      const bdStr= MON[bd.getUTCMonth()]+' '+bd.getUTCDate()+', '+bd.getUTCFullYear();
-      const bestVol = mc.total_volumes
-        ? mc.total_volumes.reduce((b,v)=>Math.abs(v[0]-targetTs)<Math.abs(b[0]-targetTs)?v:b, [0,0])[1]
+      const bds  = MON[bd.getUTCMonth()]+' '+bd.getUTCDate()+', '+bd.getUTCFullYear();
+      const vol  = mc.total_volumes
+        ? mc.total_volumes.reduce((b,v)=>Math.abs(v[0]-targetTs)<Math.abs(b[0]-targetTs)?v:b,[0,0])[1]
         : null;
       loadEl.classList.remove('show');
-      showTMSuccess(best[1], bdStr, null, bestVol, 'market chart range');
+      showTMSuccess(best[1], bds, null, vol, 'CoinGecko range');
       scrollChartToDate(best[0]);
       return;
     }
-    throw new Error('empty_range');
-  }catch(e2){
-    if(e2.message==='404'){
-      loadEl.classList.remove('show');
-      showTMError(`${ST.coin.name} did not exist on ${displayDate}.`);
-      return;
-    }
-  }
+  }catch(e){ console.warn('CG range TM failed:', e); }
 
-  // ── Strategy 3: search loaded candles ────────────────────────────────────
+  // ── Strategy 5: Search loaded candles ─────────────────────────────────────
   loadEl.classList.remove('show');
   if(ST.candles.length){
     const best = ST.candles.reduce((b,c)=>Math.abs(c.t-targetTs)<Math.abs(b.t-targetTs)?c:b);
     const diffDays = Math.abs(best.t-targetTs)/86400000;
-    if(diffDays <= 15){
+    if(diffDays <= 30){
       const bd  = new Date(best.t);
       const bds = MON[bd.getUTCMonth()]+' '+bd.getUTCDate()+', '+bd.getUTCFullYear();
-      showTMSuccess(best.c, bds, null, best.v, `chart data (~${Math.round(diffDays)}d offset)`);
+      showTMSuccess(best.c, bds, null, best.v, `chart (±${Math.round(diffDays)}d)`);
       scrollChartToDate(best.t);
       return;
     }
   }
 
-  // ── All strategies failed ────────────────────────────────────────────────
-  const keyHint = API_KEY ? 'Try again in a moment.' : 'Add a free API key (🔑) for better access.';
-  showTMError(`Could not retrieve price data for ${displayDate}. ${keyHint}`);
+  showTMError(`No price data found for ${displayDate}. `
+    + (bnSym ? 'Binance & CoinGecko both returned empty data for this date.' : 'Try loading the Max chart first, then search again.')
+  );
 }
 
 function showTMSuccess(price,dateStr,mcap,vol,source){
