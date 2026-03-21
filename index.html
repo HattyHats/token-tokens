@@ -3473,9 +3473,6 @@ function openSettings(){
   el('smAlCount', ALERTS.length + ' alerts');
   el('smDrwCount', (DRW.drawings||[]).length + ' drawings');
   el('smStorageKB', savedKB + ' KB');
-  // API key status
-  const keyEl = document.getElementById('smKeyStatus');
-  if(keyEl) keyEl.textContent = API_KEY ? '✓ Key saved (' + API_KEY.slice(0,8) + '…)' : 'No key saved — using public rate limit';
   // Theme toggle state
   const tog = document.getElementById('smThemeToggle');
   if(tog) tog.checked = lm;
@@ -4037,16 +4034,6 @@ async function initApp(){
           <input type="checkbox" id="smThemeToggle" onchange="smToggleTheme(this)">
           <span class="sm-toggle-slider"></span>
         </label>
-      </div>
-
-      <div class="sm-divider"></div>
-      <div class="sm-section-title">🔑 API</div>
-      <div class="sm-row">
-        <div class="sm-row-info">
-          <div class="sm-row-label">CoinGecko API Key</div>
-          <div class="sm-row-sub" id="smKeyStatus">No key saved — using public rate limit</div>
-        </div>
-        <button class="sm-btn" style="width:auto;padding:6px 12px;font-size:.78rem;" onclick="closeSettings();showKeyScreen()">Change</button>
       </div>
 
       <div class="sm-divider"></div>
