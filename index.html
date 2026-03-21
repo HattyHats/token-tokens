@@ -256,6 +256,27 @@ button{cursor:pointer;font-family:inherit;}
 .ce{display:flex;flex-direction:column;align-items:center;gap:6px;}
 .ce-lbl{font-family:'Share Tech Mono',monospace;font-size:.64rem;color:var(--text2);text-align:center;}
 
+
+/* ── DRAWING TOOLS PANEL ──────────────────────────────── */
+.draw-panel{border-top:1px solid var(--border);background:var(--surface);padding:7px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-shrink:0;}
+.draw-lbl{font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text3);margin-right:2px;letter-spacing:.1em;}
+.dtool{font-family:'Share Tech Mono',monospace;font-size:.7rem;padding:4px 11px;border-radius:4px;border:1px solid var(--border);color:var(--text2);background:transparent;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.dtool:hover{border-color:var(--accent2);color:var(--accent2);background:rgba(123,47,255,.07);}
+.dtool.on{border-color:var(--accent2);color:var(--accent2);background:rgba(123,47,255,.14);box-shadow:0 0 8px rgba(123,47,255,.25);}
+.dtool.danger:hover{border-color:var(--red);color:var(--red);}
+.draw-divider{width:1px;height:20px;background:var(--border);margin:0 2px;flex-shrink:0;}
+.draw-color{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);cursor:pointer;flex-shrink:0;transition:transform .15s;}
+.draw-color:hover,.draw-color.on{transform:scale(1.25);border-color:white;}
+.draw-count{font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text3);margin-left:2px;}
+/* Cursor changes by drawing mode */
+.chart-zone.drawing-line{cursor:crosshair !important;}
+.chart-zone.drawing-hline{cursor:ns-resize !important;}
+.chart-zone.drawing-ray{cursor:crosshair !important;}
+.chart-zone.drawing-rect{cursor:crosshair !important;}
+.chart-zone.drawing-text{cursor:text !important;}
+/* Measurement tooltip */
+.measure-tip{position:absolute;background:rgba(123,47,255,.9);color:#fff;font-family:'Share Tech Mono',monospace;font-size:.72rem;padding:5px 10px;border-radius:4px;pointer-events:none;z-index:60;white-space:nowrap;display:none;}
+
 /* indicator tooltip popup */
 .i-tip{position:fixed;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:13px 15px;font-family:'Rajdhani',sans-serif;font-size:.88rem;max-width:260px;z-index:700;box-shadow:0 12px 30px rgba(0,0,0,.7);pointer-events:none;display:none;}
 .i-tip h4{font-family:'Orbitron',sans-serif;font-size:.78rem;margin-bottom:6px;color:var(--accent);}
@@ -405,6 +426,28 @@ button{cursor:pointer;font-family:inherit;}
       <button class="ind rsi" id="iRSI" onclick="toggleInd('rsi')" onmouseenter="showIT(event,'rsi')" onmouseleave="hideIT()">RSI(14)<span class="i-help">?</span></button>
       <button class="ind macd" id="iMACD" onclick="toggleInd('macd')" onmouseenter="showIT(event,'macd')" onmouseleave="hideIT()">MACD<span class="i-help">?</span></button>
     </div>
+
+    <!-- DRAWING TOOLS -->
+    <div class="draw-panel" id="drawPanel">
+      <span class="draw-lbl">DRAW</span>
+      <button class="dtool" id="dtLine"  onclick="setDrawTool('line')"  title="Trend Line — click two points">📏 Line</button>
+      <button class="dtool" id="dtHLine" onclick="setDrawTool('hline')" title="Horizontal Line — price level">── H-Line</button>
+      <button class="dtool" id="dtRay"   onclick="setDrawTool('ray')"   title="Ray — extends to the right">→ Ray</button>
+      <button class="dtool" id="dtRect"  onclick="setDrawTool('rect')"  title="Rectangle — price zone">▭ Zone</button>
+      <div class="draw-divider"></div>
+      <span class="draw-lbl">COLOR</span>
+      <div class="draw-color on"  id="dcAqua"   onclick="setDrawColor('#00d4ff','dcAqua')"   style="background:#00d4ff;" title="Cyan"></div>
+      <div class="draw-color"     id="dcGreen"  onclick="setDrawColor('#00ff88','dcGreen')"  style="background:#00ff88;" title="Green"></div>
+      <div class="draw-color"     id="dcRed"    onclick="setDrawColor('#ff3366','dcRed')"    style="background:#ff3366;" title="Red"></div>
+      <div class="draw-color"     id="dcYellow" onclick="setDrawColor('#ffc800','dcYellow')" style="background:#ffc800;" title="Yellow"></div>
+      <div class="draw-color"     id="dcPurple" onclick="setDrawColor('#9664ff','dcPurple')" style="background:#9664ff;" title="Purple"></div>
+      <div class="draw-divider"></div>
+      <button class="dtool" id="dtUndo"  onclick="undoDraw()"  title="Undo last drawing">↩ Undo</button>
+      <button class="dtool danger" id="dtClear" onclick="clearDrawings()" title="Clear all drawings">🗑 Clear</button>
+      <button class="dtool" id="dtPointer" onclick="setDrawTool(null)" title="Back to normal mode" style="margin-left:4px;">↖ Pointer</button>
+      <span class="draw-count" id="drawCount"></span>
+    </div>
+    <div class="measure-tip" id="measureTip"></div>
 
     <!-- TIME MACHINE -->
     <div class="tm-bar">
@@ -620,6 +663,98 @@ const ST={
   mb:{page:1,per:50,cat:'',sort:'market_cap_desc',q:'',data:[]},
   sbt:null,mbt:null,
 };
+
+// ── Drawing Tools State ──────────────────────────────────────────────────────
+const DRW = {
+  tool:   null,        // 'line'|'hline'|'ray'|'rect'|null
+  color:  '#00d4ff',   // active draw color
+  drawings: [],        // completed drawings [{type,color,...price/candle coords}]
+  pending: null,       // drawing in progress {type,color,p1:{cx,price},p2:{cx,price}|null}
+};
+
+// Convert canvas pixel X → candle index (within visible range)
+function pxToCandleIdx(mx, canvasW) {
+  const vis = ST.candles.slice(Math.max(0,ST.zoom.s), Math.min(ST.candles.length,ST.zoom.s+ST.zoom.r));
+  if(!vis.length) return null;
+  const cw = (canvasW - 8 - 82) / vis.length;
+  const i  = Math.max(0, Math.min(vis.length-1, Math.floor((mx-4)/cw)));
+  return { visIdx:i, globalIdx:ST.zoom.s+i, candle:vis[i] };
+}
+
+// Convert canvas pixel Y → price
+function pxToPrice(my, canvasH) {
+  const vis = ST.candles.slice(Math.max(0,ST.zoom.s), Math.min(ST.candles.length,ST.zoom.s+ST.zoom.r));
+  if(!vis.length) return null;
+  const allPx = vis.flatMap(c=>[c.h,c.l]);
+  const rawMn = Math.min(...allPx), rawMx = Math.max(...allPx);
+  const rp = (rawMx-rawMn)*0.06||rawMn*0.02||1;
+  const minP = rawMn-rp, maxP = rawMx+rp, pRange = maxP-minP;
+  const PAD_T=18, PAD_B=22, cH=canvasH-PAD_T-PAD_B;
+  const price = maxP - ((my-PAD_T)/cH)*pRange;
+  return price;
+}
+
+// Convert price → canvas pixel Y (inverse)
+function priceToY(price, canvasH) {
+  const vis = ST.candles.slice(Math.max(0,ST.zoom.s), Math.min(ST.candles.length,ST.zoom.s+ST.zoom.r));
+  if(!vis.length) return 0;
+  const allPx = vis.flatMap(c=>[c.h,c.l]);
+  const rawMn = Math.min(...allPx), rawMx = Math.max(...allPx);
+  const rp = (rawMx-rawMn)*0.06||rawMn*0.02||1;
+  const minP = rawMn-rp, maxP = rawMx+rp, pRange = maxP-minP;
+  const PAD_T=18, PAD_B=22, cH=canvasH-PAD_T-PAD_B;
+  return PAD_T + (1-(price-minP)/pRange)*cH;
+}
+
+// Convert global candle index → canvas pixel X
+function candleToX(globalIdx, canvasW) {
+  const visIdx = globalIdx - ST.zoom.s;
+  const r      = ST.zoom.r;
+  const cw     = (canvasW - 8 - 82) / r;
+  return 4 + (visIdx+0.5)*cw;
+}
+
+function setDrawTool(tool) {
+  DRW.tool    = tool;
+  DRW.pending = null;
+  // Update cursor
+  const zone = document.getElementById('chartZone');
+  zone.className = 'chart-zone' + (tool ? ' drawing-'+tool : '');
+  // Highlight active button
+  ['dtLine','dtHLine','dtRay','dtRect'].forEach(id=>{
+    document.getElementById(id)?.classList.remove('on');
+  });
+  if(tool) document.getElementById('dt'+tool.charAt(0).toUpperCase()+tool.slice(1))?.classList.add('on');
+  // dtPointer active when no tool
+  document.getElementById('dtPointer')?.classList.toggle('on', !tool);
+  updateDrawCount();
+}
+
+function setDrawColor(color, btnId) {
+  DRW.color = color;
+  document.querySelectorAll('.draw-color').forEach(b=>b.classList.remove('on'));
+  document.getElementById(btnId)?.classList.add('on');
+}
+
+function undoDraw() {
+  DRW.drawings.pop();
+  DRW.pending = null;
+  updateDrawCount();
+  renderChart();
+}
+
+function clearDrawings() {
+  DRW.drawings = [];
+  DRW.pending  = null;
+  updateDrawCount();
+  renderChart();
+}
+
+function updateDrawCount() {
+  const el = document.getElementById('drawCount');
+  if(el) el.textContent = DRW.drawings.length ? DRW.drawings.length+' drawings' : '';
+}
+
 
 /* ══════════════════ PRICES ══════════════════ */
 // CryptoCompare pricemultifull: prices, 24h change, mcap, volume — CORS-safe
@@ -1408,6 +1543,92 @@ function renderChart(){
   ctx.fillStyle='#050810'; ctx.font='bold 9px Share Tech Mono'; ctx.textAlign='center';
   ctx.fillText('$'+fP(lc2.c), W-PAD_R+1+(PAD_R-2)/2, liveY+4);
 
+  // ── User Drawings ──────────────────────────────────────────────────
+  ctx.save();
+  const allDrawings = DRW.pending ? [...DRW.drawings, DRW.pending] : DRW.drawings;
+  for(const d of allDrawings){
+    const alpha = d === DRW.pending ? 0.65 : 0.85;
+    ctx.globalAlpha = alpha;
+    ctx.setLineDash([]);
+    ctx.strokeStyle = d.color || '#00d4ff';
+    ctx.fillStyle   = d.color || '#00d4ff';
+    ctx.lineWidth   = 1.8;
+
+    if(d.type === 'hline' && d.p1 != null){
+      // Horizontal line at a fixed price level
+      const y = priceToY(d.p1.price, pH);
+      ctx.strokeStyle = d.color;
+      ctx.beginPath(); ctx.moveTo(PAD_L,y); ctx.lineTo(W-PAD_R,y); ctx.stroke();
+      // Price label
+      ctx.font='bold 9px Share Tech Mono'; ctx.textAlign='right'; ctx.fillStyle=d.color;
+      ctx.fillText('$'+fP(d.p1.price), W-PAD_R-3, y-3);
+      // Dot on left
+      ctx.beginPath(); ctx.arc(PAD_L+6,y,3,0,Math.PI*2); ctx.fill();
+
+    } else if((d.type === 'line' || d.type === 'ray') && d.p1 != null && d.p2 != null){
+      const x1 = candleToX(d.p1.gi, W);
+      const y1 = priceToY(d.p1.price, pH);
+      const x2 = candleToX(d.p2.gi, W);
+      const y2 = priceToY(d.p2.price, pH);
+      ctx.beginPath();
+      if(d.type === 'ray'){
+        // Extend line to right edge of canvas
+        const dx = x2-x1, dy = y2-y1;
+        const t  = dx !== 0 ? (W-PAD_R-x1)/dx : 0;
+        ctx.moveTo(x1,y1);
+        ctx.lineTo(x1+dx*t, y1+dy*t);
+      } else {
+        ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+      }
+      ctx.stroke();
+      // End-point dots
+      ctx.beginPath(); ctx.arc(x1,y1,3.5,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x2,y2,3.5,0,Math.PI*2); ctx.fill();
+      // Price labels at both ends
+      ctx.font='bold 9px Share Tech Mono'; ctx.textAlign='left'; ctx.fillStyle=d.color;
+      ctx.fillText('$'+fP(d.p1.price), x1+6, y1-4);
+      if(d.type==='line') ctx.fillText('$'+fP(d.p2.price), x2+6, y2-4);
+      // Show % change between points
+      if(d.p1.price && d.p2.price){
+        const pct = ((d.p2.price-d.p1.price)/d.p1.price*100).toFixed(2);
+        const mid = {x:(x1+x2)/2, y:(y1+y2)/2};
+        ctx.font='bold 9px Share Tech Mono';
+        ctx.fillStyle='rgba(0,0,0,.7)';
+        ctx.fillRect(mid.x-22, mid.y-12, 44, 14);
+        ctx.fillStyle=d.color;
+        ctx.textAlign='center';
+        ctx.fillText((pct>=0?'+':'')+pct+'%', mid.x, mid.y-1);
+      }
+
+    } else if(d.type === 'rect' && d.p1 != null && d.p2 != null){
+      const x1 = candleToX(d.p1.gi, W);
+      const y1 = priceToY(d.p1.price, pH);
+      const x2 = candleToX(d.p2.gi, W);
+      const y2 = priceToY(d.p2.price, pH);
+      const rx  = Math.min(x1,x2), ry  = Math.min(y1,y2);
+      const rw2 = Math.abs(x2-x1),  rh2 = Math.abs(y2-y1);
+      // Filled zone
+      const zoneColor = d.color;
+      const r2=parseInt(zoneColor.slice(1,3),16),g2=parseInt(zoneColor.slice(3,5),16),b2=parseInt(zoneColor.slice(5,7),16);
+      ctx.fillStyle=`rgba(${r2},${g2},${b2},0.08)`;
+      ctx.fillRect(rx,ry,rw2,rh2);
+      ctx.strokeRect(rx,ry,rw2,rh2);
+      // Price labels top/bottom
+      const hiP = d.p1.price > d.p2.price ? d.p1.price : d.p2.price;
+      const loP = d.p1.price < d.p2.price ? d.p1.price : d.p2.price;
+      ctx.font='bold 9px Share Tech Mono'; ctx.textAlign='left'; ctx.fillStyle=d.color;
+      ctx.fillText('$'+fP(hiP), rx+4, ry+11);
+      ctx.fillText('$'+fP(loP), rx+4, ry+rh2-3);
+      // % range
+      const rangePct = Math.abs((hiP-loP)/loP*100).toFixed(2);
+      ctx.textAlign='center';
+      ctx.fillText(rangePct+'% range', rx+rw2/2, ry+rh2/2+4);
+    }
+  }
+  ctx.globalAlpha=1; ctx.setLineDash([]);
+  ctx.restore();
+  // ── End Drawings ──────────────────────────────────────────────────────────
+
   // ── Time axis — year-aware labels ──
   const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const spanMs2  = vis.length>1?vis[vis.length-1].t-vis[0].t:0;
@@ -1550,20 +1771,79 @@ function calcMACD(candles,fast,slow,sig){
 /* ══════════════════ CHART INTERACTION ══════════════════ */
 document.getElementById('priceCanvas').addEventListener('wheel',e=>{
   e.preventDefault();
+  if(DRW.tool) return; // don't zoom while drawing
   const d=e.deltaY>0?1.18:.85;
   ST.zoom.r=Math.min(ST.candles.length,Math.max(10,Math.round(ST.zoom.r*d)));
-  ST.zoom.s=Math.max(0,ST.candles.length-ST.zoom.r);renderChart();
+  ST.zoom.s=Math.max(0,ST.candles.length-ST.zoom.r);
+  renderChart();
 },{passive:false});
 
-document.getElementById('priceCanvas').addEventListener('mousedown',e=>{ST.drag={on:true,x:e.clientX,s:ST.zoom.s};});
+document.getElementById('priceCanvas').addEventListener('mousedown',e=>{
+  const pc  = document.getElementById('priceCanvas');
+  const rect= pc.getBoundingClientRect();
+  const mx  = e.clientX - rect.left;
+  const my  = e.clientY - rect.top;
+
+  if(!DRW.tool){
+    // Normal pan mode
+    ST.drag={on:true,x:e.clientX,s:ST.zoom.s};
+    return;
+  }
+
+  const ci    = pxToCandleIdx(mx, pc.width);
+  const price = pxToPrice(my, pc.height);
+  if(!ci || price == null) return;
+
+  if(DRW.tool === 'hline'){
+    // Horizontal line — single click, uses price at click
+    DRW.drawings.push({type:'hline', color:DRW.color, p1:{gi:ci.globalIdx, price}});
+    DRW.pending = null;
+    updateDrawCount(); renderChart(); return;
+  }
+
+  if(!DRW.pending){
+    // First click — start the shape
+    DRW.pending = {type:DRW.tool, color:DRW.color, p1:{gi:ci.globalIdx, price}, p2:{gi:ci.globalIdx, price}};
+  } else {
+    // Second click — finish the shape
+    DRW.pending.p2 = {gi:ci.globalIdx, price};
+    DRW.drawings.push({...DRW.pending});
+    DRW.pending = null;
+    updateDrawCount(); renderChart();
+  }
+});
+
 document.addEventListener('mousemove',e=>{
-  if(!ST.drag.on)return;
-  const pc=document.getElementById('priceCanvas');
-  const cw=(pc.width-4-78)/ST.zoom.r;
-  const sh=Math.round(-(e.clientX-ST.drag.x)/cw);
-  ST.zoom.s=Math.max(0,Math.min(ST.candles.length-ST.zoom.r,ST.drag.s+sh));renderChart();
+  const pc = document.getElementById('priceCanvas');
+  if(!pc) return;
+
+  if(!DRW.tool && ST.drag.on){
+    // Pan mode
+    const cw=(pc.width-4-82)/ST.zoom.r;
+    const sh=Math.round(-(e.clientX-ST.drag.x)/cw);
+    ST.zoom.s=Math.max(0,Math.min(ST.candles.length-ST.zoom.r,ST.drag.s+sh));
+    renderChart(); return;
+  }
+
+  if(DRW.tool && DRW.pending){
+    // Update pending drawing's p2 to follow mouse
+    const rect = pc.getBoundingClientRect();
+    const mx   = e.clientX - rect.left;
+    const my   = e.clientY - rect.top;
+    const ci   = pxToCandleIdx(mx, pc.width);
+    const price= pxToPrice(my, pc.height);
+    if(ci && price != null){
+      DRW.pending.p2 = {gi:ci.globalIdx, price};
+      renderChart();
+    }
+  }
 });
 document.addEventListener('mouseup',()=>{ST.drag.on=false;});
+
+// Right-click on chart to cancel pending drawing
+document.getElementById('priceCanvas').addEventListener('contextmenu',e=>{
+  if(DRW.pending){ e.preventDefault(); DRW.pending=null; renderChart(); }
+});
 
 document.getElementById('priceCanvas').addEventListener('mousemove',function(e){
   const rect=this.getBoundingClientRect(),mx=e.clientX-rect.left;
