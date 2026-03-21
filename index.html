@@ -75,7 +75,7 @@ button{cursor:pointer;font-family:inherit;}
 .layout{display:grid;grid-template-columns:295px 1fr;height:calc(100vh - 60px);}
 
 /* ── SIDEBAR ─────────────────────────────────────────── */
-.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;overflow-y:auto;}
 .sb-top{padding:10px;border-bottom:1px solid var(--border);position:relative;}
 .sb-row{display:flex;gap:6px;align-items:center;}
 .sb-in{flex:1;background:var(--bg);border:1.5px solid var(--border);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.93rem;padding:8px 12px;border-radius:5px;outline:none;transition:border-color .2s,box-shadow .2s;}
@@ -113,7 +113,7 @@ button{cursor:pointer;font-family:inherit;}
 .wl-hdr{font-family:'Share Tech Mono',monospace;font-size:.63rem;letter-spacing:.18em;color:var(--text3);text-transform:uppercase;padding:8px 12px 5px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
 .wl-ref{background:none;border:none;color:var(--text3);font-size:.82rem;transition:color .2s;}
 .wl-ref:hover{color:var(--accent);}
-.wl-list{flex:1;overflow-y:auto;}
+.wl-list{min-height:80px;overflow-y:auto;}
 .cc{padding:9px 12px;border-bottom:1px solid rgba(26,45,74,.28);cursor:pointer;display:flex;align-items:center;gap:9px;position:relative;transition:background .15s;}
 .cc:hover{background:rgba(0,212,255,.04);}
 .cc.on{background:rgba(0,212,255,.09);border-left:2px solid var(--accent);}
@@ -132,7 +132,7 @@ button{cursor:pointer;font-family:inherit;}
 .cc-rm:hover{color:var(--red);}
 .pos{color:var(--green);}
 .neg{color:var(--red);}
-.tr-sec{border-top:1px solid var(--border);max-height:210px;overflow-y:auto;flex-shrink:0;}
+.tr-sec{border-top:1px solid var(--border);overflow-y:auto;flex-shrink:0;}
 .tr-r{padding:6px 12px;display:flex;align-items:center;gap:7px;font-size:.8rem;cursor:pointer;transition:background .13s;border-bottom:1px solid rgba(26,45,74,.18);}
 .tr-r:hover{background:rgba(255,107,53,.06);}
 .tr-n{font-family:'Share Tech Mono',monospace;color:var(--text3);font-size:.65rem;width:13px;flex-shrink:0;}
@@ -257,6 +257,35 @@ button{cursor:pointer;font-family:inherit;}
 .ce-lbl{font-family:'Share Tech Mono',monospace;font-size:.64rem;color:var(--text2);text-align:center;}
 
 
+
+/* ── FEAR & GREED WIDGET ──────────────────────────────── */
+.fg-widget{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:8px 0;}
+.fg-title{font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text3);letter-spacing:.1em;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
+.fg-gauge-wrap{display:flex;align-items:center;gap:12px;}
+.fg-arc{flex-shrink:0;}
+.fg-info{display:flex;flex-direction:column;gap:2px;}
+.fg-score{font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:700;line-height:1;}
+.fg-label{font-family:'Share Tech Mono',monospace;font-size:.72rem;font-weight:600;letter-spacing:.05em;}
+.fg-prev{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--text3);margin-top:2px;}
+.fg-bar{height:5px;border-radius:3px;background:linear-gradient(to right,#ff3366,#ff9600,#ffc800,#00ff88);margin-top:6px;position:relative;}
+.fg-needle{position:absolute;top:-3px;width:2px;height:11px;background:white;border-radius:1px;transform:translateX(-50%);transition:left .6s ease;}
+
+/* ── MINI CHARTS ─────────────────────────────────────── */
+.mini-charts{display:flex;gap:6px;padding:6px 14px 0;flex-shrink:0;}
+.mc-item{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:4px 6px;cursor:pointer;transition:border-color .2s;}
+.mc-item:hover{border-color:var(--accent2);}
+.mc-item.active{border-color:var(--accent);}
+.mc-lbl{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);display:flex;justify-content:space-between;margin-bottom:2px;}
+.mc-lbl span:last-child{font-size:.58rem;}
+.mc-canvas{width:100%;height:36px;display:block;}
+
+/* ── PATTERN LABELS ──────────────────────────────────── */
+.pat-badge{position:absolute;font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:2px 5px;border-radius:3px;pointer-events:none;white-space:nowrap;z-index:20;opacity:.92;}
+
+/* ── NOTE LABEL INPUT ────────────────────────────────── */
+.note-input-wrap{position:fixed;z-index:999;display:none;}
+.note-input-wrap input{font-family:'Share Tech Mono',monospace;font-size:.8rem;background:rgba(10,16,32,.97);border:1px solid var(--accent2);color:var(--text);padding:5px 10px;border-radius:4px;outline:none;width:200px;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+
 /* ── DRAWING TOOLS PANEL ──────────────────────────────── */
 .draw-panel{border-top:1px solid var(--border);background:var(--surface);padding:7px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-shrink:0;}
 .draw-lbl{font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text3);margin-right:2px;letter-spacing:.1em;}
@@ -315,6 +344,105 @@ button{cursor:pointer;font-family:inherit;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--text3);}
 @media(max-width:768px){.layout{grid-template-columns:1fr;height:auto;}.sidebar{max-height:220px;border-right:none;border-bottom:1px solid var(--border);}#learnSec{padding:14px;}}
+
+/* ── LEARN SECTION ─────────────────────────────────────── */
+#learnSec{display:none;padding:0;overflow-y:auto;height:calc(100vh - 92px);}
+.ls-hero{background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(123,47,255,.08));border-bottom:1px solid var(--border);padding:28px 32px 22px;text-align:center;}
+.ls-hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(1.2rem,3vw,1.9rem);font-weight:700;color:var(--text);margin-bottom:8px;}
+.ls-hero-sub{color:var(--text2);font-size:.95rem;max-width:600px;margin:0 auto 16px;line-height:1.6;}
+.ls-hero-tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+.ls-tag{font-family:'Share Tech Mono',monospace;font-size:.68rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text2);text-decoration:none;transition:all .2s;cursor:pointer;}
+.ls-tag:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.06);}
+.ls-sec{padding:28px 32px;border-bottom:1px solid var(--border);}
+.ls-sec-hdr{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;}
+.ls-sec-num{font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:900;color:var(--border);line-height:1;min-width:48px;}
+.ls-sec-title{font-family:'Rajdhani',sans-serif;font-size:1.25rem;font-weight:700;color:var(--text);margin-bottom:3px;}
+.ls-sec-sub{color:var(--text3);font-size:.82rem;}
+/* Cards */
+.ls-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.ls-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;transition:border-color .2s;}
+.ls-card:hover{border-color:var(--accent2);}
+.ls-card-green{border-left:3px solid var(--green);}
+.ls-card-red{border-left:3px solid var(--red);}
+.ls-card-ico{font-size:1.5rem;margin-bottom:8px;}
+.ls-card-title{font-weight:700;font-size:1rem;color:var(--text);margin-bottom:8px;}
+.ls-card-body{color:var(--text2);font-size:.85rem;line-height:1.65;}
+.ls-card-footer{font-family:'Share Tech Mono',monospace;font-size:.7rem;margin-top:10px;padding:6px 10px;border-radius:4px;background:rgba(255,255,255,.04);}
+.ls-card-footer.green{color:var(--green);}
+.ls-card-footer.red{color:var(--red);}
+/* Candlestick demo */
+.ls-candle-demo{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;}
+.ls-candle-pair{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.ls-candle-label{font-size:.78rem;text-align:center;line-height:1.5;}
+.green-label{color:var(--green);}
+.red-label{color:var(--red);}
+.ls-candle-explain{flex:1;min-width:200px;}
+.ls-explain-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid rgba(26,45,74,.4);font-size:.83rem;}
+.ls-explain-term{font-family:'Share Tech Mono',monospace;font-size:.72rem;color:var(--accent);min-width:90px;flex-shrink:0;padding-top:1px;}
+.ls-explain-def{color:var(--text2);line-height:1.5;}
+/* Support/Resistance diagram */
+.ls-sr-diagram{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;justify-content:center;overflow-x:auto;}
+/* Volume grid */
+.ls-vol-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px;}
+.ls-vol-item{border-radius:8px;padding:14px;border:1px solid var(--border);}
+.ls-vol-item.good{background:rgba(0,255,136,.05);border-color:rgba(0,255,136,.25);}
+.ls-vol-item.bad{background:rgba(255,51,102,.05);border-color:rgba(255,51,102,.25);}
+.ls-vol-item.warn{background:rgba(255,150,0,.05);border-color:rgba(255,150,0,.2);}
+.ls-vol-icon{font-size:1.4rem;margin-bottom:6px;}
+.ls-vol-title{font-weight:700;font-size:.88rem;color:var(--text);margin-bottom:5px;}
+.ls-vol-desc{color:var(--text2);font-size:.8rem;line-height:1.5;}
+/* Tip box */
+.ls-tip-box{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:12px 16px;font-size:.83rem;color:var(--text2);line-height:1.6;}
+/* Indicators */
+.ls-ind-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;}
+.ls-ind-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .2s;}
+.ls-ind-card:hover{border-color:var(--accent2);}
+.ls-ind-hdr{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-left:3px solid var(--accent);background:rgba(255,255,255,.02);}
+.ls-ind-name{font-weight:700;font-size:.9rem;color:var(--text);}
+.ls-try-btn{font-family:'Share Tech Mono',monospace;font-size:.63rem;padding:3px 9px;border-radius:20px;border:1px solid var(--accent);color:var(--accent);background:transparent;cursor:pointer;transition:all .2s;}
+.ls-try-btn:hover{background:var(--accent);color:#050810;}
+.ls-ind-body{padding:12px 14px;}
+.ls-ind-body p{color:var(--text2);font-size:.83rem;line-height:1.6;margin-bottom:10px;}
+.ls-ind-signals{display:flex;flex-direction:column;gap:5px;}
+.signal-row{font-size:.78rem;padding:5px 8px;border-radius:4px;background:rgba(255,255,255,.03);line-height:1.4;}
+.signal-row.green{background:rgba(0,255,136,.06);color:var(--green);}
+.signal-row.red{background:rgba(255,51,102,.06);color:var(--red);}
+.signal-row.yellow{background:rgba(255,200,0,.06);color:var(--yellow);}
+/* Pattern grid */
+.ls-pattern-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.ls-pat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;}
+.ls-pat-svg{width:100%;height:auto;display:block;margin-bottom:6px;}
+.ls-pat-name{font-weight:700;font-size:.82rem;margin-bottom:4px;}
+.ls-pat-desc{color:var(--text2);font-size:.76rem;line-height:1.4;}
+.green-text{color:var(--green);}
+.red-text{color:var(--red);}
+/* Fibonacci */
+.ls-fib-wrap{display:flex;flex-wrap:wrap;gap:20px;}
+.ls-fib-levels{flex:1;min-width:220px;display:flex;flex-direction:column;gap:0;}
+.ls-fib-row{display:flex;align-items:center;gap:12px;padding:7px 10px;border-left:3px solid var(--fc,#7b2fff);margin-bottom:3px;border-radius:0 5px 5px 0;background:rgba(255,255,255,.02);transition:background .15s;}
+.ls-fib-row:hover{background:rgba(255,255,255,.04);}
+.ls-fib-row.golden{background:rgba(255,150,0,.07);border-left-width:4px;}
+.fib-pct{font-family:'Share Tech Mono',monospace;font-size:.78rem;color:var(--fc,#7b2fff);min-width:60px;font-weight:700;}
+.fib-desc{font-size:.78rem;color:var(--text2);line-height:1.4;}
+.ls-fib-how{flex:1;min-width:220px;}
+.ls-fib-step{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(26,45,74,.3);font-size:.84rem;color:var(--text2);}
+.fib-step-n{font-family:'Orbitron',sans-serif;font-size:.8rem;font-weight:700;color:var(--accent2);min-width:20px;}
+/* Checklist */
+.ls-cl-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:20px;}
+.ls-cl-col{display:flex;flex-direction:column;gap:8px;}
+.ls-cl-group-title{font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--accent);letter-spacing:.1em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:2px;}
+.ls-cl-item{display:flex;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;font-size:.82rem;color:var(--text2);line-height:1.5;}
+.ls-cl-item:hover{border-color:var(--accent2);background:rgba(123,47,255,.05);}
+.ls-cl-item.done{border-color:var(--green);background:rgba(0,255,136,.05);}
+.ls-cl-item.done .ls-ck::after{content:'✓';}
+.ls-ck{width:16px;height:16px;border:1.5px solid var(--border);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--green);margin-top:1px;}
+.ls-cl-item.done .ls-ck{background:rgba(0,255,136,.15);border-color:var(--green);}
+.ls-disclaimer{text-align:center;color:var(--text3);font-size:.78rem;padding:16px;background:rgba(255,200,0,.04);border:1px solid rgba(255,200,0,.15);border-radius:8px;}
+/* Highlight helpers */
+.hl-cyan{color:var(--accent);font-weight:600;}
+.hl-yellow{color:var(--yellow);font-weight:600;}
+@media(max-width:768px){.ls-sec{padding:18px 16px;}.ls-hero{padding:18px 16px;}.ls-candle-demo{flex-direction:column;}.ls-fib-wrap{flex-direction:column;}}
+
 </style>
 </head>
 <body>
@@ -372,6 +500,41 @@ button{cursor:pointer;font-family:inherit;}
       <div class="wl-hdr">🔥 Trending</div>
       <div id="trList"><div style="padding:12px;text-align:center;color:var(--text3);font-size:.75rem;">Loading…</div></div>
     </div>
+
+    <!-- FEAR & GREED INDEX -->
+    <div class="fg-widget" id="fgWidget">
+      <div class="fg-title">
+        <span>😱 FEAR &amp; GREED INDEX</span>
+        <span id="fgUpdated" style="font-size:.58rem;color:var(--text3);"></span>
+      </div>
+      <div class="fg-gauge-wrap">
+        <svg class="fg-arc" width="80" height="48" viewBox="0 0 80 48">
+          <defs>
+            <linearGradient id="fgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#ff3366"/>
+              <stop offset="25%"  stop-color="#ff9600"/>
+              <stop offset="50%"  stop-color="#ffc800"/>
+              <stop offset="75%"  stop-color="#a8e063"/>
+              <stop offset="100%" stop-color="#00ff88"/>
+            </linearGradient>
+          </defs>
+          <path d="M8,44 A32,32 0 0,1 72,44" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="8" stroke-linecap="round"/>
+          <path id="fgArcFill" d="M8,44 A32,32 0 0,1 72,44" fill="none" stroke="url(#fgGrad)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 101"/>
+          <line id="fgNeedle" x1="40" y1="44" x2="40" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="40" cy="44" r="3" fill="white"/>
+          <text x="8"  y="48" fill="#ff3366" font-size="5.5" font-family="Share Tech Mono" text-anchor="middle">0</text>
+          <text x="72" y="48" fill="#00ff88" font-size="5.5" font-family="Share Tech Mono" text-anchor="middle">100</text>
+        </svg>
+        <div class="fg-info">
+          <div class="fg-score" id="fgScore">—</div>
+          <div class="fg-label" id="fgLabel">Loading…</div>
+          <div class="fg-prev"  id="fgPrev"></div>
+        </div>
+      </div>
+      <div class="fg-bar">
+        <div class="fg-needle" id="fgBarNeedle" style="left:50%"></div>
+      </div>
+    </div>
   </aside>
 
   <main class="main">
@@ -396,6 +559,26 @@ button{cursor:pointer;font-family:inherit;}
         <button class="ct" id="lineBtn" onclick="setCT('line')">Line</button>
         <div class="dv"></div>
         <button class="live-btn" onclick="doRefresh()"><span class="ldot"></span>LIVE</button>
+      </div>
+    </div>
+
+    <!-- MINI TIMEFRAME CHARTS -->
+    <div class="mini-charts" id="miniCharts">
+      <div class="mc-item active" id="mc1d" onclick="setTFFromMini(this,'1')" title="1 Day">
+        <div class="mc-lbl"><span>1D</span><span id="mc1dPct">—</span></div>
+        <canvas class="mc-canvas" id="mc1dCanvas"></canvas>
+      </div>
+      <div class="mc-item" id="mc1w" onclick="setTFFromMini(this,'7')" title="7 Days">
+        <div class="mc-lbl"><span>7D</span><span id="mc7dPct">—</span></div>
+        <canvas class="mc-canvas" id="mc7dCanvas"></canvas>
+      </div>
+      <div class="mc-item" id="mc1m" onclick="setTFFromMini(this,'30')" title="30 Days">
+        <div class="mc-lbl"><span>1M</span><span id="mc30dPct">—</span></div>
+        <canvas class="mc-canvas" id="mc30dCanvas"></canvas>
+      </div>
+      <div class="mc-item" id="mc1y" onclick="setTFFromMini(this,'365')" title="1 Year">
+        <div class="mc-lbl"><span>1Y</span><span id="mc365dPct">—</span></div>
+        <canvas class="mc-canvas" id="mc365dCanvas"></canvas>
       </div>
     </div>
     <div class="ohlc">
@@ -434,6 +617,8 @@ button{cursor:pointer;font-family:inherit;}
       <button class="dtool" id="dtHLine" onclick="setDrawTool('hline')" title="Horizontal Line — price level">── H-Line</button>
       <button class="dtool" id="dtRay"   onclick="setDrawTool('ray')"   title="Ray — extends to the right">→ Ray</button>
       <button class="dtool" id="dtRect"  onclick="setDrawTool('rect')"  title="Rectangle — price zone">▭ Zone</button>
+      <button class="dtool" id="dtFib"   onclick="setDrawTool('fib')"   title="Fibonacci Retracement — click two points">🌀 Fib</button>
+      <button class="dtool" id="dtNote"  onclick="setDrawTool('note')"  title="Add a text note — click to place">📝 Note</button>
       <div class="draw-divider"></div>
       <span class="draw-lbl">COLOR</span>
       <div class="draw-color on"  id="dcAqua"   onclick="setDrawColor('#00d4ff','dcAqua')"   style="background:#00d4ff;" title="Cyan"></div>
@@ -464,45 +649,448 @@ button{cursor:pointer;font-family:inherit;}
 
 <!-- LEARN TAB -->
 <div id="learnSec">
-  <div class="ls-title">How To Read A Crypto Chart</div>
-  <p class="ls-sub">From complete beginner to professional — everything you need to understand what price is doing and why it matters.</p>
-  <div class="lc" style="margin-bottom:13px;">
-    <div class="lc-t">🕯 Candlestick Anatomy</div>
-    <div class="cdemo">
-      <div class="ce"><svg width="40" height="100" viewBox="0 0 40 100"><line x1="20" y1="5" x2="20" y2="25" stroke="#00ff88" stroke-width="2"/><rect x="10" y="25" width="20" height="50" fill="#00ff88" rx="2"/><line x1="20" y1="75" x2="20" y2="92" stroke="#00ff88" stroke-width="2"/><text x="28" y="10" fill="#00ff88" font-size="9" font-family="Share Tech Mono">High</text><text x="28" y="28" fill="#7a9cc0" font-size="9" font-family="Share Tech Mono">Open</text><text x="28" y="72" fill="#7a9cc0" font-size="9" font-family="Share Tech Mono">Close</text><text x="28" y="95" fill="#00ff88" font-size="9" font-family="Share Tech Mono">Low</text></svg><div class="ce-lbl">🟢 Bullish (UP)</div></div>
-      <div class="ce"><svg width="40" height="100" viewBox="0 0 40 100"><line x1="20" y1="5" x2="20" y2="25" stroke="#ff3366" stroke-width="2"/><rect x="10" y="25" width="20" height="50" fill="#ff3366" rx="2"/><line x1="20" y1="75" x2="20" y2="92" stroke="#ff3366" stroke-width="2"/><text x="28" y="10" fill="#ff3366" font-size="9" font-family="Share Tech Mono">High</text><text x="28" y="28" fill="#7a9cc0" font-size="9" font-family="Share Tech Mono">Close</text><text x="28" y="72" fill="#7a9cc0" font-size="9" font-family="Share Tech Mono">Open</text><text x="28" y="95" fill="#ff3366" font-size="9" font-family="Share Tech Mono">Low</text></svg><div class="ce-lbl">🔴 Bearish (DOWN)</div></div>
-      <div style="max-width:270px;color:var(--text2);font-size:.86rem;line-height:1.7;"><p>Each candle = one time period</p><br><p><b style="color:var(--text)">Body</b> = Open vs Close range</p><p><b style="color:var(--text)">Wicks</b> = extreme prices reached</p><p><b style="color:var(--green)">Green</b> = price went UP that period</p><p><b style="color:var(--red)">Red</b> = price went DOWN that period</p></div>
+
+  <div class="ls-hero">
+    <div class="ls-hero-title">📊 How To Read A Crypto Chart</div>
+    <div class="ls-hero-sub">From complete beginner to confident trader — everything explained simply with real examples.</div>
+    <div class="ls-hero-tags">
+      <a class="ls-tag" href="#sec-basics"   onclick="scrollLearn('sec-basics')">Basics</a>
+      <a class="ls-tag" href="#sec-candles"  onclick="scrollLearn('sec-candles')">Candles</a>
+      <a class="ls-tag" href="#sec-trend"    onclick="scrollLearn('sec-trend')">Trends</a>
+      <a class="ls-tag" href="#sec-sr"       onclick="scrollLearn('sec-sr')">Support &amp; Resistance</a>
+      <a class="ls-tag" href="#sec-volume"   onclick="scrollLearn('sec-volume')">Volume</a>
+      <a class="ls-tag" href="#sec-ind"      onclick="scrollLearn('sec-ind')">Indicators</a>
+      <a class="ls-tag" href="#sec-patterns" onclick="scrollLearn('sec-patterns')">Patterns</a>
+      <a class="ls-tag" href="#sec-fib"      onclick="scrollLearn('sec-fib')">Fibonacci</a>
+      <a class="ls-tag" href="#sec-checklist" onclick="scrollLearn('sec-checklist')">Checklist</a>
     </div>
   </div>
-  <div class="ls-grid">
-    <div class="lc"><div class="lc-ico">📈</div><div class="lc-t">Trend</div><div class="lc-p"><b>Uptrend</b> — Higher highs and higher lows. Each peak and valley is above the last.<br><br><b>Downtrend</b> — Lower highs and lower lows.<br><br><b>Sideways</b> — Price bouncing between two levels. Wait for a breakout before trading.</div></div>
-    <div class="lc"><div class="lc-ico">🏗</div><div class="lc-t">Support &amp; Resistance</div><div class="lc-p"><b>Support</b> — A floor where buyers historically step in. Price bounces upward from here.<br><br><b>Resistance</b> — A ceiling where sellers appear. Price struggles to break above.<br><br>Once broken, resistance often becomes new support.</div></div>
-    <div class="lc"><div class="lc-ico">📦</div><div class="lc-t">Volume</div><div class="lc-p">Volume = how much was traded that period.<br><br><b>High volume on up move</b> = strong buying.<br><b>High volume on down move</b> = strong selling.<br><b>Low volume move</b> = weak, likely to reverse.<br><br>Always confirm price action with volume!</div></div>
-    <div class="lc"><div class="lc-ico">〰️</div><div class="lc-t">Moving Average (MA / EMA)</div><div class="lc-p">Smooths price over a set period to reveal the true trend direction.<br><br><b>Price above MA</b> = bullish. <b>Below MA</b> = bearish.<br><b>Golden Cross</b> (fast MA crosses above slow MA) = major bullish signal.<br><b>EMA</b> reacts faster than MA to recent moves.</div></div>
-    <div class="lc"><div class="lc-ico">🌡</div><div class="lc-t">RSI — Momentum Meter</div><div class="lc-p">Relative Strength Index (0–100) measures how fast price is moving.<br><br><b style="color:var(--red)">Above 70</b> = Overbought — may pull back soon.<br><b style="color:var(--green)">Below 30</b> = Oversold — may bounce soon.<br><br><b>RSI divergence</b>: price makes new high but RSI doesn't = warning signal!</div></div>
-    <div class="lc"><div class="lc-ico">⚡</div><div class="lc-t">MACD — Trend Momentum</div><div class="lc-p">Shows momentum shifts using two moving averages.<br><br><b style="color:var(--green)">MACD crosses above signal</b> = bullish momentum.<br><b style="color:var(--red)">MACD crosses below signal</b> = bearish momentum.<br><br>Watch the histogram — when it shrinks, the trend may be weakening.</div></div>
-    <div class="lc"><div class="lc-ico">📐</div><div class="lc-t">Bollinger Bands</div><div class="lc-p">Middle MA with upper/lower bands based on volatility.<br><br><b>Near upper band</b> = potentially overbought.<br><b>Near lower band</b> = potentially oversold.<br><b>Band squeeze</b> = volatility about to expand — big move incoming!</div></div>
-    <div class="lc"><div class="lc-ico">💧</div><div class="lc-t">VWAP</div><div class="lc-p">Volume Weighted Average Price — used by professional/institutional traders.<br><br><b>Price above VWAP</b> = bullish intraday sentiment.<br><b>Price below VWAP</b> = bearish intraday sentiment.<br><br>Acts as a key dynamic support/resistance level throughout the session.</div></div>
+
+  <!-- ── BASICS ─────────────────────────────────────────── -->
+  <div class="ls-sec" id="sec-basics">
+    <div class="ls-sec-hdr">
+      <span class="ls-sec-num">01</span>
+      <div><div class="ls-sec-title">The Basics — What Are You Looking At?</div>
+      <div class="ls-sec-sub">Understanding the chart before anything else</div></div>
+    </div>
+    <div class="ls-cards">
+      <div class="ls-card">
+        <div class="ls-card-ico">📐</div>
+        <div class="ls-card-title">The Two Axes</div>
+        <div class="ls-card-body">Every price chart has two axes. The <b>vertical axis (Y)</b> shows the <span class="hl-cyan">price in USD</span> — higher up means a higher price. The <b>horizontal axis (X)</b> shows <span class="hl-cyan">time</span> — further right means more recent. Where price was at any moment is shown as a point (or candle) on the chart at the intersection of those two values.</div>
+      </div>
+      <div class="ls-card">
+        <div class="ls-card-ico">⏱</div>
+        <div class="ls-card-title">Timeframes</div>
+        <div class="ls-card-body">A <b>timeframe</b> determines how much history you see and how each candle is grouped. On the <span class="hl-yellow">1D chart</span>, each candle = 5 minutes. On the <span class="hl-yellow">1Y chart</span>, each candle = one full day. Longer timeframes show the bigger picture. Shorter ones show fine detail. <br><br><b>Rule of thumb:</b> Always check the weekly/monthly chart before making decisions on a short-term chart.</div>
+      </div>
+      <div class="ls-card">
+        <div class="ls-card-ico">📈</div>
+        <div class="ls-card-title">Line vs Candlestick Chart</div>
+        <div class="ls-card-body">A <b>line chart</b> connects only the closing price of each period — it's clean and easy to read the overall trend. A <b>candlestick chart</b> shows <i>four</i> prices per period (open, high, low, close) giving you far more information about what happened <i>during</i> that period. Most traders prefer candlesticks.</div>
+      </div>
+    </div>
   </div>
-  <div class="cl-box">
-    <div class="cl-t">⚡ Live Analysis Checklist</div>
-    <ul class="cl">
-      <li onclick="ck(this)"><span class="ck"></span><span>What is the overall trend? (Higher highs = uptrend, lower lows = downtrend)</span></li>
-      <li onclick="ck(this)"><span class="ck"></span><span>Is price above or below MA(20) and EMA(50)? (Above = bullish, below = bearish)</span></li>
-      <li onclick="ck(this)"><span class="ck"></span><span>Is volume confirming the move? (High volume = stronger signal)</span></li>
-      <li onclick="ck(this)"><span class="ck"></span><span>Where are key support and resistance levels? Is price testing one now?</span></li>
-      <li onclick="ck(this)"><span class="ck"></span><span>Is RSI above 70 (overbought) or below 30 (oversold)? Any RSI divergence?</span></li>
-      <li onclick="ck(this)"><span class="ck"></span><span>Is MACD crossing up (bullish) or down (bearish)?</span></li>
-      <li onclick="ck(this)"><span class="ck"></span><span>Are Bollinger Bands squeezing? (Big move likely coming)</span></li>
-      <li onclick="ck(this)"><span class="ck"></span><span>Is price above or below VWAP? (Institutional sentiment guide)</span></li>
-      <li onclick="ck(this)"><span class="ck"></span><span>Any key candlestick patterns? (Long wicks = rejection, Doji = indecision)</span></li>
-      <li onclick="ck(this)"><span class="ck"></span><span>Zoom out to the weekly chart — what is the bigger picture telling you?</span></li>
-    </ul>
+
+  <!-- ── CANDLESTICKS ────────────────────────────────────── -->
+  <div class="ls-sec" id="sec-candles">
+    <div class="ls-sec-hdr">
+      <span class="ls-sec-num">02</span>
+      <div><div class="ls-sec-title">Candlestick Charts — Reading Every Candle</div>
+      <div class="ls-sec-sub">Each candle tells a complete story of that time period</div></div>
+    </div>
+    <div class="ls-candle-demo">
+      <div class="ls-candle-pair">
+        <svg width="52" height="120" viewBox="0 0 52 120">
+          <line x1="26" y1="6" x2="26" y2="24" stroke="#00ff88" stroke-width="2.5"/>
+          <rect x="12" y="24" width="28" height="62" fill="#00ff88" rx="2"/>
+          <line x1="26" y1="86" x2="26" y2="108" stroke="#00ff88" stroke-width="2.5"/>
+          <text x="38" y="12" fill="#00ff88" font-size="8.5" font-family="Share Tech Mono">High</text>
+          <text x="38" y="28" fill="#a0c0e0" font-size="8.5" font-family="Share Tech Mono">Open</text>
+          <text x="38" y="84" fill="#a0c0e0" font-size="8.5" font-family="Share Tech Mono">Close</text>
+          <text x="38" y="108" fill="#00ff88" font-size="8.5" font-family="Share Tech Mono">Low</text>
+        </svg>
+        <div class="ls-candle-label green-label">🟢 Bullish Candle<br><small>Price went UP — Close &gt; Open</small></div>
+      </div>
+      <div class="ls-candle-pair">
+        <svg width="52" height="120" viewBox="0 0 52 120">
+          <line x1="26" y1="6" x2="26" y2="24" stroke="#ff3366" stroke-width="2.5"/>
+          <rect x="12" y="24" width="28" height="62" fill="#ff3366" rx="2"/>
+          <line x1="26" y1="86" x2="26" y2="108" stroke="#ff3366" stroke-width="2.5"/>
+          <text x="38" y="12" fill="#ff3366" font-size="8.5" font-family="Share Tech Mono">High</text>
+          <text x="38" y="28" fill="#a0c0e0" font-size="8.5" font-family="Share Tech Mono">Close</text>
+          <text x="38" y="84" fill="#a0c0e0" font-size="8.5" font-family="Share Tech Mono">Open</text>
+          <text x="38" y="108" fill="#ff3366" font-size="8.5" font-family="Share Tech Mono">Low</text>
+        </svg>
+        <div class="ls-candle-label red-label">🔴 Bearish Candle<br><small>Price went DOWN — Close &lt; Open</small></div>
+      </div>
+      <div class="ls-candle-explain">
+        <div class="ls-explain-row"><span class="ls-explain-term">Body</span><span class="ls-explain-def">The thick rectangle. Shows the range between Open and Close prices.</span></div>
+        <div class="ls-explain-row"><span class="ls-explain-term">Wicks</span><span class="ls-explain-def">The thin lines above and below the body. Show the highest and lowest prices reached that period, even if briefly.</span></div>
+        <div class="ls-explain-row"><span class="ls-explain-term">Long wick up</span><span class="ls-explain-def">Sellers pushed price back down — potential rejection of higher prices.</span></div>
+        <div class="ls-explain-row"><span class="ls-explain-term">Long wick down</span><span class="ls-explain-def">Buyers pushed price back up — potential rejection of lower prices (strong support).</span></div>
+        <div class="ls-explain-row"><span class="ls-explain-term">Doji candle</span><span class="ls-explain-def">Open and close are nearly the same (very thin body). Shows indecision — neither buyers nor sellers won.</span></div>
+      </div>
+    </div>
   </div>
-  <p style="color:var(--text3);font-size:.78rem;text-align:center;padding:10px;">⚠ Token-Tokens is for educational purposes only. Always DYOR. Not financial advice.</p>
+
+  <!-- ── TREND ───────────────────────────────────────────── -->
+  <div class="ls-sec" id="sec-trend">
+    <div class="ls-sec-hdr">
+      <span class="ls-sec-num">03</span>
+      <div><div class="ls-sec-title">Identifying Trends</div>
+      <div class="ls-sec-sub">The most important skill in chart reading</div></div>
+    </div>
+    <div class="ls-cards">
+      <div class="ls-card ls-card-green">
+        <div class="ls-card-ico">📈</div>
+        <div class="ls-card-title" style="color:var(--green)">Uptrend</div>
+        <div class="ls-card-body"><b>Higher Highs (HH) + Higher Lows (HL)</b><br><br>Each peak is higher than the last peak. Each dip is higher than the last dip. Price is making a staircase pattern upward.<br><br><b>What to do:</b> Look for buying opportunities on dips to the previous higher low. The trend is your friend.</div>
+        <div class="ls-card-footer green">HH → HL → HH → HL = UPTREND ✓</div>
+      </div>
+      <div class="ls-card ls-card-red">
+        <div class="ls-card-ico">📉</div>
+        <div class="ls-card-title" style="color:var(--red)">Downtrend</div>
+        <div class="ls-card-body"><b>Lower Highs (LH) + Lower Lows (LL)</b><br><br>Each rally fails at a lower level. Each dip goes lower than the previous dip. Price is making a staircase pattern downward.<br><br><b>What to do:</b> Avoid buying. Wait for a trend reversal signal — a higher high breaking the pattern — before entering long.</div>
+        <div class="ls-card-footer red">LH → LL → LH → LL = DOWNTREND ✗</div>
+      </div>
+      <div class="ls-card">
+        <div class="ls-card-ico">➡️</div>
+        <div class="ls-card-title">Sideways / Range</div>
+        <div class="ls-card-body"><b>Price bouncing between two levels</b><br><br>No clear direction. Price keeps hitting the same ceiling (resistance) and the same floor (support) without breaking out.<br><br><b>What to do:</b> Buy near support, sell near resistance — OR wait for a breakout in either direction with high volume before committing.</div>
+        <div class="ls-card-footer">Support ↔ Resistance = RANGE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SUPPORT & RESISTANCE ───────────────────────────── -->
+  <div class="ls-sec" id="sec-sr">
+    <div class="ls-sec-hdr">
+      <span class="ls-sec-num">04</span>
+      <div><div class="ls-sec-title">Support &amp; Resistance</div>
+      <div class="ls-sec-sub">Price has memory — these levels are where battles happen</div></div>
+    </div>
+    <div class="ls-sr-diagram">
+      <svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:520px;height:auto;">
+        <!-- Resistance line -->
+        <line x1="20" y1="45" x2="480" y2="45" stroke="#ff3366" stroke-width="1.5" stroke-dasharray="8,4"/>
+        <text x="490" y="49" fill="#ff3366" font-size="11" font-family="Share Tech Mono">R</text>
+        <!-- Support line -->
+        <line x1="20" y1="140" x2="480" y2="140" stroke="#00ff88" stroke-width="1.5" stroke-dasharray="8,4"/>
+        <text x="490" y="144" fill="#00ff88" font-size="11" font-family="Share Tech Mono">S</text>
+        <!-- Price zigzag bouncing between levels -->
+        <polyline points="20,140 60,90 100,140 150,80 200,140 250,60 280,45 320,80 360,45 400,90 440,45 480,70"
+          fill="none" stroke="#00d4ff" stroke-width="2.5" stroke-linejoin="round"/>
+        <!-- Bounce dots at support -->
+        <circle cx="20"  cy="140" r="4" fill="#00ff88"/>
+        <circle cx="100" cy="140" r="4" fill="#00ff88"/>
+        <circle cx="200" cy="140" r="4" fill="#00ff88"/>
+        <!-- Rejection dots at resistance -->
+        <circle cx="280" cy="45"  r="4" fill="#ff3366"/>
+        <circle cx="360" cy="45"  r="4" fill="#ff3366"/>
+        <circle cx="440" cy="45"  r="4" fill="#ff3366"/>
+        <!-- Labels -->
+        <text x="30" y="134" fill="#00ff88" font-size="9" font-family="Share Tech Mono">bounce</text>
+        <text x="110" y="134" fill="#00ff88" font-size="9" font-family="Share Tech Mono">bounce</text>
+        <text x="285" y="40" fill="#ff3366" font-size="9" font-family="Share Tech Mono">reject</text>
+        <text x="365" y="40" fill="#ff3366" font-size="9" font-family="Share Tech Mono">reject</text>
+        <!-- Breakout arrow -->
+        <text x="28" y="170" fill="#a0c0e0" font-size="9" font-family="Share Tech Mono">Support = floor (buyers step in here)</text>
+        <text x="28" y="18"  fill="#a0c0e0" font-size="9" font-family="Share Tech Mono">Resistance = ceiling (sellers appear here)</text>
+      </svg>
+    </div>
+    <div class="ls-cards" style="margin-top:12px;">
+      <div class="ls-card">
+        <div class="ls-card-ico">💡</div>
+        <div class="ls-card-title">Role Reversal</div>
+        <div class="ls-card-body">This is crucial: <b>when resistance is broken, it often becomes the new support.</b> And when support breaks, it often becomes the new resistance. Price has "memory" — old battlegrounds become reference points for future price action.</div>
+      </div>
+      <div class="ls-card">
+        <div class="ls-card-ico">🎯</div>
+        <div class="ls-card-title">How to Find Levels</div>
+        <div class="ls-card-body">Look for price areas that have been <b>tested multiple times</b>. Round numbers ($50,000, $100,000) often act as psychological levels. Previous all-time highs are major resistance. Areas with long wicks (rejection) mark strong levels. Use the <b>H-Line tool</b> in Token-Tokens to mark them!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VOLUME ──────────────────────────────────────────── -->
+  <div class="ls-sec" id="sec-volume">
+    <div class="ls-sec-hdr">
+      <span class="ls-sec-num">05</span>
+      <div><div class="ls-sec-title">Volume — The Fuel Behind Price</div>
+      <div class="ls-sec-sub">Confirms whether a move is real or fake</div></div>
+    </div>
+    <div class="ls-vol-grid">
+      <div class="ls-vol-item good">
+        <div class="ls-vol-icon">🔥</div>
+        <div class="ls-vol-title">High Volume + Up Move</div>
+        <div class="ls-vol-desc">Strong buying interest. Real demand. Move is likely to continue. <b>Most bullish signal.</b></div>
+      </div>
+      <div class="ls-vol-item bad">
+        <div class="ls-vol-icon">🩸</div>
+        <div class="ls-vol-title">High Volume + Down Move</div>
+        <div class="ls-vol-desc">Strong selling pressure. Real panic or distribution. Decline likely continues. <b>Most bearish signal.</b></div>
+      </div>
+      <div class="ls-vol-item warn">
+        <div class="ls-vol-icon">⚠️</div>
+        <div class="ls-vol-title">Low Volume + Up Move</div>
+        <div class="ls-vol-desc">Weak rally. Not many participants. Could be a "fakeout" that reverses quickly. <b>Don't trust it.</b></div>
+      </div>
+      <div class="ls-vol-item warn">
+        <div class="ls-vol-icon">🤔</div>
+        <div class="ls-vol-title">Low Volume + Down Move</div>
+        <div class="ls-vol-desc">Weak selling. May just be lack of buyers, not active dumping. Often resolves sideways. <b>Neutral signal.</b></div>
+      </div>
+    </div>
+    <div class="ls-tip-box">💡 <b>Volume Spike on Breakout</b> — when price breaks above resistance <i>and</i> volume is unusually high, that's one of the most reliable signals in all of crypto. The move has conviction behind it.</div>
+  </div>
+
+  <!-- ── INDICATORS ─────────────────────────────────────── -->
+  <div class="ls-sec" id="sec-ind">
+    <div class="ls-sec-hdr">
+      <span class="ls-sec-num">06</span>
+      <div><div class="ls-sec-title">Technical Indicators</div>
+      <div class="ls-sec-sub">Mathematical tools that help interpret price action</div></div>
+    </div>
+    <div class="ls-ind-grid">
+
+      <div class="ls-ind-card">
+        <div class="ls-ind-hdr" style="border-left-color:#ffc800">
+          <div class="ls-ind-name">〰️ Moving Average (MA)</div>
+          <button class="ls-try-btn" onclick="activateIndicator('ma')">Try it →</button>
+        </div>
+        <div class="ls-ind-body">
+          <p>Calculates the <b>average closing price</b> over a set number of periods. Smooths out the noise and reveals the true underlying trend direction.</p>
+          <div class="ls-ind-signals">
+            <div class="signal-row green">▲ Price <b>above</b> MA = bullish trend</div>
+            <div class="signal-row red">▼ Price <b>below</b> MA = bearish trend</div>
+            <div class="signal-row yellow">✨ Fast MA crosses <b>above</b> slow MA = <b>Golden Cross</b> (major buy signal)</div>
+            <div class="signal-row red">💀 Fast MA crosses <b>below</b> slow MA = <b>Death Cross</b> (major sell signal)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ls-ind-card">
+        <div class="ls-ind-hdr" style="border-left-color:#ff64c8">
+          <div class="ls-ind-name">〰️ EMA (Exponential MA)</div>
+          <button class="ls-try-btn" onclick="activateIndicator('ema')">Try it →</button>
+        </div>
+        <div class="ls-ind-body">
+          <p>Like MA but gives <b>more weight to recent prices</b> — it reacts faster to price changes, making it better for catching trend shifts early before they become obvious.</p>
+          <div class="ls-ind-signals">
+            <div class="signal-row green">▲ Price above EMA50 = confirmed uptrend</div>
+            <div class="signal-row red">▼ Price below EMA50 = confirmed downtrend</div>
+            <div class="signal-row">⚡ EMA reacts faster than MA — better for volatile markets</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ls-ind-card">
+        <div class="ls-ind-hdr" style="border-left-color:#ff9600">
+          <div class="ls-ind-name">🌡 RSI — Relative Strength Index</div>
+          <button class="ls-try-btn" onclick="activateIndicator('rsi')">Try it →</button>
+        </div>
+        <div class="ls-ind-body">
+          <p>Measures <b>momentum</b> on a 0–100 scale. Shows how fast price has been moving and whether the asset is statistically stretched in either direction.</p>
+          <div class="ls-ind-signals">
+            <div class="signal-row red">🔴 RSI <b>above 70</b> = Overbought — may pull back soon</div>
+            <div class="signal-row green">🟢 RSI <b>below 30</b> = Oversold — may bounce soon</div>
+            <div class="signal-row yellow">⚡ RSI <b>Divergence</b>: price makes new high but RSI doesn't = warning, trend weakening</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ls-ind-card">
+        <div class="ls-ind-hdr" style="border-left-color:#9664ff">
+          <div class="ls-ind-name">⚡ MACD</div>
+          <button class="ls-try-btn" onclick="activateIndicator('macd')">Try it →</button>
+        </div>
+        <div class="ls-ind-body">
+          <p>Shows <b>momentum shifts</b> using two EMAs. The gap between them (the histogram) shows how strong the current momentum is. Crossovers generate signals.</p>
+          <div class="ls-ind-signals">
+            <div class="signal-row green">▲ MACD line crosses <b>above</b> signal = bullish momentum building</div>
+            <div class="signal-row red">▼ MACD line crosses <b>below</b> signal = bearish momentum building</div>
+            <div class="signal-row">📊 Shrinking histogram = trend is losing steam, reversal possible</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ls-ind-card">
+        <div class="ls-ind-hdr" style="border-left-color:#64c8ff">
+          <div class="ls-ind-name">📐 Bollinger Bands</div>
+          <button class="ls-try-btn" onclick="activateIndicator('bb')">Try it →</button>
+        </div>
+        <div class="ls-ind-body">
+          <p>Three lines: a center MA with upper/lower bands set 2 standard deviations apart. The bands <b>expand in volatile markets</b> and contract in calm ones.</p>
+          <div class="ls-ind-signals">
+            <div class="signal-row red">⬆ Price touches upper band = potentially overbought</div>
+            <div class="signal-row green">⬇ Price touches lower band = potentially oversold</div>
+            <div class="signal-row yellow">🎯 <b>Band Squeeze</b>: bands very tight = big move incoming (direction unknown)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ls-ind-card">
+        <div class="ls-ind-hdr" style="border-left-color:#00ff88">
+          <div class="ls-ind-name">💧 VWAP</div>
+          <button class="ls-try-btn" onclick="activateIndicator('vwap')">Try it →</button>
+        </div>
+        <div class="ls-ind-body">
+          <p>Volume Weighted Average Price — the average price paid, weighted by how much was traded at each level. Used by <b>institutional and professional traders</b> as a key benchmark.</p>
+          <div class="ls-ind-signals">
+            <div class="signal-row green">▲ Price above VWAP = bulls in control intraday</div>
+            <div class="signal-row red">▼ Price below VWAP = bears in control intraday</div>
+            <div class="signal-row">🏛 Institutions often buy dips to VWAP and sell rallies above it</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── PATTERNS ────────────────────────────────────────── -->
+  <div class="ls-sec" id="sec-patterns">
+    <div class="ls-sec-hdr">
+      <span class="ls-sec-num">07</span>
+      <div><div class="ls-sec-title">Chart Patterns</div>
+      <div class="ls-sec-sub">Recurring shapes that traders use to anticipate the next move</div></div>
+    </div>
+    <div class="ls-pattern-grid">
+      <div class="ls-pat-card">
+        <svg viewBox="0 0 140 80" class="ls-pat-svg">
+          <polyline points="10,60 30,35 50,60 70,25 90,60 110,15 130,40" fill="none" stroke="#00ff88" stroke-width="2"/>
+          <text x="5" y="75" fill="#a0c0e0" font-size="8" font-family="Share Tech Mono">Higher Highs &amp; Higher Lows</text>
+        </svg>
+        <div class="ls-pat-name green-text">⬆ Uptrend Channel</div>
+        <div class="ls-pat-desc">Series of HH+HL. Buy the dips. Exit if a HL is broken.</div>
+      </div>
+      <div class="ls-pat-card">
+        <svg viewBox="0 0 140 80" class="ls-pat-svg">
+          <polyline points="10,20 30,45 50,25 70,55 90,30 110,65 130,45" fill="none" stroke="#ff3366" stroke-width="2"/>
+          <text x="5" y="75" fill="#a0c0e0" font-size="8" font-family="Share Tech Mono">Lower Highs &amp; Lower Lows</text>
+        </svg>
+        <div class="ls-pat-name red-text">⬇ Downtrend Channel</div>
+        <div class="ls-pat-desc">Series of LH+LL. Stay out or short. Exit when a LH is broken.</div>
+      </div>
+      <div class="ls-pat-card">
+        <svg viewBox="0 0 140 80" class="ls-pat-svg">
+          <line x1="10" y1="20" x2="130" y2="20" stroke="#ff3366" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <polyline points="10,55 35,20 60,55 85,20 120,55" fill="none" stroke="#00d4ff" stroke-width="2"/>
+          <circle cx="35" cy="20" r="4" fill="#ff3366"/>
+          <circle cx="85" cy="20" r="4" fill="#ff3366"/>
+          <text x="5" y="75" fill="#a0c0e0" font-size="8" font-family="Share Tech Mono">Two peaks at same level</text>
+        </svg>
+        <div class="ls-pat-name red-text">⛰⛰ Double Top</div>
+        <div class="ls-pat-desc">Two highs at the same level = bearish reversal. Price likely drops after the second peak.</div>
+      </div>
+      <div class="ls-pat-card">
+        <svg viewBox="0 0 140 80" class="ls-pat-svg">
+          <line x1="10" y1="60" x2="130" y2="60" stroke="#00ff88" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <polyline points="10,25 35,60 60,25 85,60 120,25" fill="none" stroke="#00d4ff" stroke-width="2"/>
+          <circle cx="35" cy="60" r="4" fill="#00ff88"/>
+          <circle cx="85" cy="60" r="4" fill="#00ff88"/>
+          <text x="5" y="75" fill="#a0c0e0" font-size="8" font-family="Share Tech Mono">Two lows at same level</text>
+        </svg>
+        <div class="ls-pat-name green-text">🏔🏔 Double Bottom</div>
+        <div class="ls-pat-desc">Two lows at the same level = bullish reversal. Price likely rises after the second bounce.</div>
+      </div>
+      <div class="ls-pat-card">
+        <svg viewBox="0 0 140 80" class="ls-pat-svg">
+          <polyline points="15,55 35,25 55,55" fill="none" stroke="#ff9600" stroke-width="1.5"/>
+          <line x1="55" y1="55" x2="85" y2="35" stroke="#00d4ff" stroke-width="1.5"/>
+          <line x1="55" y1="55" x2="85" y2="55" stroke="#a0c0e0" stroke-width="1" stroke-dasharray="4,3"/>
+          <polyline points="85,35 105,55 125,20" fill="none" stroke="#00ff88" stroke-width="2"/>
+          <text x="5" y="75" fill="#a0c0e0" font-size="8" font-family="Share Tech Mono">Consolidation → Breakout</text>
+        </svg>
+        <div class="ls-pat-name">📐 Flag / Pennant</div>
+        <div class="ls-pat-desc">Strong move (pole), then tight consolidation (flag), then breakout in same direction. Continuation pattern.</div>
+      </div>
+      <div class="ls-pat-card">
+        <svg viewBox="0 0 140 80" class="ls-pat-svg">
+          <polyline points="10,65 30,40 50,60 70,20 90,50 110,65 130,65" fill="none" stroke="#00d4ff" stroke-width="2"/>
+          <line x1="10" y1="48" x2="130" y2="48" stroke="#ffc800" stroke-width="1" stroke-dasharray="5,3"/>
+          <text x="5" y="75" fill="#a0c0e0" font-size="8" font-family="Share Tech Mono">Center shoulder - head - shoulder</text>
+        </svg>
+        <div class="ls-pat-name red-text">👤 Head &amp; Shoulders</div>
+        <div class="ls-pat-desc">Left shoulder, higher head, lower right shoulder. Classic reversal. Break of neckline = strong sell signal.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FIBONACCI ───────────────────────────────────────── -->
+  <div class="ls-sec" id="sec-fib">
+    <div class="ls-sec-hdr">
+      <span class="ls-sec-num">08</span>
+      <div><div class="ls-sec-title">Fibonacci Retracement</div>
+      <div class="ls-sec-sub">Ancient math that markets seem to respect</div></div>
+    </div>
+    <div class="ls-fib-wrap">
+      <div class="ls-fib-levels">
+        <div class="ls-fib-row" style="--fc:#9664ff"><span class="fib-pct">0%</span><span class="fib-desc">The starting high — absolute top of the move</span></div>
+        <div class="ls-fib-row" style="--fc:#00d4ff"><span class="fib-pct">23.6%</span><span class="fib-desc">Shallow retracement. Common in strong uptrends. Weak pullback level.</span></div>
+        <div class="ls-fib-row" style="--fc:#00ff88"><span class="fib-pct">38.2%</span><span class="fib-desc">Moderate retracement. Good entry zone in bull markets.</span></div>
+        <div class="ls-fib-row" style="--fc:#ffc800"><span class="fib-pct">50%</span><span class="fib-desc">Psychological midpoint. Not technically Fibonacci but widely watched.</span></div>
+        <div class="ls-fib-row golden" style="--fc:#ff9600"><span class="fib-pct">61.8% ✨</span><span class="fib-desc">The Golden Ratio — the most important level. Price bounces here very often.</span></div>
+        <div class="ls-fib-row" style="--fc:#ff6060"><span class="fib-pct">78.6%</span><span class="fib-desc">Deep retracement. Last line of defense before full retracement to start.</span></div>
+        <div class="ls-fib-row" style="--fc:#9664ff"><span class="fib-pct">100%</span><span class="fib-desc">The starting low — full retracement back to origin</span></div>
+      </div>
+      <div class="ls-fib-how">
+        <div class="ls-fib-step"><span class="fib-step-n">1</span><span>Find a significant <b>swing low</b> (bottom of a major move down)</span></div>
+        <div class="ls-fib-step"><span class="fib-step-n">2</span><span>Find the corresponding <b>swing high</b> (top of the move up)</span></div>
+        <div class="ls-fib-step"><span class="fib-step-n">3</span><span>Click <b>🌀 Fib</b> in Token-Tokens and click those two points</span></div>
+        <div class="ls-fib-step"><span class="fib-step-n">4</span><span>Watch how price <b>reacts at each level</b> during pullbacks</span></div>
+        <div class="ls-tip-box" style="margin-top:10px;">💡 The <b>61.8% level</b> (the Golden Ratio) is where price bounces most often. When combined with a support level or MA at the same price, it becomes an extremely powerful zone.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CHECKLIST ───────────────────────────────────────── -->
+  <div class="ls-sec" id="sec-checklist">
+    <div class="ls-sec-hdr">
+      <span class="ls-sec-num">09</span>
+      <div><div class="ls-sec-title">Live Analysis Checklist</div>
+      <div class="ls-sec-sub">Run through this every time you open a chart</div></div>
+    </div>
+    <div class="ls-cl-wrap">
+      <div class="ls-cl-col">
+        <div class="ls-cl-group-title">📊 Big Picture First</div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>Zoom out to MAX or 1Y.</b> Is the overall trend up, down, or sideways? Never trade against the big picture.</div></div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>Find key support and resistance.</b> Where has price bounced or rejected multiple times? Mark them with H-Line.</div></div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>Check the Fear &amp; Greed Index.</b> Extreme Fear (&lt;20) = potential buy zone. Extreme Greed (&gt;80) = be cautious.</div></div>
+      </div>
+      <div class="ls-cl-col">
+        <div class="ls-cl-group-title">📈 Trend &amp; Structure</div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>Is price above MA20 and EMA50?</b> Both above = strong uptrend. Both below = downtrend. Mixed = neutral.</div></div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>Is price making higher highs and higher lows?</b> This is the definition of an uptrend — verify it visually.</div></div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>Any pattern recognition labels on the chart?</b> Golden Cross, Double Bottom = bullish. Death Cross, Double Top = bearish.</div></div>
+      </div>
+      <div class="ls-cl-col">
+        <div class="ls-cl-group-title">⚡ Momentum &amp; Volume</div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>RSI reading?</b> Above 70 = overbought (caution). Below 30 = oversold (opportunity). 40-60 = neutral momentum.</div></div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>MACD crossover direction?</b> Cross up = bullish momentum building. Cross down = bearish momentum building.</div></div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>Is volume confirming the move?</b> Big price move on low volume = suspect. Big move on high volume = real.</div></div>
+      </div>
+      <div class="ls-cl-col">
+        <div class="ls-cl-group-title">🕯 Candle &amp; Entry</div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>What do the recent candles look like?</b> Long wicks = rejection. Doji = indecision. Strong bodies = conviction.</div></div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>Are Bollinger Bands squeezing?</b> Very tight bands = big move coming soon. Watch for the breakout direction.</div></div>
+        <div class="ls-cl-item" onclick="lsCk(this)"><div class="ls-ck"></div><div><b>Check Fibonacci levels.</b> Is price sitting at a 38.2%, 50%, or 61.8% retracement? These are high-probability entry zones.</div></div>
+      </div>
+    </div>
+    <div class="ls-disclaimer">⚠ Token-Tokens is for <b>educational purposes only</b>. Always do your own research (DYOR). This is not financial advice. Never invest more than you can afford to lose.</div>
+  </div>
+
+</div>
+
 </div>
 
 </div><!-- /app -->
+
+
+<!-- NOTE INPUT OVERLAY -->
+<div class="note-input-wrap" id="noteInputWrap">
+  <input id="noteInputBox" type="text" placeholder="Type note, press Enter…" maxlength="60">
+</div>
 
 <!-- TOKEN BROWSER MODAL -->
 <div class="m-bg hide" id="modalBg" onclick="mBgClick(event)">
@@ -721,7 +1309,7 @@ function setDrawTool(tool) {
   const zone = document.getElementById('chartZone');
   zone.className = 'chart-zone' + (tool ? ' drawing-'+tool : '');
   // Highlight active button
-  ['dtLine','dtHLine','dtRay','dtRect'].forEach(id=>{
+  ['dtLine','dtHLine','dtRay','dtRect','dtFib','dtNote'].forEach(id=>{
     document.getElementById(id)?.classList.remove('on');
   });
   if(tool) document.getElementById('dt'+tool.charAt(0).toUpperCase()+tool.slice(1))?.classList.add('on');
@@ -909,6 +1497,12 @@ async function loadChart(id, days) {
 
     ST.candles = candles;
     setDot('ok');
+    // Load mini charts for all timeframes (non-blocking)
+    loadMiniCharts(id);
+    // Sync active mini chart highlight
+    const tfMap2={'1':'mc1d','7':'mc1w','30':'mc1m','365':'mc1y'};
+    document.querySelectorAll('.mc-item').forEach(b=>b.classList.remove('active'));
+    if(tfMap2[days]) document.getElementById(tfMap2[days])?.classList.add('active');
 
     // Show last 120 candles; user can drag/scroll back to see older data
     const view = Math.min(120, ST.candles.length);
@@ -1623,10 +2217,44 @@ function renderChart(){
       const rangePct = Math.abs((hiP-loP)/loP*100).toFixed(2);
       ctx.textAlign='center';
       ctx.fillText(rangePct+'% range', rx+rw2/2, ry+rh2/2+4);
+
+    } else if(d.type === 'fib' && d.p1 != null && d.p2 != null){
+      renderFibDrawing(ctx, d, vis, toX, priceToY, W, PAD_L, PAD_R, pH);
+
+    } else if(d.type === 'note' && d.p1 != null && d.text){
+      const nx  = candleToX(d.p1.gi, W);
+      const ny  = priceToY(d.p1.price, pH);
+      ctx.save();
+      ctx.font = 'bold 9px Share Tech Mono';
+      const tw  = ctx.measureText(d.text).width;
+      const bw  = tw + 14, bh = 16;
+      const bx  = Math.min(Math.max(nx-bw/2, PAD_L), W-PAD_R-bw);
+      const hxN = (d.color||'#00d4ff').replace('#','');
+      const rN=parseInt(hxN.slice(0,2),16),gN=parseInt(hxN.slice(2,4),16),bN2=parseInt(hxN.slice(4,6),16);
+      ctx.fillStyle=`rgba(${rN},${gN},${bN2},.18)`;
+      if(ctx.roundRect) ctx.roundRect(bx,ny-bh-4,bw,bh,3); else ctx.rect(bx,ny-bh-4,bw,bh);
+      ctx.fill();
+      ctx.strokeStyle=`rgba(${rN},${gN},${bN2},.85)`;
+      ctx.lineWidth=1; ctx.setLineDash([]);
+      if(ctx.roundRect) ctx.roundRect(bx,ny-bh-4,bw,bh,3); else ctx.rect(bx,ny-bh-4,bw,bh);
+      ctx.stroke();
+      ctx.fillStyle=d.color||'#00d4ff'; ctx.textAlign='center';
+      ctx.fillText(d.text, bx+bw/2, ny-8);
+      ctx.strokeStyle=`rgba(${rN},${gN},${bN2},.5)`;
+      ctx.lineWidth=1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(bx+bw/2,ny-4); ctx.lineTo(bx+bw/2,ny); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=`rgba(${rN},${gN},${bN2},.9)`;
+      ctx.beginPath(); ctx.arc(bx+bw/2,ny,3,0,Math.PI*2); ctx.fill();
+      ctx.restore();
     }
   }
   ctx.globalAlpha=1; ctx.setLineDash([]);
   ctx.restore();
+
+  // ── Pattern Recognition labels ──
+  renderPatterns(ctx, vis, toX, toY, pH, PAD_L, PAD_R, W);
+
   // ── End Drawings ──────────────────────────────────────────────────────────
 
   // ── Time axis — year-aware labels ──
@@ -1768,6 +2396,383 @@ function calcMACD(candles,fast,slow,sig){
   return{ml,sig:sigFull,hist};
 }
 
+
+/* ══════════════════ FEAR & GREED ══════════════════════ */
+async function loadFearGreed(){
+  try{
+    const res  = await fetch('https://api.alternative.me/fng/?limit=2&format=json');
+    if(!res.ok) throw new Error(res.status);
+    const json = await res.json();
+    const cur  = json.data[0];
+    const prev = json.data[1];
+    const score= parseInt(cur.value);
+    const label= cur.value_classification;
+    const date = new Date(parseInt(cur.timestamp)*1000);
+    const dateStr = date.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+
+    // Color ramp: 0=red, 25=orange, 50=yellow, 75=lime, 100=green
+    const col = score<=25?'#ff3366':score<=45?'#ff9600':score<=55?'#ffc800':score<=75?'#a8e063':'#00ff88';
+
+    const scoreEl = document.getElementById('fgScore');
+    const labelEl = document.getElementById('fgLabel');
+    const updEl   = document.getElementById('fgUpdated');
+    const prevEl  = document.getElementById('fgPrev');
+    if(scoreEl){ scoreEl.textContent=score; scoreEl.style.color=col; }
+    if(labelEl){ labelEl.textContent=label; labelEl.style.color=col; }
+    if(updEl)   updEl.textContent = 'Updated '+dateStr;
+    if(prevEl && prev){
+      const ps=parseInt(prev.value), diff=score-ps;
+      prevEl.textContent=`Yesterday: ${ps} ${diff>=0?'▲':'▼'}${Math.abs(diff)}`;
+      prevEl.style.color=diff>=0?'#00ff88':'#ff3366';
+    }
+
+    // SVG needle: rotates around (40,44), 0 score=left(-90deg from top), 100=right(+90deg)
+    // The semicircle goes from 8,44 (left) through 40,12 (top) to 72,44 (right)
+    // Angle: score 0 → 180deg (pointing left), score 100 → 0deg (pointing right)
+    // We map: angleDeg = 180 - (score/100)*180
+    const angleDeg = 180 - (score/100)*180;
+    const rad = angleDeg * Math.PI / 180;
+    const needleLen = 24;
+    // SVG: 0deg = right, 90deg = up, 180deg = left (standard math convention)
+    // We want: score=0 → needle points LEFT, score=100 → points RIGHT
+    // needle tip: cx + r*cos(π - angleDeg*π/180), cy - r*sin(...)
+    const nx = 40 + needleLen * Math.cos(Math.PI - rad);
+    const ny = 44 - needleLen * Math.sin(Math.PI - rad);
+    const needleEl = document.getElementById('fgNeedle');
+    if(needleEl){ needleEl.setAttribute('x2',nx.toFixed(1)); needleEl.setAttribute('y2',ny.toFixed(1)); }
+
+    // Arc fill: the SVG arc path has a total visual length of ~100 CSS units
+    // dasharray = "fillAmount totalLength"
+    const arcEl = document.getElementById('fgArcFill');
+    if(arcEl){
+      // The semicircular path at radius 32, stroke-width 8
+      // Circumference of full circle = 2π*32 ≈ 201, half = ~100.5
+      const totalArc = 100.5;
+      const filled   = (score/100)*totalArc;
+      arcEl.setAttribute('stroke-dasharray',`${filled.toFixed(1)} ${totalArc}`);
+    }
+
+    // Bar needle (CSS gradient bar)
+    const barNeedle = document.getElementById('fgBarNeedle');
+    if(barNeedle) barNeedle.style.left = score+'%';
+
+  }catch(e){
+    console.warn('Fear & Greed load failed:',e);
+    const labelEl=document.getElementById('fgLabel');
+    if(labelEl) labelEl.textContent='Unavailable';
+  }
+}
+
+/* ══════════════════ MINI CHARTS ════════════════════════ */
+async function loadMiniCharts(coinId){
+  const tfs = ['1','7','30','365'];
+  for(const tf of tfs){
+    try{
+      const sym  = CC_SYM[coinId] || coinId.toUpperCase().split('-')[0];
+      const cfg  = CC_TF[tf] || CC_TF['30'];
+      const url  = `${CC}/${cfg.ep}?fsym=${sym}&tsym=USD&limit=${Math.min(cfg.lim,120)}&aggregate=${cfg.agg}`;
+      const res  = await fetch(url);
+      if(!res.ok) continue;
+      const json = await res.json();
+      const data = (json.Data?.Data||[]).filter(c=>c.close>0);
+      if(data.length<2) continue;
+      drawMiniChart(tf, data);
+    }catch(e){}
+  }
+}
+
+function drawMiniChart(tf, data){
+  const canvasId = `mc${tf}dCanvas`;
+  const pctId    = `mc${tf}dPct`;
+  const canvas   = document.getElementById(canvasId);
+  const pctEl    = document.getElementById(pctId);
+  if(!canvas) return;
+
+  const W = canvas.offsetWidth || 120;
+  const H = 36;
+  canvas.width  = W * window.devicePixelRatio;
+  canvas.height = H * window.devicePixelRatio;
+  canvas.style.width  = W+'px';
+  canvas.style.height = H+'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.clearRect(0,0,W,H);
+
+  const prices = data.map(d=>d.close);
+  const mn = Math.min(...prices), mx = Math.max(...prices);
+  const range = mx-mn||1;
+  const toY   = v => 2 + (1-(v-mn)/range)*(H-4);
+  const toX   = i => (i/(prices.length-1))*(W-1);
+
+  const up = prices[prices.length-1] >= prices[0];
+  const col= up ? '#00ff88' : '#ff3366';
+
+  // Fill
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,   up?'rgba(0,255,136,.25)':'rgba(255,51,102,.25)');
+  grad.addColorStop(1,   'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(prices[0]));
+  for(let i=1;i<prices.length;i++) ctx.lineTo(toX(i),toY(prices[i]));
+  ctx.lineTo(toX(prices.length-1),H);
+  ctx.lineTo(0,H); ctx.closePath();
+  ctx.fillStyle=grad; ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  for(let i=0;i<prices.length;i++) i?ctx.lineTo(toX(i),toY(prices[i])):ctx.moveTo(toX(i),toY(prices[i]));
+  ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.lineJoin='round'; ctx.stroke();
+
+  // % change label
+  if(pctEl){
+    const pct = ((prices[prices.length-1]-prices[0])/prices[0]*100).toFixed(1);
+    pctEl.textContent = (pct>=0?'+':'')+pct+'%';
+    pctEl.style.color = up?'#00ff88':'#ff3366';
+  }
+}
+
+function setTFFromMini(el, tf){
+  // Highlight active mini chart
+  document.querySelectorAll('.mc-item').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  // Also update main TF buttons
+  document.querySelectorAll('.tf').forEach(b=>b.classList.remove('on'));
+  // Map tf to button text
+  const tfMap={'1':'1d','7':'7d','30':'30d','90':'90d','365':'1y','1825':'5y','max':'MAX'};
+  document.querySelectorAll('.tf').forEach(b=>{ if(b.textContent===tfMap[tf]) b.classList.add('on'); });
+  loadChart(ST.coin.id, tf).then(()=>{ ST.tf=tf; });
+}
+
+/* ══════════════════ PATTERN RECOGNITION ════════════════ */
+function detectPatterns(candles){
+  const patterns = [];
+  if(candles.length < 20) return patterns;
+  const n = candles.length;
+
+  // ── Golden Cross / Death Cross (MA20 crosses MA50) ──
+  if(n >= 52){
+    const ma20 = [], ma50 = [];
+    for(let i=19;i<n;i++) ma20.push({i, v:candles.slice(i-19,i+1).reduce((s,c)=>s+c.c,0)/20});
+    for(let i=49;i<n;i++) ma50.push({i, v:candles.slice(i-49,i+1).reduce((s,c)=>s+c.c,0)/50});
+    const ma50map = {};
+    ma50.forEach(m=>ma50map[m.i]=m.v);
+    for(let j=1;j<ma20.length;j++){
+      const prev20=ma20[j-1].v, cur20=ma20[j].v;
+      const idx=ma20[j].i;
+      const prev50=ma50map[idx-1], cur50=ma50map[idx];
+      if(!prev50||!cur50) continue;
+      if(prev20<=prev50 && cur20>cur50){
+        patterns.push({type:'Golden Cross',idx,color:'#ffc800',pos:'above',emoji:'✨',
+          desc:'MA20 crossed above MA50 — bullish momentum signal'});
+      } else if(prev20>=prev50 && cur20<cur50){
+        patterns.push({type:'Death Cross',idx,color:'#ff3366',pos:'below',emoji:'💀',
+          desc:'MA20 crossed below MA50 — bearish momentum signal'});
+      }
+    }
+  }
+
+  // ── Double Top ──
+  const localMaxes = [];
+  for(let i=3;i<n-3;i++){
+    if(candles[i].h > candles[i-1].h && candles[i].h > candles[i-2].h &&
+       candles[i].h > candles[i+1].h && candles[i].h > candles[i+2].h){
+      localMaxes.push({i, h:candles[i].h});
+    }
+  }
+  for(let a=0;a<localMaxes.length-1;a++){
+    for(let b=a+1;b<localMaxes.length;b++){
+      const gap = localMaxes[b].i - localMaxes[a].i;
+      if(gap < 5 || gap > 60) continue;
+      const diff = Math.abs(localMaxes[a].h - localMaxes[b].h)/localMaxes[a].h;
+      if(diff < 0.025){ // within 2.5%
+        patterns.push({type:'Double Top',idx:localMaxes[b].i,color:'#ff3366',pos:'above',emoji:'⛰⛰',
+          desc:'Two similar highs — potential reversal signal'});
+        break;
+      }
+    }
+  }
+
+  // ── Double Bottom ──
+  const localMins = [];
+  for(let i=3;i<n-3;i++){
+    if(candles[i].l < candles[i-1].l && candles[i].l < candles[i-2].l &&
+       candles[i].l < candles[i+1].l && candles[i].l < candles[i+2].l){
+      localMins.push({i, l:candles[i].l});
+    }
+  }
+  for(let a=0;a<localMins.length-1;a++){
+    for(let b=a+1;b<localMins.length;b++){
+      const gap = localMins[b].i - localMins[a].i;
+      if(gap < 5 || gap > 60) continue;
+      const diff = Math.abs(localMins[a].l - localMins[b].l)/localMins[a].l;
+      if(diff < 0.025){
+        patterns.push({type:'Double Bottom',idx:localMins[b].i,color:'#00ff88',pos:'below',emoji:'🏔🏔',
+          desc:'Two similar lows — potential reversal higher'});
+        break;
+      }
+    }
+  }
+
+  // Return only the most recent 6 to avoid clutter
+  return patterns.slice(-6);
+}
+
+function renderPatterns(ctx, vis, toX, toY, pH, PAD_L, PAD_R, W){
+  // vis is the visible candle slice; we need global indices mapped to vis positions
+  const patterns = detectPatterns(ST.candles);
+  const s = ST.zoom.s;
+  const r = ST.zoom.r;
+
+  for(const p of patterns){
+    const visIdx = p.idx - s;
+    if(visIdx < 0 || visIdx >= r) continue;
+    const x  = toX(visIdx);
+    const c  = vis[visIdx];
+    const y  = p.pos==='above' ? toY(c.h)-18 : toY(c.l)+8;
+
+    // Badge pill
+    ctx.save();
+    const label = p.emoji+' '+p.type;
+    ctx.font = 'bold 9px Share Tech Mono';
+    const tw = ctx.measureText(label).width;
+    const bw = tw+12, bh=14;
+    const bx = Math.min(Math.max(x-bw/2, PAD_L), W-PAD_R-bw);
+
+    // Parse hex color to rgba
+    const hx=p.color.replace('#','');
+    const r2=parseInt(hx.slice(0,2),16),g2=parseInt(hx.slice(2,4),16),b2=parseInt(hx.slice(4,6),16);
+
+    ctx.fillStyle=`rgba(${r2},${g2},${b2},.15)`;
+    if(ctx.roundRect) ctx.roundRect(bx,y,bw,bh,3); else ctx.rect(bx,y,bw,bh);
+    ctx.fill();
+    ctx.strokeStyle=`rgba(${r2},${g2},${b2},.8)`;
+    ctx.lineWidth=1; ctx.setLineDash([]);
+    if(ctx.roundRect) ctx.roundRect(bx,y,bw,bh,3); else ctx.rect(bx,y,bw,bh);
+    ctx.stroke();
+    ctx.fillStyle=p.color;
+    ctx.textAlign='center';
+    ctx.fillText(label, bx+bw/2, y+bh-3);
+
+    // Vertical tick
+    ctx.strokeStyle=`rgba(${r2},${g2},${b2},.45)`;
+    ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.beginPath();
+    ctx.moveTo(x, p.pos==='above'?toY(c.h):toY(c.l));
+    ctx.lineTo(x, p.pos==='above'?toY(c.h)-14:toY(c.l)+4);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+  }
+}
+
+/* ══════════════════ FIBONACCI RENDERING ════════════════ */
+function renderFibDrawing(ctx, d, vis, toX, priceToYfn, W, PAD_L, PAD_R, pH){
+  if(!d.p1 || !d.p2) return;
+  const FIB_LEVELS = [
+    {r:0,     label:'0%',     col:'rgba(150,100,255,.7)'},
+    {r:0.236, label:'23.6%',  col:'rgba(0,212,255,.7)'},
+    {r:0.382, label:'38.2%',  col:'rgba(0,255,136,.8)'},
+    {r:0.5,   label:'50%',    col:'rgba(255,200,0,.8)'},
+    {r:0.618, label:'61.8%',  col:'rgba(255,150,0,.85)'},
+    {r:0.786, label:'78.6%',  col:'rgba(255,80,80,.8)'},
+    {r:1,     label:'100%',   col:'rgba(150,100,255,.7)'},
+  ];
+  const hiP = Math.max(d.p1.price, d.p2.price);
+  const loP = Math.min(d.p1.price, d.p2.price);
+  const range = hiP - loP;
+  if(range <= 0) return;
+
+  const x1 = candleToX(d.p1.gi, W);
+  const x2 = candleToX(d.p2.gi, W);
+  const xL  = Math.min(x1, x2, PAD_L);
+  const xR  = Math.max(x1, x2, W-PAD_R);
+
+  ctx.save();
+  ctx.font = 'bold 9px Share Tech Mono';
+
+  for(const lv of FIB_LEVELS){
+    const price = hiP - lv.r * range;
+    const y     = priceToYfn(price, pH);
+    if(y < 0 || y > pH) continue;
+
+    // Fill band between adjacent levels (subtle)
+    const idx = FIB_LEVELS.indexOf(lv);
+    if(idx < FIB_LEVELS.length-1){
+      const nextPrice = hiP - FIB_LEVELS[idx+1].r * range;
+      const y2 = priceToYfn(nextPrice, pH);
+      const hx = lv.col.match(/[\d.]+/g);
+      if(hx && hx.length>=3){
+        ctx.fillStyle=`rgba(${hx[0]},${hx[1]},${hx[2]},0.04)`;
+        ctx.fillRect(xL, Math.min(y,y2), xR-xL, Math.abs(y2-y));
+      }
+    }
+
+    // Horizontal level line
+    ctx.strokeStyle = lv.col;
+    ctx.lineWidth   = lv.r===0.618 ? 1.8 : 1.2; // emphasize golden ratio
+    ctx.setLineDash(lv.r===0.5?[6,4]:[]);
+    ctx.beginPath(); ctx.moveTo(xL,y); ctx.lineTo(xR,y); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label on right
+    ctx.fillStyle   = lv.col;
+    ctx.textAlign   = 'left';
+    ctx.fillText(`${lv.label}  $${fP(price)}`, W-PAD_R+4, y+3.5);
+  }
+
+  // Anchor dots at p1 and p2
+  ctx.fillStyle = 'rgba(150,100,255,.9)';
+  ctx.beginPath(); ctx.arc(x1, priceToYfn(d.p1.price,pH), 4, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x2, priceToYfn(d.p2.price,pH), 4, 0, Math.PI*2); ctx.fill();
+
+  ctx.restore();
+}
+
+/* ══════════════════ NOTE / LABEL TOOL ══════════════════ */
+let _notePending = null; // {gi, price, x_screen, y_screen}
+
+function showNoteInput(gi, price, screenX, screenY){
+  _notePending = {gi, price};
+  const wrap = document.getElementById('noteInputWrap');
+  const inp  = document.getElementById('noteInputBox');
+  wrap.style.display = 'block';
+  wrap.style.left    = screenX + 'px';
+  wrap.style.top     = (screenY - 40) + 'px';
+  inp.value = '';
+  inp.focus();
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const inp = document.getElementById('noteInputBox');
+  if(!inp) return;
+  inp.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){
+      const text = inp.value.trim();
+      if(text && _notePending){
+        DRW.drawings.push({
+          type:'note', color:DRW.color,
+          p1:{gi:_notePending.gi, price:_notePending.price},
+          text
+        });
+        updateDrawCount(); renderChart();
+      }
+      document.getElementById('noteInputWrap').style.display='none';
+      _notePending = null;
+    } else if(e.key==='Escape'){
+      document.getElementById('noteInputWrap').style.display='none';
+      _notePending = null;
+    }
+  });
+  // Click outside dismisses
+  document.addEventListener('mousedown', e=>{
+    const wrap = document.getElementById('noteInputWrap');
+    if(wrap && !wrap.contains(e.target) && wrap.style.display==='block'){
+      wrap.style.display='none';
+      _notePending = null;
+    }
+  }, true);
+});
+
 /* ══════════════════ CHART INTERACTION ══════════════════ */
 document.getElementById('priceCanvas').addEventListener('wheel',e=>{
   e.preventDefault();
@@ -1795,10 +2800,15 @@ document.getElementById('priceCanvas').addEventListener('mousedown',e=>{
   if(!ci || price == null) return;
 
   if(DRW.tool === 'hline'){
-    // Horizontal line — single click, uses price at click
     DRW.drawings.push({type:'hline', color:DRW.color, p1:{gi:ci.globalIdx, price}});
     DRW.pending = null;
     updateDrawCount(); renderChart(); return;
+  }
+
+  if(DRW.tool === 'note'){
+    // Show floating text input at click position
+    showNoteInput(ci.globalIdx, price, e.clientX, e.clientY);
+    return;
   }
 
   if(!DRW.pending){
@@ -2075,6 +3085,26 @@ function fL(n){if(!n||n<=0)return'—';if(n>=1e12)return(n/1e12).toFixed(2)+'T';
 function esc(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
 function rc(s){const cols=['#f7931a','#627eea','#9945ff','#0033ad','#c2a633','#00d4ff','#ff6b35','#00ff88','#e84142','#26a17b','#2775ca','#f0b90b'];let h=0;for(let i=0;i<(s||'').length;i++)h=(h*31+s.charCodeAt(i))%cols.length;return cols[h];}
 
+
+/* ══════════════════ LEARN SECTION HELPERS ══════════════════ */
+function scrollLearn(id){
+  const el=document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function lsCk(el){
+  el.classList.toggle('done');
+}
+function activateIndicator(name){
+  // Switch to chart tab and enable the indicator
+  showTab('chart');
+  if(!ST.inds.has(name)){
+    ST.inds.add(name);
+    const btn=document.getElementById('i'+name.toUpperCase());
+    if(btn) btn.classList.add('on');
+    renderChart();
+  }
+}
+
 /* ══════════════════ TABS / THEME / CHECKLIST ══════════════════ */
 function showTab(n){document.getElementById('chartTab').style.display=n==='chart'?'block':'none';document.getElementById('learnSec').style.display=n==='learn'?'block':'none';document.querySelectorAll('.nb').forEach((b,i)=>b.classList.toggle('on',(i===0&&n==='chart')||(i===1&&n==='learn')));if(n==='chart')setTimeout(renderChart,50);}
 function ck(li){li.classList.toggle('done');li.querySelector('.ck').textContent=li.classList.contains('done')?'✓':'';}
@@ -2110,6 +3140,9 @@ async function initApp(){
   await loadChart(ST.coin.id, ST.tf);
   setInterval(loadPrices, 90000);
   setInterval(loadTicker, 240000);
+  // Load Fear & Greed (refresh hourly)
+  loadFearGreed();
+  setInterval(loadFearGreed, 3600000);
 }
 </script>
 </body>
