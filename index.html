@@ -595,10 +595,32 @@ let API_KEY=localStorage.getItem('cg_api_key')||'';
 const BASE='https://api.coingecko.com/api/v3';
 
 function getUrl(path){
+  // Always append key as query param if we have one
   const sep=path.includes('?')?'&':'?';
-  return API_KEY?`${BASE}${path}${sep}x_cg_demo_api_key=${API_KEY}`:`${BASE}${path}`;
+  return API_KEY?`${BASE}${path}${sep}x_cg_demo_api_key=${encodeURIComponent(API_KEY)}`:`${BASE}${path}`;
 }
 
+// Direct fetch — bypasses the queue, for time-sensitive single requests
+async function apiFetchDirect(path,ttl=60000,retries=3){
+  const url=getUrl(path);
+  const cached=CACHE.get(url);
+  if(cached)return cached;
+  let lastErr;
+  for(let attempt=0;attempt<=retries;attempt++){
+    try{
+      const r=await fetch(url,{headers:{'Accept':'application/json'}});
+      if(r.status===429){await sleep(attempt===0?3000:8000);continue;}
+      if(r.status===404)throw new Error('404');
+      if(!r.ok)throw new Error(r.status);
+      const data=await r.json();
+      if(ttl>0)CACHE.set(url,data,ttl);
+      setDot('ok');return data;
+    }catch(e){lastErr=e;if(e.message==='404')throw e;if(attempt<retries)await sleep(1500*(attempt+1));}
+  }
+  setDot('err');throw lastErr;
+}
+
+// Queued fetch — rate-limited, for non-urgent bulk loads
 async function apiFetch(path,ttl=60000,retries=2){
   const url=getUrl(path);
   const cached=CACHE.get(url);
@@ -608,9 +630,7 @@ async function apiFetch(path,ttl=60000,retries=2){
     for(let attempt=0;attempt<=retries;attempt++){
       try{
         const r=await fetch(url,{headers:{'Accept':'application/json'}});
-        if(r.status===429){
-          setDot('rl');await sleep(attempt===0?5000:12000);continue;
-        }
+        if(r.status===429){setDot('rl');await sleep(attempt===0?5000:12000);continue;}
         if(!r.ok)throw new Error(r.status);
         const data=await r.json();
         CACHE.set(url,data,ttl);
@@ -685,51 +705,63 @@ async function loadPrices(){
 /* ══════════════════ CHART DATA ══════════════════ */
 async function loadChart(id,days){
   document.getElementById('cLoad').style.display='flex';
+  ST.candles=[];
   try{
-    const d=days==='max'?'max':String(days);
-    // Decide interval: hourly for <=90 days, daily for longer
-    const numDays=days==='max'?99999:+days;
-    const interval=numDays<=90?'hourly':'daily';
+    // --- Determine the correct API call ---
+    // CoinGecko market_chart with 'days=max' returns ALL history (back to 2013)
+    // For 'max' and large ranges, interval is always 'daily' (auto)
+    // For <=90 days we request hourly; for >90 days daily granularity
+    let apiDays, forceInterval=null;
+    if(days==='max'){
+      apiDays='max';
+    }else{
+      apiDays=String(days); // e.g. '365', '1825', '30'
+    }
+    const numDays=days==='max'?99999:Number(days);
+    // CoinGecko auto-selects interval based on days — we just hint it
+    const intervalParam=numDays<=90?'&interval=hourly':'';
+    // Use direct fetch (bypasses queue) so chart loads fast without waiting for other requests
+    const path=`/coins/${id}/market_chart?vs_currency=usd&days=${apiDays}${intervalParam}`;
+    const mc=await apiFetchDirect(path,600000,2);
+    if(!mc||!mc.prices||!mc.prices.length)throw new Error('empty');
 
-    // Step 1: fetch market_chart for price+volume (preserves real timestamps)
-    const mcPath=`/coins/${id}/market_chart?vs_currency=usd&days=${d}${days!=='max'?'&interval='+interval:''}`;
-    const mc=await apiFetch(mcPath,600000);
-    if(!mc||!mc.prices||!mc.prices.length)throw new Error('no data');
+    const prices=mc.prices;       // [[ts_ms, price], ...]
+    const vols=mc.total_volumes||[]; // [[ts_ms, vol], ...]
 
-    const prices=mc.prices;          // [[ts, price], ...]
-    const vols=mc.total_volumes||[]; // [[ts, vol], ...]
-
-    // Build a volume map keyed by timestamp (nearest match within tolerance)
-    const volArr=vols.map(v=>({t:v[0],v:v[1]}));
+    // Binary-search nearest volume for a timestamp
     function nearestVol(ts){
-      // binary-search-style find closest
-      let best=0,bestDist=Infinity;
-      for(let i=0;i<volArr.length;i++){const d=Math.abs(volArr[i].t-ts);if(d<bestDist){bestDist=d;best=i;}}
-      return bestDist<86400000*2?volArr[best].v:0;
+      if(!vols.length)return 0;
+      let lo=0,hi=vols.length-1;
+      while(lo<hi){const m=(lo+hi)>>1;if(vols[m][0]<ts)lo=m+1;else hi=m;}
+      const d1=Math.abs(vols[lo][0]-ts);
+      const d2=lo>0?Math.abs(vols[lo-1][0]-ts):Infinity;
+      return d2<d1?vols[lo-1][1]:vols[lo][1];
     }
 
-    // Step 2: group prices into proper OHLC candles by bucket
-    // For hourly data → each price point IS a candle
-    // For daily data → group by calendar day using UTC date
-    ST.candles=[];
-    if(interval==='hourly'||numDays<=2){
-      // Each point = 1 candle (no grouping needed)
+    // Detect actual interval from data spacing
+    const avgGapMs=prices.length>1?(prices[prices.length-1][0]-prices[0][0])/(prices.length-1):86400000;
+    const isHourly=avgGapMs<7200000; // <2h gap means hourly data
+
+    if(isHourly){
+      // Each price point → 1 candle. Open = prev close.
       for(let i=0;i<prices.length;i++){
-        const ts=prices[i][0],px=prices[i][1];
-        const prev=i>0?prices[i-1][1]:px;
-        ST.candles.push({t:ts,o:prev,h:Math.max(prev,px),l:Math.min(prev,px),c:px,v:nearestVol(ts)});
+        const [ts,px]=prices[i];
+        const prevPx=i>0?prices[i-1][1]:px;
+        ST.candles.push({t:ts,o:prevPx,h:Math.max(prevPx,px),l:Math.min(prevPx,px),c:px,v:nearestVol(ts)});
       }
     }else{
-      // Group by day using UTC date string as key
-      const dayMap=new Map();
+      // Daily data — group by UTC calendar day to avoid duplicate dates
+      const dayMap=new Map(); // "YYYY-MM-DD" → {ts, pxArr}
       prices.forEach(([ts,px])=>{
-        const key=new Date(ts).toISOString().slice(0,10); // "YYYY-MM-DD"
-        if(!dayMap.has(key))dayMap.set(key,[]);
-        dayMap.get(key).push({ts,px});
+        const d=new Date(ts);
+        const key=d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');
+        if(!dayMap.has(key))dayMap.set(key,{ts,pxArr:[]});
+        const entry=dayMap.get(key);
+        entry.pxArr.push(px);
+        if(ts<entry.ts)entry.ts=ts; // keep earliest ts for this day
       });
-      dayMap.forEach((pts,key)=>{
-        const pxArr=pts.map(p=>p.px);
-        const ts=pts[0].ts;
+      // Build candles from grouped days
+      for(const[key,{ts,pxArr}] of dayMap){
         ST.candles.push({
           t:ts,
           o:pxArr[0],
@@ -738,50 +770,21 @@ async function loadChart(id,days){
           c:pxArr[pxArr.length-1],
           v:nearestVol(ts)
         });
-      });
-      // Sort by timestamp (Map preserves insertion order but let's be safe)
+      }
       ST.candles.sort((a,b)=>a.t-b.t);
     }
 
-    // Step 3: try to overlay real OHLC data (more accurate H/L/O/C)
-    // Match by timestamp proximity rather than by array index
-    try{
-      // CoinGecko OHLC only supports specific day counts: 1,7,14,30,90,180,365,max
-      const allowedDays=['1','7','14','30','90','180','365','max'];
-      const ohlcDays=allowedDays.includes(d)?d:(numDays<=7?'7':numDays<=14?'14':numDays<=30?'30':numDays<=90?'90':numDays<=180?'180':numDays<=365?'365':'max');
-      if(ohlcDays===d||numDays>90){// only fetch if it won't add an extra call for a different range
-        const ohlc=await apiFetch(`/coins/${id}/ohlc?vs_currency=usd&days=${ohlcDays}`,600000);
-        if(ohlc&&ohlc.length){
-          // Build a fast timestamp→OHLC map
-          const ohlcMap=new Map();
-          ohlc.forEach(r=>ohlcMap.set(r[0],{o:r[1],h:r[2],l:r[3],c:r[4]}));
-          // For each candle find the closest OHLC entry within 25 hours
-          const tol=numDays<=7?7200000:90000000; // 2h or 25h tolerance
-          ST.candles=ST.candles.map(c=>{
-            let best=null,bestDist=Infinity;
-            ohlcMap.forEach((v,ots)=>{const dist=Math.abs(ots-c.t);if(dist<bestDist&&dist<tol){bestDist=dist;best=v;}});
-            return best?{...c,o:best.o,h:best.h,l:best.l,c:best.c}:c;
-          });
-        }
-      }
-    }catch(e){/* OHLC overlay optional */}
+    if(!ST.candles.length)throw new Error('no candles built');
 
-    // Validate: remove any candles where timestamps look wrong (duplicate dates etc)
-    const seen=new Set();
-    ST.candles=ST.candles.filter(c=>{
-      const key=new Date(c.t).toISOString().slice(0,10);
-      if(seen.has(key))return false;
-      seen.add(key);return true;
-    });
-    ST.candles.sort((a,b)=>a.t-b.t);
-
-    // Default view: show last 80 candles but allow scroll back to the start
-    const defaultView=Math.min(80,ST.candles.length);
-    ST.zoom={s:Math.max(0,ST.candles.length-defaultView),r:defaultView};
+    // Show last ~120 candles by default; full history available by scrolling left
+    const defView=Math.min(120,ST.candles.length);
+    ST.zoom={s:Math.max(0,ST.candles.length-defView),r:defView};
     renderChart();
+
   }catch(e){
-    console.warn('Chart load failed:',e);
-    synthCandles();renderChart();
+    console.warn('Chart load failed:',e.message||e);
+    synthCandles();
+    renderChart();
   }
   document.getElementById('cLoad').style.display='none';
 }
@@ -1271,7 +1274,12 @@ document.getElementById('priceCanvas').addEventListener('mouseleave',()=>documen
 async function setTF(btn,tf){document.querySelectorAll('.tf').forEach(b=>b.classList.remove('on'));btn.classList.add('on');ST.tf=tf;await loadChart(ST.coin.id,tf);}
 function setCT(t){ST.ct=t;document.getElementById('candleBtn').classList.toggle('on',t==='candle');document.getElementById('lineBtn').classList.toggle('on',t==='line');renderChart();}
 function toggleInd(n){ST.inds.has(n)?ST.inds.delete(n):ST.inds.add(n);document.getElementById('i'+n.toUpperCase()).classList.toggle('on');renderChart();}
-async function doRefresh(){CACHE.del(getUrl(`/coins/${ST.coin.id}/market_chart?vs_currency=usd&days=${ST.tf}&interval=${+ST.tf<=7?'hourly':'daily'}`));await loadChart(ST.coin.id,ST.tf);}
+async function doRefresh(){
+  // Clear all cached entries for this coin's chart data
+  const id=ST.coin.id;
+  Object.keys(CACHE.store).forEach(k=>{if(k.includes('/'+id+'/market_chart'))CACHE.del(k);});
+  await loadChart(id,ST.tf);
+}
 
 /* indicator info tooltips */
 const IT={
@@ -1286,79 +1294,132 @@ function showIT(e,n){const t=document.getElementById('iTip'),i=IT[n];if(!i)retur
 function hideIT(){document.getElementById('iTip').style.display='none';}
 
 /* ══════════════════ TIME MACHINE ══════════════════ */
-// Set max date to today on init
 function initTimeMachine(){
   const inp=document.getElementById('tmDate');
   const today=new Date();
   inp.max=today.toISOString().slice(0,10);
-  // Default to 2 years ago as a useful starting point
-  const twoYearsAgo=new Date(today);twoYearsAgo.setFullYear(twoYearsAgo.getFullYear()-2);
-  inp.value=twoYearsAgo.toISOString().slice(0,10);
+  // Default to 2 years ago
+  const ago=new Date(today);ago.setFullYear(ago.getFullYear()-2);
+  inp.value=ago.toISOString().slice(0,10);
 }
 
 async function runTimeMachine(){
   const inp=document.getElementById('tmDate');
-  const dateStr=inp.value;
+  const dateStr=inp.value; // "YYYY-MM-DD"
   if(!dateStr){showTMError('Please pick a date first.');return;}
-  const targetDate=new Date(dateStr+'T12:00:00Z');// noon UTC to avoid timezone edge cases
+
+  // Parse the date in local time then treat as UTC noon to avoid timezone shifts
+  const parts=dateStr.split('-');
+  const yyyy=parseInt(parts[0]),mm=parseInt(parts[1])-1,dd=parseInt(parts[2]);
+  const targetDate=new Date(Date.UTC(yyyy,mm,dd,12,0,0));
   const now=new Date();
+
   if(targetDate>now){showTMError('Cannot look up a future date!');return;}
-  // CoinGecko /history endpoint requires date in dd-mm-yyyy
-  const dd=String(targetDate.getUTCDate()).padStart(2,'0');
-  const mm=String(targetDate.getUTCMonth()+1).padStart(2,'0');
-  const yyyy=targetDate.getUTCFullYear();
-  const cgDate=`${dd}-${mm}-${yyyy}`;
-  // Friendly display date
+  if(yyyy<2010){showTMError('Price data is not available before 2010.');return;}
+
+  // CoinGecko /history endpoint uses dd-mm-yyyy format
+  const cgDate=String(dd).padStart(2,'0')+'-'+String(mm+1).padStart(2,'0')+'-'+String(yyyy);
   const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const displayDate=MON[targetDate.getUTCMonth()]+' '+targetDate.getUTCDate()+', '+yyyy;
+  const displayDate=MON[mm]+' '+dd+', '+yyyy;
 
-  // Show loading
   const loadEl=document.getElementById('tmLoading'),resEl=document.getElementById('tmResult');
-  loadEl.classList.add('show');resEl.classList.remove('show');resEl.innerHTML='';
+  loadEl.classList.add('show');
+  resEl.classList.remove('show');
+  resEl.innerHTML='';
 
+  // Strategy 1: Try CoinGecko /history endpoint directly (bypasses queue)
   try{
-    // Fetch historical price for this specific date
-    const hist=await apiFetch(`/coins/${ST.coin.id}/history?date=${cgDate}&localization=false`,86400000);// cache 24h
+    const path=`/coins/${ST.coin.id}/history?date=${cgDate}&localization=false`;
+    // Clear any cached failure for this URL
+    const url=getUrl(path);
+    CACHE.del(url);
+    const hist=await apiFetchDirect(path,86400000,2);
     loadEl.classList.remove('show');
-    if(!hist||!hist.market_data||!hist.market_data.current_price){
-      showTMError(`No price data available for ${displayDate}. This token may not have existed yet.`);return;
+
+    if(hist&&hist.market_data&&hist.market_data.current_price&&hist.market_data.current_price.usd!=null){
+      const histPrice=hist.market_data.current_price.usd;
+      showTMSuccess(histPrice,displayDate,hist.market_data.market_cap?.usd,hist.market_data.total_volume?.usd,'CoinGecko History API');
+      scrollChartToDate(targetDate.getTime());
+      return;
     }
-    const histPrice=hist.market_data.current_price.usd;
-    const currentPrice=ST.coin.price;
-    const pctChange=currentPrice&&histPrice?((currentPrice-histPrice)/histPrice*100):null;
-    const pctStr=pctChange!=null?(pctChange>=0?'+':'')+pctChange.toFixed(2)+'%':null;
-    const pctClass=pctChange!=null?(pctChange>=0?'pos':'neg'):'';
-    const histMcap=hist.market_data.market_cap?.usd;
-    const histVol=hist.market_data.total_volume?.usd;
-    resEl.innerHTML=`
-      <span class="tm-r-coin">${ST.coin.name} (${ST.coin.symbol})</span>
-      <span class="tm-r-date">📅 ${displayDate}</span>
-      <span class="tm-r-price">$${fP(histPrice)}</span>
-      ${pctStr?`<span class="tm-r-vs">vs today: <span class="tm-r-change ${pctClass}">${pctStr} ${pctChange>=0?'▲':'▼'}</span></span>`:''}
-      ${histMcap?`<span class="tm-r-note">MCap: $${fL(histMcap)}</span>`:''}
-      ${histVol?`<span class="tm-r-note">Vol: $${fL(histVol)}</span>`:''}
-    `;
-    resEl.classList.add('show');
-    // Also try to scroll the chart to show that date
-    scrollChartToDate(targetDate.getTime());
+    // history endpoint returned but no price data
+    throw new Error('no_price_in_response');
   }catch(e){
+    // 404 means token didn't exist yet
+    if(e.message==='404'){
+      loadEl.classList.remove('show');
+      showTMError(`${ST.coin.name} did not exist on ${displayDate}. It may have launched after this date.`);
+      return;
+    }
+    // Fall through to Strategy 2
+  }
+
+  // Strategy 2: Use market_chart range around that date (±3 days window)
+  try{
+    const fromTs=Math.floor((targetDate.getTime()-86400000*2)/1000);
+    const toTs=Math.floor((targetDate.getTime()+86400000*2)/1000);
+    const path=`/coins/${ST.coin.id}/market_chart/range?vs_currency=usd&from=${fromTs}&to=${toTs}`;
+    CACHE.del(getUrl(path));
+    const mc=await apiFetchDirect(path,86400000,2);
     loadEl.classList.remove('show');
-    // Try checking if it's in already-loaded candles
-    const ts=targetDate.getTime();
-    const closest=ST.candles.reduce((best,c)=>(!best||Math.abs(c.t-ts)<Math.abs(best.t-ts))?c:best,null);
-    if(closest&&Math.abs(closest.t-ts)<86400000*3){
-      const displayDate2=MON[new Date(closest.t).getUTCMonth()]+' '+new Date(closest.t).getUTCDate()+', '+new Date(closest.t).getUTCFullYear();
-      resEl.innerHTML=`
-        <span class="tm-r-coin">${ST.coin.name}</span>
-        <span class="tm-r-date">📅 ~${displayDate2}</span>
-        <span class="tm-r-price">$${fP(closest.c)}</span>
-        <span class="tm-r-note">(from chart data)</span>`;
-      resEl.classList.add('show');
-      scrollChartToDate(closest.t);
-    }else{
-      showTMError('Could not retrieve price data. The token may not have existed at that date, or try adding your API key for better access.');
+
+    if(mc&&mc.prices&&mc.prices.length){
+      // Find closest price to target date
+      const targetTs=targetDate.getTime();
+      const closest=mc.prices.reduce((best,p)=>
+        Math.abs(p[0]-targetTs)<Math.abs(best[0]-targetTs)?p:best
+      );
+      const closeDate=new Date(closest[0]);
+      const closeDateStr=MON[closeDate.getUTCMonth()]+' '+closeDate.getUTCDate()+', '+closeDate.getUTCFullYear();
+      const vol=mc.total_volumes?mc.total_volumes.reduce((b,v)=>Math.abs(v[0]-targetTs)<Math.abs(b[0]-targetTs)?v:b,[0,0])[1]:null;
+      showTMSuccess(closest[1],closeDateStr,null,vol,'market chart');
+      scrollChartToDate(closest[0]);
+      return;
+    }
+    throw new Error('empty range');
+  }catch(e){
+    if(e.message==='404'){
+      loadEl.classList.remove('show');
+      showTMError(`${ST.coin.name} did not exist on ${displayDate}.`);
+      return;
     }
   }
+
+  // Strategy 3: Search already-loaded candles
+  loadEl.classList.remove('show');
+  const targetTs=targetDate.getTime();
+  if(ST.candles.length){
+    const best=ST.candles.reduce((b,c)=>Math.abs(c.t-targetTs)<Math.abs(b.t-targetTs)?c:b);
+    const diffDays=Math.abs(best.t-targetTs)/86400000;
+    if(diffDays<10){
+      const bd=new Date(best.t);
+      const bdStr=MON[bd.getUTCMonth()]+' '+bd.getUTCDate()+', '+bd.getUTCFullYear();
+      showTMSuccess(best.c,bdStr,null,best.v,'chart data ('+Math.round(diffDays)+' day offset)');
+      scrollChartToDate(best.t);
+      return;
+    }
+  }
+
+  // All strategies failed
+  showTMError(`Could not retrieve price data for ${displayDate}. ${API_KEY?'This may be a temporary API issue — try again in a moment.':'Add a free API key (🔑 button) for better data access.'}`);
+}
+
+function showTMSuccess(price,dateStr,mcap,vol,source){
+  const resEl=document.getElementById('tmResult');
+  const currentPrice=ST.coin.price;
+  const pctChange=currentPrice&&price?((currentPrice-price)/price*100):null;
+  const pctStr=pctChange!=null?(pctChange>=0?'+':'')+pctChange.toFixed(2)+'%':null;
+  const pctClass=pctChange!=null?(pctChange>=0?'pos':'neg'):'';
+  const emoji=pctChange!=null?(pctChange>=0?'▲':'▼'):'';
+  resEl.innerHTML=`
+    <span class="tm-r-coin">${ST.coin.name} <span style="color:var(--text3);font-size:.7rem;">${ST.coin.symbol}</span></span>
+    <span class="tm-r-date">📅 ${dateStr}</span>
+    <span class="tm-r-price">$${fP(price)}</span>
+    ${pctStr?`<span class="tm-r-vs">vs today <span class="tm-r-change ${pctClass}">${pctStr} ${emoji}</span></span>`:''}
+    ${mcap?`<span class="tm-r-note">MCap $${fL(mcap)}</span>`:''}
+    ${vol?`<span class="tm-r-note">Vol $${fL(vol)}</span>`:''}
+    <span class="tm-r-note" style="color:var(--text3);font-size:.63rem;">via ${source}</span>`;
+  resEl.classList.add('show');
 }
 
 function showTMError(msg){
@@ -1369,37 +1430,41 @@ function showTMError(msg){
 }
 
 function scrollChartToDate(targetTs){
-  // Find the candle index closest to target timestamp
   if(!ST.candles.length)return;
-  let bestIdx=0,bestDist=Infinity;
-  ST.candles.forEach((c,i)=>{const d=Math.abs(c.t-targetTs);if(d<bestDist){bestDist=d;bestIdx=i;}});
-  // Center the view around that candle
+  // Find closest candle
+  let best=0,bestDist=Infinity;
+  ST.candles.forEach((c,i)=>{const d=Math.abs(c.t-targetTs);if(d<bestDist){bestDist=d;best=i;}});
+  // Center view around it
   const half=Math.floor(ST.zoom.r/2);
-  ST.zoom.s=Math.max(0,Math.min(ST.candles.length-ST.zoom.r,bestIdx-half));
+  ST.zoom.s=Math.max(0,Math.min(ST.candles.length-ST.zoom.r,best-half));
   renderChart();
-  // Draw a marker line on the chart at that position
-  highlightDateOnChart(bestIdx);
+  // Draw Time Machine marker
+  setTimeout(()=>drawTMMarker(best),50);
 }
 
-function highlightDateOnChart(candleIdx){
-  // Draw a temporary purple vertical line on the price canvas
+function drawTMMarker(candleIdx){
   const pc=document.getElementById('priceCanvas');
+  if(!pc)return;
   const ctx=pc.getContext('2d');
   const{s,r}=ST.zoom;
   const visIdx=candleIdx-s;
   if(visIdx<0||visIdx>=r)return;
-  const pL=4,pR=78,cW=pc.width-pL-pR,cH=pc.height-32;
-  const cw=cW/r,x=pL+(visIdx+.5)*cw;
+  const pL=4,pR=78,W=pc.width,pH=pc.height;
+  const cW=W-pL-pR,cw=cW/r,x=pL+(visIdx+.5)*cw;
   ctx.save();
-  ctx.strokeStyle='rgba(123,47,255,.8)';ctx.lineWidth=2;ctx.setLineDash([5,4]);
-  ctx.beginPath();ctx.moveTo(x,12);ctx.lineTo(x,12+cH);ctx.stroke();
-  ctx.setLineDash([]);
-  // Label
-  ctx.fillStyle='rgba(123,47,255,.9)';ctx.fillRect(x-28,8,56,14);
-  ctx.fillStyle='#fff';ctx.font='bold 8px Share Tech Mono';ctx.textAlign='center';ctx.fillText('◀ TIME MACHINE',x,18);
+  // Glowing vertical line
+  ctx.shadowColor='rgba(123,47,255,.8)';ctx.shadowBlur=8;
+  ctx.strokeStyle='rgba(123,47,255,.9)';ctx.lineWidth=2;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(x,12);ctx.lineTo(x,pH-20);ctx.stroke();
+  ctx.setLineDash([]);ctx.shadowBlur=0;
+  // Label pill
+  const label='⏳ TIME MACHINE';const lw=ctx.measureText(label).width+16;
+  ctx.fillStyle='rgba(123,47,255,.9)';
+  ctx.beginPath();ctx.roundRect?ctx.roundRect(x-lw/2,3,lw,13,3):ctx.fillRect(x-lw/2,3,lw,13);
+  ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 8px Share Tech Mono';ctx.textAlign='center';ctx.fillText(label,x,12);
   ctx.restore();
-  // Fade out after 4 seconds
-  setTimeout(()=>renderChart(),4000);
+  setTimeout(()=>renderChart(),4500);
 }
 function fP(p){if(p==null)return'—';if(p===0)return'0.00';const a=Math.abs(p);if(a<.00001)return p.toFixed(8);if(a<.001)return p.toFixed(6);if(a<.1)return p.toFixed(5);if(a<1)return p.toFixed(4);if(a<100)return p.toFixed(2);if(a<10000)return p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});return p.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fL(n){if(!n||n<=0)return'—';if(n>=1e12)return(n/1e12).toFixed(2)+'T';if(n>=1e9)return(n/1e9).toFixed(2)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toFixed(2);}
