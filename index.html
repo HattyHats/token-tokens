@@ -2974,8 +2974,86 @@ function checkAlerts(){
   if(changed){ renderAlerts(); saveState(); }
 }
 
+function playAlertDing(){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Three-note ascending ding: C5 → E5 → G5
+    const notes = [523.25, 659.25, 783.99];
+    notes.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+      const start = ctx.currentTime + i * 0.18;
+      const end   = start + 0.55;
+
+      // Envelope: quick attack, smooth exponential decay
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.45, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, end);
+
+      osc.start(start);
+      osc.stop(end);
+    });
+
+    // Auto-close context after sound finishes
+    setTimeout(() => ctx.close(), 1200);
+  }catch(e){
+    console.warn('Alert sound failed:', e);
+  }
+}
+
+function playAlertDing(){
+  try{
+    const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+
+    // Three-note ascending ding: G5 → B5 → D6  (major chord, bright & clear)
+    const notes = [
+      {freq:784.0, start:0.00, dur:0.30},
+      {freq:987.8, start:0.14, dur:0.30},
+      {freq:1174.7,start:0.28, dur:0.50},
+    ];
+
+    notes.forEach(({freq, start, dur})=>{
+      const osc  = ctx.createOscillator();
+      const gn   = ctx.createGain();
+      osc.connect(gn);
+      gn.connect(gain);
+
+      osc.type      = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+
+      // Attack → sustain → release envelope
+      const t0 = ctx.currentTime + start;
+      gn.gain.setValueAtTime(0, t0);
+      gn.gain.linearRampToValueAtTime(0.35, t0 + 0.015);   // fast attack
+      gn.gain.setValueAtTime(0.35, t0 + dur * 0.4);         // sustain
+      gn.gain.exponentialRampToValueAtTime(0.001, t0 + dur); // smooth release
+
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.01);
+    });
+
+    // Auto-close context after sound finishes
+    setTimeout(()=>ctx.close(), 1200);
+  }catch(e){
+    console.warn('Alert sound failed:', e);
+  }
+}
+
 function triggerAlert(alert, currentPrice){
   const msg = `${alert.symbol} is now ${alert.dir} $${fP(alert.price)}! Current: $${fP(currentPrice)}`;
+
+  // Play ding sound
+  playAlertDing();
+
   // Browser notification
   if('Notification' in window && Notification.permission === 'granted'){
     new Notification('🔔 Token-Tokens Alert', {
