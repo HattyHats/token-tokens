@@ -129,7 +129,7 @@ button{cursor:pointer;font-family:inherit;}
 .layout{display:grid;grid-template-columns:295px 1fr;height:calc(100vh - 60px);}
 
 /* ── SIDEBAR ─────────────────────────────────────────── */
-.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;overflow-y:auto;}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
 .sb-top{padding:10px;border-bottom:1px solid var(--border);position:relative;}
 .sb-row{display:flex;gap:6px;align-items:center;}
 .sb-in{flex:1;background:var(--bg);border:1.5px solid var(--border);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.93rem;padding:8px 12px;border-radius:5px;outline:none;transition:border-color .2s,box-shadow .2s;}
@@ -470,28 +470,30 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── COIN INFO BUTTON & POPUP ─────────────────────────── */
 .cc-info-btn{
-  position:absolute;left:5px;bottom:5px;
-  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);
+  position:absolute;left:4px;bottom:4px;
+  background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);
   color:var(--accent);font-family:'Share Tech Mono',monospace;
-  font-size:.55rem;padding:1px 5px;border-radius:10px;
-  opacity:0;transition:opacity .2s;cursor:pointer;line-height:1.6;
-  z-index:10;
+  font-size:.6rem;padding:2px 7px;border-radius:10px;
+  opacity:0;transition:opacity .2s,background .2s;cursor:pointer;line-height:1.6;
+  z-index:10;white-space:nowrap;
 }
 .cc:hover .cc-info-btn{opacity:1;}
-.cc-info-btn:hover{background:rgba(0,212,255,.25);}
+.cc-info-btn:hover{background:rgba(0,212,255,.3);transform:scale(1.05);}
 
 /* Info popup card */
 .coin-info-popup{
-  position:fixed;z-index:800;
-  width:260px;
+  position:fixed;z-index:9500;
+  width:280px;
   background:linear-gradient(145deg,var(--bg2),var(--surface));
   border:1px solid var(--border);
   border-radius:10px;
   box-shadow:0 20px 50px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04),0 0 30px rgba(0,212,255,.06);
-  pointer-events:none;
+  pointer-events:auto;
   display:none;
   animation:mIn .18s ease;
   overflow:hidden;
+  overflow-y:auto;
+  max-height:420px;
 }
 .coin-info-popup.show{display:block;}
 .cip-hdr{
@@ -2145,7 +2147,10 @@ function renderWL(prev){
       <div class="cc-info"><div class="cc-name">${c.name}</div><div class="cc-sym">${c.symbol||''}/USD</div></div>
       <div class="cc-r"><div class="cc-price">${c.price?'$'+fP(c.price):'—'}</div><div class="cc-chg ${cls}">${c.price?sign+c.change.toFixed(2)+'%':'—'}</div></div>
       <button class="cc-rm" onclick="removeFromWL('${c.id}',event)">✕</button>
-      <button class="cc-info-btn" onmouseenter="showCoinInfo(event,'${c.id}','${esc(c.name)}','${c.symbol||''}','${c.image||''}')" onmouseleave="hideCoinInfo()" onclick="e=>e.stopPropagation()">ℹ</button>
+            <button class="cc-info-btn"
+        data-id="${c.id}" data-name="${esc(c.name)}" data-sym="${c.symbol||''}" data-img="${esc(c.image||'')}"
+        onmouseenter="cipHover(this)"
+        onclick="event.stopPropagation()">ℹ info</button>
     </div>`;
   }).join('');
 }
@@ -2278,98 +2283,154 @@ function setupModalSearch(){
   });
 }
 
+let _fetchModalAbort = null;
 async function fetchModal(){
-  const tg=document.getElementById('tGrid');
-  tg.innerHTML=`<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;"><div class="spin" style="margin:0 auto 12px;"></div>Loading tokens…</div>`;
-  document.getElementById('mPg').innerHTML='';
-  const b=ST.mb;
+  // Cancel any previous in-flight request
+  if (_fetchModalAbort) { _fetchModalAbort.abort(); }
+  _fetchModalAbort = new AbortController();
+  const sig = _fetchModalAbort.signal;
 
-  try{
-    let data=[];
+  const tg = document.getElementById('tGrid');
+  tg.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;"><div class="spin" style="margin:0 auto 12px;"></div>Loading tokens…</div>`;
+  document.getElementById('mPg').innerHTML = '';
+  const b = ST.mb;
 
-    if(b.q.length>=2){
-      // ── SEARCH via CoinGecko /search then /coins/markets for prices ──
-      const sr=await apiFetch(`/search?query=${encodeURIComponent(b.q)}`,30000);
-      const allCoins=sr.coins||[];
-      b.total=allCoins.length;
-      const page=allCoins.slice((b.page-1)*b.per, b.page*b.per);
-      if(!page.length){
-        tg.innerHTML=`<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);">No results found for "${b.q}"</div>`;
+  try {
+    let data = [];
+
+    if (b.q.length >= 2) {
+      // ── SEARCH: /search for IDs, then /coins/markets for prices ──────────
+      const sr = await cgFetch(`/search?query=${encodeURIComponent(b.q)}`, 30000, sig);
+      const allCoins = sr.coins || [];
+      b.total = allCoins.length;
+      const pageCoins = allCoins.slice((b.page - 1) * b.per, b.page * b.per);
+      if (!pageCoins.length) {
+        tg.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);">No results found for "${b.q}"</div>`;
         return;
       }
-      const ids=page.map(c=>c.id).join(',');
-      let priceMap={};
-      try{
-        const pd=await apiFetch(`/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=${b.per}&page=1&sparkline=false&price_change_percentage=24h`,45000);
-        pd.forEach(d=>priceMap[d.id]=d);
-      }catch(e){}
-      // Merge: preserve search result order, enrich with live price data
-      data=page.map(c=>{
-        const p=priceMap[c.id];
+      const ids = pageCoins.map(c => c.id).join(',');
+      let priceMap = {};
+      try {
+        const pd = await cgFetch(`/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h`, 45000, sig);
+        pd.forEach(d => priceMap[d.id] = d);
+      } catch(e) {}
+      data = pageCoins.map(c => {
+        const p = priceMap[c.id];
         return {
           id:     c.id,
           name:   c.name,
-          symbol: (c.symbol||'').toUpperCase(),
-          price:  p?.current_price    ?? null,
-          change: p?.price_change_percentage_24h ?? null,
-          mcap:   p?.market_cap       ?? null,
-          vol:    p?.total_volume     ?? null,
-          image:  p?.image || c.thumb || '',
-          rank:   p?.market_cap_rank  || c.market_cap_rank || null,
+          symbol: (c.symbol || '').toUpperCase(),
+          price:  p ? p.current_price : null,
+          change: p ? p.price_change_percentage_24h : null,
+          mcap:   p ? p.market_cap : null,
+          vol:    p ? p.total_volume : null,
+          image:  (p && p.image) ? p.image : (c.thumb || ''),
+          rank:   p ? p.market_cap_rank : (c.market_cap_rank || null),
         };
       });
+
     } else {
-      // ── BROWSE via CoinGecko /coins/markets ──────────────────────────────
-      // Gainers/Losers: free tier doesn't support price_change sort server-side.
-      // We fetch by market_cap_desc and sort client-side for those modes.
-      const cat = CG_CATS[b.cat] || '';
+      // ── BROWSE: /coins/markets with category + sort ───────────────────────
+      const cat  = CG_CATS[b.cat] || '';
       const catParam = cat ? `&category=${encodeURIComponent(cat)}` : '';
-      const needsClientSort = b.sort === 'price_change_desc_24h' || b.sort === 'price_change_asc_24h';
-      // For client-side sort we fetch a larger pool (250 coins) then sort + paginate
-      const fetchSort  = needsClientSort ? 'market_cap_desc' : (CG_SORT_MAP[b.sort] || 'market_cap_desc');
-      const fetchPer   = needsClientSort ? 250 : b.per;
-      const fetchPage  = needsClientSort ? 1   : b.page;
-      const url = `/coins/markets?vs_currency=usd${catParam}&order=${fetchSort}&per_page=${fetchPer}&page=${fetchPage}&sparkline=false&price_change_percentage=24h`;
-      // Use longer cache TTL for browse (2 min), shorter for sort changes
-      let raw = await apiFetch(url, needsClientSort ? 120000 : 45000);
+      // Gainers/Losers aren't available on free tier as server-side sort.
+      // Fetch top 250 by mcap and sort client-side.
+      const needsClientSort = (b.sort === 'price_change_desc_24h' || b.sort === 'price_change_asc_24h');
+      const serverSort  = needsClientSort ? 'market_cap_desc' : (CG_SORT_MAP[b.sort] || 'market_cap_desc');
+      const fetchPer    = needsClientSort ? 250 : b.per;
+      const fetchPage   = needsClientSort ? 1   : b.page;
+      const url = `/coins/markets?vs_currency=usd${catParam}&order=${serverSort}&per_page=${fetchPer}&page=${fetchPage}&sparkline=false&price_change_percentage=24h`;
+      let raw = await cgFetch(url, needsClientSort ? 600000 : 600000, sig);
 
       const mapCoin = d => ({
         id:     d.id,
         name:   d.name,
-        symbol: (d.symbol||'').toUpperCase(),
-        price:  d.current_price    ?? null,
-        change: d.price_change_percentage_24h ?? null,
-        mcap:   d.market_cap       ?? null,
-        vol:    d.total_volume     ?? null,
-        image:  d.image            || '',
-        rank:   d.market_cap_rank  || null,
-        high24: d.high_24h         || null,
-        low24:  d.low_24h          || null,
+        symbol: (d.symbol || '').toUpperCase(),
+        price:  d.current_price     != null ? d.current_price     : null,
+        change: d.price_change_percentage_24h != null ? d.price_change_percentage_24h : null,
+        mcap:   d.market_cap        != null ? d.market_cap        : null,
+        vol:    d.total_volume      != null ? d.total_volume      : null,
+        image:  d.image  || '',
+        rank:   d.market_cap_rank   || null,
+        high24: d.high_24h          || null,
+        low24:  d.low_24h           || null,
       });
 
-      if(needsClientSort){
-        // Sort the full pool client-side then paginate
-        raw.sort((a,z) => {
-          const av = a.price_change_percentage_24h ?? (b.sort==='price_change_desc_24h' ? -Infinity : Infinity);
-          const zv = z.price_change_percentage_24h ?? (b.sort==='price_change_desc_24h' ? -Infinity : Infinity);
-          return b.sort === 'price_change_desc_24h' ? zv - av : av - zv;
+      if (needsClientSort) {
+        const asc = (b.sort === 'price_change_asc_24h');
+        raw.sort((a, z) => {
+          const av = (a.price_change_percentage_24h != null) ? a.price_change_percentage_24h : (asc ? Infinity : -Infinity);
+          const zv = (z.price_change_percentage_24h != null) ? z.price_change_percentage_24h : (asc ? Infinity : -Infinity);
+          return asc ? av - zv : zv - av;
         });
         b.total = raw.length;
-        raw = raw.slice((b.page-1)*b.per, b.page*b.per);
+        raw = raw.slice((b.page - 1) * b.per, b.page * b.per);
       } else {
-        b.total = cat ? (raw.length < b.per ? (b.page-1)*b.per+raw.length : b.page*b.per+b.per) : 18000;
+        b.total = cat ? Math.max(raw.length, b.per * b.page) : 18000;
       }
       data = raw.map(mapCoin);
     }
 
-    b.data=data;
-    document.getElementById('mCnt').textContent=b.q?`${b.total} results`:`Page ${b.page}`;
+    b.data = data;
+    document.getElementById('mCnt').textContent = b.q ? `${b.total} results` : `Page ${b.page}`;
     renderModal();
     renderMPg();
-  }catch(err){
-    console.error('fetchModal failed:',err);
-    tg.innerHTML=`<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;">⚠ Request failed — please wait a moment and try again.<br><br><small style="color:var(--text3)">This is usually a temporary API rate limit. Wait 30 seconds and try again.</small></div>`;
+
+  } catch(err) {
+    if (err && err.name === 'AbortError') return; // cancelled by newer request, ignore
+    console.error('fetchModal error:', err);
+    tg.innerHTML = `<div style="grid-column:1/-1;padding:32px 20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;line-height:2;">
+      <div style="font-size:1.5rem;margin-bottom:8px;">⚠</div>
+      <div style="color:var(--text);margin-bottom:8px;">Could not load token data</div>
+      <div style="font-size:.75rem;margin-bottom:16px;">${err.message === 'Rate limited (429)' ? '⏳ CoinGecko rate limit hit. Wait 30 seconds and try again.' : 'Error: '+(err.message||'Network error')}</div>
+      <button onclick="fetchModal()" style="background:rgba(0,212,255,.1);border:1px solid var(--accent);color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:.78rem;padding:8px 20px;border-radius:5px;cursor:pointer;margin-top:4px;">↻ Try Again</button>
+    </div>`;
   }
+}
+
+// cgFetch: direct fetch for modal/popup — bypasses queue, has own cache + retry
+// Separate from the background apiFetch queue so UI feels instant
+let _cgAbort = null; // cancel previous in-flight modal request
+
+async function cgFetch(path, ttl=60000, signal=null) {
+  const url = getUrl(path);
+  const hit = CACHE.get(url);
+  if (hit) return hit;
+
+  const delays = [0, 5000, 12000]; // immediate, then backoff on rate limit
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      // Show waiting message in modal
+      const tg = document.getElementById('tGrid');
+      if (tg && tg.innerHTML.includes('spin')) {
+        tg.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;">
+          <div class="spin" style="margin:0 auto 12px;"></div>
+          Rate limited — retrying in ${delays[attempt]/1000}s…
+        </div>`;
+      }
+      await sleep(delays[attempt]);
+    }
+    try {
+      const opts = { headers: { 'Accept': 'application/json' } };
+      if (signal) opts.signal = signal;
+      const r = await fetch(url, opts);
+      if (r.status === 429) {
+        lastErr = new Error('Rate limited (429)');
+        continue;
+      }
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      if (ttl > 0) CACHE.set(url, data, ttl);
+      setDot('ok');
+      return data;
+    } catch(e) {
+      if (e.name === 'AbortError') throw e;
+      lastErr = e;
+    }
+  }
+  setDot('err');
+  throw lastErr || new Error('Request failed');
 }
 
 function renderModal(){
@@ -4142,48 +4203,80 @@ async function initApp(){
 /* ══════════════════ COIN INFO POPUP ══════════════════════ */
 let _cipTimeout=null, _cipHideTimeout=null, _cipCurrentId=null;
 
+
+// cipHover: read data-* attrs from button and call showCoinInfo safely
+function cipHover(btn){
+  showCoinInfo(
+    {target:btn, stopPropagation:()=>{}},
+    btn.dataset.id,
+    btn.dataset.name,
+    btn.dataset.sym,
+    btn.dataset.img
+  );
+}
 async function showCoinInfo(e, id, name, symbol, image){
   e.stopPropagation();
   clearTimeout(_cipHideTimeout);
-  const popup=document.getElementById('coinInfoPopup');
-  if(!popup)return;
+  clearTimeout(_cipTimeout);
 
-  // Position popup
-  const rect=e.target.getBoundingClientRect();
-  let left=rect.right+10, top=rect.top-10;
-  if(left+270>window.innerWidth) left=rect.left-275;
-  if(top+400>window.innerHeight) top=window.innerHeight-420;
-  popup.style.left=Math.max(8,left)+'px';
-  popup.style.top=Math.max(8,top)+'px';
+  const popup = document.getElementById('coinInfoPopup');
+  if(!popup) return;
 
-  // Set header immediately with what we know
-  const col=rc(symbol||'');
-  const cipHdr=document.getElementById('cipHdr');
-  if(image){
-    document.getElementById('cipImgFb').outerHTML=`<img class="cip-img" id="cipImgEl" src="${image}" alt="" onerror="this.outerHTML='<div class=cip-img-fb id=cipImgFb style=background:${col}22;color:${col};>${(symbol||'?').substring(0,3)}</div>'">`;
-  }else{
-    const fb=document.getElementById('cipImgFb');
-    if(fb){fb.style.background=col+'22';fb.style.color=col;fb.textContent=(symbol||'?').substring(0,3);}
-  }
-  document.getElementById('cipName').textContent=name||'—';
-  document.getElementById('cipSym').textContent=(symbol||'—')+' / USD';
-  document.getElementById('cipBody').innerHTML='<div class="cip-loading"><div class="spin" style="display:inline-block;width:12px;height:12px;border-width:1.5px;vertical-align:middle;margin-right:6px;"></div>Loading info…</div>';
-  popup.classList.add('show');
-  _cipCurrentId=id;
+  // If same coin already loaded and visible, just keep it open
+  if(_cipCurrentId === id && popup.classList.contains('show')) return;
 
-  // Fetch coin detail (cached)
-  if(_cipTimeout)clearTimeout(_cipTimeout);
-  _cipTimeout=setTimeout(async()=>{
-    if(_cipCurrentId!==id)return;
-    try{
-      const data=await apiFetch(`/coins/${encodeURIComponent(id)}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`,120000);
-      if(_cipCurrentId!==id)return;
-      renderCoinInfoPopup(data);
-    }catch(err){
-      if(_cipCurrentId!==id)return;
-      document.getElementById('cipBody').innerHTML='<div class="cip-loading" style="color:var(--red);">⚠ Could not load data</div>';
+  // Position the popup next to the hovered button
+  const rect = e.target.getBoundingClientRect();
+  const pw = 288, ph = 400;
+  let left = rect.right + 12;
+  let top  = rect.top - 10;
+  if(left + pw > window.innerWidth  - 8) left = rect.left - pw - 8;
+  if(left < 8) left = 8;
+  if(top + ph > window.innerHeight - 8) top = window.innerHeight - ph - 8;
+  if(top < 8) top = 8;
+  popup.style.left = left + 'px';
+  popup.style.top  = top  + 'px';
+
+  // Update header — use innerHTML on wrapper, never outerHTML
+  const col = rc(symbol || '');
+  const wrap = document.getElementById('cipImgWrap');
+  if(wrap){
+    if(image){
+      const abbr = (symbol||'?').substring(0,3);
+      wrap.innerHTML = `<img class="cip-img" src="${image}" alt=""
+        onerror="this.outerHTML='<div class=cip-img-fb style=background:${col}22;color:${col};border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:.48rem;font-weight:900;>${abbr}</div>'">`;
+    } else {
+      const abbr = (symbol||'?').substring(0,3);
+      wrap.innerHTML = `<div class="cip-img-fb" style="background:${col}22;color:${col};">${abbr}</div>`;
     }
-  }, 300);
+  }
+  const nameEl = document.getElementById('cipName');
+  const symEl  = document.getElementById('cipSym');
+  const body   = document.getElementById('cipBody');
+  const footer = document.getElementById('cipFooter');
+  if(nameEl) nameEl.textContent = name || '—';
+  if(symEl)  symEl.textContent  = (symbol||'—') + ' / USD';
+  if(body)   body.innerHTML = '<div class="cip-loading"><div class="spin" style="display:inline-block;width:12px;height:12px;border-width:1.5px;vertical-align:middle;margin-right:6px;"></div>Loading info…</div>';
+  if(footer) footer.textContent = 'Hover away to close';
+
+  _cipCurrentId = id;
+  popup.classList.add('show');
+
+  // Fetch full coin data — 5 min cache so repeated hovers are instant
+  _cipTimeout = setTimeout(async () => {
+    if(_cipCurrentId !== id) return;
+    try {
+      const data = await cgFetch(
+        `/coins/${encodeURIComponent(id)}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`,
+        300000
+      );
+      if(_cipCurrentId !== id) return;
+      renderCoinInfoPopup(data);
+    } catch(err) {
+      if(_cipCurrentId !== id) return;
+      if(body) body.innerHTML = '<div class="cip-loading" style="color:var(--red);">⚠ Could not load — check connection</div>';
+    }
+  }, 250);
 }
 
 function renderCoinInfoPopup(d){
@@ -4245,7 +4338,7 @@ function hideCoinInfo(){
     if(popup)popup.classList.remove('show');
     _cipCurrentId=null;
     clearTimeout(_cipTimeout);
-  },120);
+  },400);
 }
 // Attach popup hover listeners - called from initApp after DOM is ready
 function initCoinInfoPopup(){
@@ -4273,7 +4366,7 @@ document.addEventListener('keydown',e=>{
 <!-- ═════ COIN INFO POPUP ═════ -->
 <div class="coin-info-popup" id="coinInfoPopup">
   <div class="cip-hdr" id="cipHdr">
-    <div class="cip-img-fb" id="cipImgFb"></div>
+    <div id="cipImgWrap" style="flex-shrink:0;width:28px;height:28px;"></div>
     <div><div class="cip-name" id="cipName">—</div><div class="cip-sym" id="cipSym">—</div></div>
   </div>
   <div class="cip-body" id="cipBody">
