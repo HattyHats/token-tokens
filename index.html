@@ -259,16 +259,91 @@ button{cursor:pointer;font-family:inherit;}
 
 
 /* ── FEAR & GREED WIDGET ──────────────────────────────── */
-.fg-widget{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:8px 0;}
-.fg-title{font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text3);letter-spacing:.1em;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
-.fg-gauge-wrap{display:flex;align-items:center;gap:12px;}
-.fg-arc{flex-shrink:0;}
-.fg-info{display:flex;flex-direction:column;gap:2px;}
-.fg-score{font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:700;line-height:1;}
-.fg-label{font-family:'Share Tech Mono',monospace;font-size:.72rem;font-weight:600;letter-spacing:.05em;}
-.fg-prev{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--text3);margin-top:2px;}
-.fg-bar{height:5px;border-radius:3px;background:linear-gradient(to right,#ff3366,#ff9600,#ffc800,#00ff88);margin-top:6px;position:relative;}
-.fg-needle{position:absolute;top:-3px;width:2px;height:11px;background:white;border-radius:1px;transform:translateX(-50%);transition:left .6s ease;}
+.fg-widget{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin:8px 0;}
+.fg-title{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--text3);letter-spacing:.1em;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;}
+#fgUpdated{font-size:.56rem;color:var(--text3);}
+.fg-body{display:flex;align-items:center;gap:10px;}
+#fgCanvas{flex-shrink:0;display:block;}
+.fg-right{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.fg-score{font-family:'Orbitron',sans-serif;font-size:1.7rem;font-weight:700;line-height:1;}
+.fg-label{font-family:'Share Tech Mono',monospace;font-size:.72rem;font-weight:600;letter-spacing:.04em;}
+.fg-prev{font-family:'Share Tech Mono',monospace;font-size:.61rem;color:var(--text3);}
+.fg-zones{display:flex;gap:6px;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--text3);margin-top:3px;flex-wrap:wrap;}
+
+/* ── PRICE ALERTS ─────────────────────────────────────── */
+.alert-panel{background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;}
+.alert-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;cursor:pointer;user-select:none;background:linear-gradient(135deg,rgba(255,51,102,.05),rgba(255,150,0,.03));border-bottom:1px solid transparent;transition:background .2s;}
+.alert-panel-hdr:hover{background:linear-gradient(135deg,rgba(255,51,102,.09),rgba(255,150,0,.06));}
+.alert-panel-hdr.open{border-bottom:1px solid var(--border);}
+.alert-panel-title{font-family:'Orbitron',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--text);display:flex;align-items:center;gap:8px;}
+.alert-badge{background:var(--red);color:#fff;font-family:'Share Tech Mono',monospace;font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:10px;min-width:18px;text-align:center;}
+.alert-badge.has-alerts{animation:badgePulse 2s ease infinite;}
+@keyframes badgePulse{0%,100%{box-shadow:0 0 0 0 rgba(255,51,102,.4)}50%{box-shadow:0 0 0 4px rgba(255,51,102,0)}}
+.alert-toggle{font-size:.75rem;color:var(--text3);transition:transform .25s;}
+.alert-toggle.open{transform:rotate(180deg);}
+.alert-body{display:none;flex-direction:column;gap:10px;padding:12px 14px;}
+.alert-body.open{display:flex;}
+.alert-add-row{display:flex;gap:7px;align-items:stretch;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;flex-wrap:wrap;}
+.alert-coin-name{font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:700;color:var(--accent);background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);padding:0 10px;border-radius:5px;display:flex;align-items:center;white-space:nowrap;letter-spacing:.04em;}
+.alert-dir{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:.78rem;padding:0 8px;border-radius:5px;outline:none;cursor:pointer;transition:border-color .2s;}
+.alert-dir:focus{border-color:var(--accent);}
+.alert-price-in{flex:1;min-width:100px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:.85rem;padding:8px 12px;border-radius:5px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.alert-price-in:focus{border-color:var(--red);box-shadow:0 0 0 2px rgba(255,51,102,.12);}
+.alert-price-in::placeholder{color:var(--text3);}
+.alert-add-btn{background:linear-gradient(135deg,var(--red),#ff6b6b);border:none;color:#fff;font-family:'Orbitron',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.08em;padding:8px 14px;border-radius:5px;transition:all .2s;white-space:nowrap;}
+.alert-add-btn:hover{transform:scale(1.04);box-shadow:0 0 14px rgba(255,51,102,.45);}
+.alert-list{display:flex;flex-direction:column;gap:6px;}
+.alert-empty{font-family:'Share Tech Mono',monospace;font-size:.75rem;color:var(--text3);text-align:center;padding:14px;border:1px dashed rgba(26,45,74,.8);border-radius:6px;}
+.alert-item{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;transition:all .2s;}
+.alert-item:hover{border-color:rgba(255,51,102,.35);transform:translateX(1px);}
+.alert-item.triggered{border-color:var(--green);background:rgba(0,255,136,.04);}
+.alert-item-sym{font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;color:var(--text);flex-shrink:0;}
+.alert-item-dir{font-family:'Share Tech Mono',monospace;font-size:.9rem;flex-shrink:0;width:18px;text-align:center;font-weight:700;}
+.alert-item-dir.above{color:var(--green);}
+.alert-item-dir.below{color:var(--red);}
+.alert-item-price{font-family:'Share Tech Mono',monospace;font-size:.82rem;color:var(--accent);flex:1;}
+.alert-item-status{font-family:'Share Tech Mono',monospace;font-size:.62rem;padding:2px 8px;border-radius:10px;flex-shrink:0;}
+.alert-item-status.active{background:rgba(0,212,255,.08);color:var(--accent);border:1px solid rgba(0,212,255,.22);}
+.alert-item-status.hit{background:rgba(0,255,136,.08);color:var(--green);border:1px solid rgba(0,255,136,.28);}
+.alert-del{background:none;border:none;color:var(--text3);font-size:.72rem;padding:3px 6px;border-radius:4px;transition:all .2s;flex-shrink:0;}
+.alert-del:hover{color:var(--red);background:rgba(255,51,102,.1);}
+
+/* ── SETTINGS BUTTON (3D) ────────────────────────────── */
+.settings-btn{background:linear-gradient(160deg,#0f1c32,#0a1020);border:1px solid var(--border);color:var(--text2);padding:6px 13px;border-radius:6px;font-size:.78rem;font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.05em;transition:all .2s;box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07),inset 0 -1px 0 rgba(0,0,0,.3);}
+.settings-btn:hover{color:var(--accent);border-color:rgba(0,212,255,.5);background:linear-gradient(160deg,rgba(0,212,255,.14),rgba(0,212,255,.06));box-shadow:0 4px 14px rgba(0,212,255,.2),inset 0 1px 0 rgba(0,212,255,.15);transform:translateY(-1px);}
+.settings-btn:active{transform:translateY(0);box-shadow:0 1px 3px rgba(0,0,0,.5);}
+
+/* ── SETTINGS MODAL ──────────────────────────────────── */
+#settingsModal{position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);}
+#settingsModal.hide{display:none;}
+.sm-box{background:linear-gradient(145deg,var(--bg2),var(--surface));border:1px solid var(--border);border-radius:14px;width:min(440px,94vw);box-shadow:0 30px 80px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04);animation:smIn .22s cubic-bezier(.34,1.56,.64,1);overflow:hidden;}
+@keyframes smIn{from{opacity:0;transform:scale(.92) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.sm-hdr{background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(123,47,255,.08));border-bottom:1px solid var(--border);padding:18px 20px 14px;display:flex;align-items:center;justify-content:space-between;}
+.sm-title{font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sm-close{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;font-size:.9rem;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.sm-close:hover{border-color:var(--red);color:var(--red);background:rgba(255,51,102,.1);}
+.sm-body{padding:16px 20px;display:flex;flex-direction:column;gap:8px;}
+.sm-section-title{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--text3);letter-spacing:.15em;text-transform:uppercase;padding:4px 2px 2px;}
+.sm-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;gap:12px;transition:border-color .2s;}
+.sm-row:hover{border-color:rgba(0,212,255,.2);}
+.sm-row-info{flex:1;min-width:0;}
+.sm-row-label{font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:600;color:var(--text);}
+.sm-row-sub{font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text3);margin-top:1px;}
+.sm-val{font-family:'Share Tech Mono',monospace;font-size:.82rem;color:var(--accent);font-weight:700;flex-shrink:0;}
+.sm-divider{height:1px;background:var(--border);margin:4px 0;}
+.sm-btn{width:100%;padding:10px 14px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:600;letter-spacing:.04em;border:1px solid var(--border);background:var(--bg);color:var(--text2);transition:all .2s;text-align:left;display:flex;align-items:center;gap:10px;}
+.sm-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.06);}
+.sm-btn.danger{border-color:rgba(255,51,102,.3);color:var(--red);}
+.sm-btn.danger:hover{background:rgba(255,51,102,.08);border-color:var(--red);}
+.sm-btn-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+.sm-footer{padding:12px 20px;border-top:1px solid var(--border);background:rgba(0,0,0,.2);}
+.sm-footer-note{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--text3);text-align:center;line-height:1.6;}
+.sm-toggle{position:relative;width:42px;height:22px;flex-shrink:0;}
+.sm-toggle input{opacity:0;width:0;height:0;position:absolute;}
+.sm-toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:11px;cursor:pointer;transition:background .2s;}
+.sm-toggle-slider::before{content:'';position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:var(--text3);transition:all .2s;}
+.sm-toggle input:checked+.sm-toggle-slider{background:var(--accent);}
+.sm-toggle input:checked+.sm-toggle-slider::before{transform:translateX(20px);background:#050810;}
 
 /* ── MINI CHARTS ─────────────────────────────────────── */
 .mini-charts{display:flex;gap:6px;padding:6px 14px 0;flex-shrink:0;}
@@ -621,7 +696,7 @@ button{cursor:pointer;font-family:inherit;}
   </nav>
   <div class="hdr-r">
     <div class="api-dot wait" id="apiDot"><div class="spin" style="width:9px;height:9px;border-width:1.5px;"></div>&nbsp;connecting</div>
-    <button class="settings-btn" onclick="showSettingsToast()">⚙ Settings</button>
+    <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
     <button class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
   </div>
 </header>
@@ -648,37 +723,23 @@ button{cursor:pointer;font-family:inherit;}
     <!-- FEAR & GREED INDEX -->
     <div class="fg-widget" id="fgWidget">
       <div class="fg-title">
-        <span>😱 CRYPTO FEAR &amp; GREED</span>
-        <span id="fgUpdated" style="font-size:.58rem;color:var(--text3);"></span>
+        <span>😱 FEAR &amp; GREED INDEX</span>
+        <span id="fgUpdated"></span>
       </div>
-      <div class="fg-gauge-wrap">
-        <svg class="fg-arc" width="80" height="48" viewBox="0 0 80 48">
-          <defs>
-            <linearGradient id="fgGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#ff3366"/>
-              <stop offset="25%"  stop-color="#ff9600"/>
-              <stop offset="50%"  stop-color="#ffc800"/>
-              <stop offset="75%"  stop-color="#a8e063"/>
-              <stop offset="100%" stop-color="#00ff88"/>
-            </linearGradient>
-          </defs>
-          <path d="M8,44 A32,32 0 0,1 72,44" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="8" stroke-linecap="round"/>
-          <path id="fgArcFill" d="M8,44 A32,32 0 0,1 72,44" fill="none" stroke="url(#fgGrad)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 101"/>
-          <line id="fgNeedle" x1="40" y1="44" x2="40" y2="18" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="40" cy="44" r="3" fill="white"/>
-          <text x="8"  y="48" fill="#ff3366" font-size="5.5" font-family="Share Tech Mono" text-anchor="middle">0</text>
-          <text x="72" y="48" fill="#00ff88" font-size="5.5" font-family="Share Tech Mono" text-anchor="middle">100</text>
-        </svg>
-        <div class="fg-info">
+      <div class="fg-body">
+        <canvas id="fgCanvas" width="160" height="90"></canvas>
+        <div class="fg-right">
           <div class="fg-score" id="fgScore">—</div>
           <div class="fg-label" id="fgLabel">Loading…</div>
           <div class="fg-prev"  id="fgPrev"></div>
+          <div class="fg-zones">
+            <span style="color:#ff3366">● Fear</span>
+            <span style="color:#ffc800">● Neutral</span>
+            <span style="color:#00ff88">● Greed</span>
+          </div>
         </div>
       </div>
-      <div class="fg-bar">
-        <div class="fg-needle" id="fgBarNeedle" style="left:50%"></div>
-      </div>
-      <div style="font-size:.58rem;color:var(--text3);margin-top:5px;font-family:'Share Tech Mono',monospace;">Crypto index · alternative.me</div>
+      <div style="font-size:.55rem;color:var(--text3);margin-top:5px;font-family:'Share Tech Mono',monospace;text-align:center;">alternative.me · updates daily</div>
     </div>
   </aside>
 
@@ -2658,68 +2719,141 @@ function calcMACD(candles,fast,slow,sig){
 /* ══════════════════ FEAR & GREED ══════════════════════ */
 async function loadFearGreed(){
   try{
-    // alternative.me is the Crypto Fear & Greed Index (NOT CNN's stock market index)
-    const res  = await fetch('https://api.alternative.me/fng/?limit=2&format=json&t='+Date.now());
+    const res = await fetch('https://api.alternative.me/fng/?limit=2&format=json&t='+Date.now());
     if(!res.ok) throw new Error(res.status);
     const json = await res.json();
     const cur  = json.data[0];
     const prev = json.data[1];
-    const score= parseInt(cur.value);
-    const label= cur.value_classification;
-    const date = new Date(parseInt(cur.timestamp)*1000);
+    const score = parseInt(cur.value);
+    const label = cur.value_classification;
+    const date  = new Date(parseInt(cur.timestamp)*1000);
     const dateStr = date.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 
-    // Color ramp: 0=red, 25=orange, 50=yellow, 75=lime, 100=green
+    // Color based on score
     const col = score<=25?'#ff3366':score<=45?'#ff9600':score<=55?'#ffc800':score<=75?'#a8e063':'#00ff88';
 
-    const scoreEl = document.getElementById('fgScore');
-    const labelEl = document.getElementById('fgLabel');
-    const updEl   = document.getElementById('fgUpdated');
-    const prevEl  = document.getElementById('fgPrev');
-    if(scoreEl){ scoreEl.textContent=score; scoreEl.style.color=col; }
-    if(labelEl){ labelEl.textContent=label; labelEl.style.color=col; }
-    if(updEl)   updEl.textContent = 'Updated '+dateStr;
-    if(prevEl && prev){
-      const ps=parseInt(prev.value), diff=score-ps;
-      prevEl.textContent=`Yesterday: ${ps} ${diff>=0?'▲':'▼'}${Math.abs(diff)}`;
+    // Update text elements
+    const scoreEl=document.getElementById('fgScore');
+    const labelEl=document.getElementById('fgLabel');
+    const updEl  =document.getElementById('fgUpdated');
+    const prevEl =document.getElementById('fgPrev');
+    if(scoreEl){scoreEl.textContent=score;scoreEl.style.color=col;}
+    if(labelEl){labelEl.textContent=label;labelEl.style.color=col;}
+    if(updEl)   updEl.textContent='Updated '+dateStr;
+    if(prevEl&&prev){
+      const ps=parseInt(prev.value),diff=score-ps;
+      prevEl.textContent='Yesterday: '+ps+' '+(diff>=0?'▲':'▼')+Math.abs(diff);
       prevEl.style.color=diff>=0?'#00ff88':'#ff3366';
     }
 
-    // SVG needle: rotates around (40,44), 0 score=left(-90deg from top), 100=right(+90deg)
-    // The semicircle goes from 8,44 (left) through 40,12 (top) to 72,44 (right)
-    // Angle: score 0 → 180deg (pointing left), score 100 → 0deg (pointing right)
-    // We map: angleDeg = 180 - (score/100)*180
-    const angleDeg = 180 - (score/100)*180;
-    const rad = angleDeg * Math.PI / 180;
-    const needleLen = 24;
-    // SVG: 0deg = right, 90deg = up, 180deg = left (standard math convention)
-    // We want: score=0 → needle points LEFT, score=100 → points RIGHT
-    // needle tip: cx + r*cos(π - angleDeg*π/180), cy - r*sin(...)
-    const nx = 40 + needleLen * Math.cos(Math.PI - rad);
-    const ny = 44 - needleLen * Math.sin(Math.PI - rad);
-    const needleEl = document.getElementById('fgNeedle');
-    if(needleEl){ needleEl.setAttribute('x2',nx.toFixed(1)); needleEl.setAttribute('y2',ny.toFixed(1)); }
-
-    // Arc fill: the SVG arc path has a total visual length of ~100 CSS units
-    // dasharray = "fillAmount totalLength"
-    const arcEl = document.getElementById('fgArcFill');
-    if(arcEl){
-      // The semicircular path at radius 32, stroke-width 8
-      // Circumference of full circle = 2π*32 ≈ 201, half = ~100.5
-      const totalArc = 100.5;
-      const filled   = (score/100)*totalArc;
-      arcEl.setAttribute('stroke-dasharray',`${filled.toFixed(1)} ${totalArc}`);
-    }
-
-    // Bar needle (CSS gradient bar)
-    const barNeedle = document.getElementById('fgBarNeedle');
-    if(barNeedle) barNeedle.style.left = score+'%';
+    // Draw canvas gauge
+    drawFGGauge(score, col);
 
   }catch(e){
     console.warn('Fear & Greed load failed:',e);
     const labelEl=document.getElementById('fgLabel');
     if(labelEl) labelEl.textContent='Unavailable';
+    drawFGGauge(50,'#ffc800'); // show neutral as fallback
   }
+}
+
+function drawFGGauge(score, needleCol){
+  const canvas = document.getElementById('fgCanvas');
+  if(!canvas) return;
+  const dpr = window.devicePixelRatio||1;
+  const W=160, H=90;
+  canvas.width  = W*dpr;
+  canvas.height = H*dpr;
+  canvas.style.width  = W+'px';
+  canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,W,H);
+
+  const cx=W/2, cy=H-14, R=62, arcW=10;
+  // Arc spans from 180° to 0° (left to right) = π to 0 in radians
+  const startAngle = Math.PI;
+  const endAngle   = 0;
+
+  // ── Draw colored zone segments ──
+  const zones=[
+    {from:0,   to:25,  col:'#ff3366'},   // Extreme Fear
+    {from:25,  to:47,  col:'#ff9600'},   // Fear
+    {from:47,  to:53,  col:'#ffc800'},   // Neutral
+    {from:53,  to:75,  col:'#a8e063'},   // Greed
+    {from:75,  to:100, col:'#00ff88'},   // Extreme Greed
+  ];
+  // Background track
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, Math.PI, 0, false);
+  ctx.strokeStyle='rgba(255,255,255,.07)';
+  ctx.lineWidth=arcW;
+  ctx.lineCap='round';
+  ctx.stroke();
+
+  // Colored segments
+  zones.forEach(z=>{
+    const a1 = Math.PI + (z.from/100)*Math.PI;
+    const a2 = Math.PI + (z.to  /100)*Math.PI;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, a1, a2, false);
+    ctx.strokeStyle=z.col;
+    ctx.lineWidth=arcW;
+    ctx.lineCap='butt';
+    ctx.stroke();
+  });
+
+  // ── Zone tick marks ──
+  [0,25,50,75,100].forEach(v=>{
+    const ang = Math.PI + (v/100)*Math.PI;
+    const ix  = cx + (R-arcW/2)*Math.cos(ang);
+    const iy  = cy + (R-arcW/2)*Math.sin(ang);
+    const ox  = cx + (R+arcW/2+2)*Math.cos(ang);
+    const oy  = cy + (R+arcW/2+2)*Math.sin(ang);
+    ctx.beginPath(); ctx.moveTo(ix,iy); ctx.lineTo(ox,oy);
+    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1.5; ctx.lineCap='round'; ctx.stroke();
+    // Labels
+    const lx = cx + (R+arcW/2+10)*Math.cos(ang);
+    const ly = cy + (R+arcW/2+10)*Math.sin(ang);
+    ctx.fillStyle='rgba(122,156,192,.6)'; ctx.font=`bold ${v===50?8:7}px Share Tech Mono`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(v, lx, ly);
+  });
+
+  // ── Filled arc up to score ──
+  const fillEnd = Math.PI + (score/100)*Math.PI;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, Math.PI, fillEnd, false);
+  ctx.strokeStyle = needleCol;
+  ctx.lineWidth = arcW-2;
+  ctx.lineCap='round';
+  ctx.globalAlpha=0.0; // invisible — zones already show this; just for reference
+  ctx.stroke();
+  ctx.globalAlpha=1;
+
+  // ── Needle ──
+  const needleAngle = Math.PI + (score/100)*Math.PI;
+  const needleLen   = R-6;
+  const nx = cx + needleLen * Math.cos(needleAngle);
+  const ny = cy + needleLen * Math.sin(needleAngle);
+
+  // Needle shadow/glow
+  ctx.shadowColor = needleCol;
+  ctx.shadowBlur  = 8;
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx, ny);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.stroke();
+  ctx.shadowBlur  = 0;
+
+  // Needle base dot
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2);
+  ctx.fillStyle=needleCol; ctx.fill();
+
+  // ── Score text in gauge ──
+  ctx.fillStyle=needleCol; ctx.font='bold 11px Orbitron, Share Tech Mono';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(score, cx, cy-22);
 }
 
 /* ══════════════════ MINI CHARTS ════════════════════════ */
@@ -3101,8 +3235,10 @@ let ALERT_CHECK_INTERVAL = null;
 function toggleAlertPanel(){
   const body = document.getElementById('alertBody');
   const tog  = document.getElementById('alertToggle');
+  const hdr  = document.getElementById('alertPanel')?.querySelector('.alert-panel-hdr');
   const open = body.classList.toggle('open');
   tog.classList.toggle('open', open);
+  if(hdr) hdr.classList.toggle('open', open);
 }
 
 function updateAlertCoinName(){
@@ -3159,18 +3295,19 @@ function renderAlerts(){
   const list    = document.getElementById('alertList');
   const badge   = document.getElementById('alertBadge');
   const active  = ALERTS.filter(a=>a.active && !a.triggered).length;
-  if(badge){ badge.textContent = ALERTS.length; badge.style.display = ALERTS.length?'inline':'none'; }
+  if(badge){ badge.textContent = ALERTS.length; badge.style.display = ALERTS.length?'inline':'none'; badge.classList.toggle('has-alerts', ALERTS.filter(a=>a.active&&!a.triggered).length>0); }
   if(!ALERTS.length){
     list.innerHTML = '<div class="alert-empty">No alerts set. Add one above!</div>';
     return;
   }
   list.innerHTML = ALERTS.map(a=>`
     <div class="alert-item${a.triggered?' triggered':''}">
+      <span class="alert-item-dir ${a.dir}">${a.dir==='above'?'↑':'↓'}</span>
       <span class="alert-item-sym">${a.symbol}</span>
-      <span class="alert-item-dir">${a.dir==='above'?'↑':'↓'}</span>
       <span class="alert-item-price">$${fP(a.price)}</span>
-      <span class="alert-item-status ${a.triggered?'hit':'active'}">${a.triggered?'✓ HIT':'active'}</span>
-      <span class="alert-del" onclick="deleteAlert(${a.id})" title="Remove">✕</span>
+      <span style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text3);">${a.name||''}</span>
+      <span class="alert-item-status ${a.triggered?'hit':'active'}">${a.triggered?'✓ TRIGGERED':'ACTIVE'}</span>
+      <button class="alert-del" onclick="deleteAlert(${a.id})" title="Remove alert">✕</button>
     </div>
   `).join('');
 }
@@ -3325,24 +3462,60 @@ function closeToast(id){
 }
 
 /* ══════════════════ SETTINGS TOAST ══════════════════════════ */
-function showSettingsToast(){
-  const wlCount   = ST.wl.length;
-  const alCount   = ALERTS.length;
-  const drwCount  = DRW.drawings.length;
-  const saved     = localStorage.getItem(LS_KEY);
-  const savedKB   = saved ? (saved.length/1024).toFixed(1) : '0';
-  showToast(
-    '⚙ Your Settings',
-    `<b>Watchlist:</b> ${wlCount} tokens saved<br>`+
-    `<b>Alerts:</b> ${alCount} active<br>`+
-    `<b>Drawings:</b> ${drwCount} saved<br>`+
-    `<b>Storage:</b> ${savedKB} KB used<br><br>`+
-    `<small style="color:var(--text3)">All data is saved locally in your browser.<br>`+
-    `<span style="cursor:pointer;color:var(--red);text-decoration:underline;" onclick="clearSavedState();closeToast(this.closest('.toast').id)">Clear all saved data</span></small>`,
-    'info',
-    0  // don't auto-dismiss settings panel
-  );
+function openSettings(){
+  const modal = document.getElementById('settingsModal');
+  if(!modal) return;
+  // Populate live values
+  const saved = localStorage.getItem(LS_KEY);
+  const savedKB = saved ? (saved.length/1024).toFixed(1) : '0';
+  const el = (id,val)=>{ const e=document.getElementById(id); if(e) e.textContent=val; };
+  el('smWlCount', ST.wl.length + ' tokens');
+  el('smAlCount', ALERTS.length + ' alerts');
+  el('smDrwCount', (DRW.drawings||[]).length + ' drawings');
+  el('smStorageKB', savedKB + ' KB');
+  // API key status
+  const keyEl = document.getElementById('smKeyStatus');
+  if(keyEl) keyEl.textContent = API_KEY ? '✓ Key saved (' + API_KEY.slice(0,8) + '…)' : 'No key saved — using public rate limit';
+  // Theme toggle state
+  const tog = document.getElementById('smThemeToggle');
+  if(tog) tog.checked = lm;
+  modal.classList.remove('hide');
 }
+function closeSettings(){
+  const modal = document.getElementById('settingsModal');
+  if(modal) modal.classList.add('hide');
+}
+function smBgClick(e){
+  if(e.target === document.getElementById('settingsModal')) closeSettings();
+}
+function smToggleTheme(cb){ toggleTheme(); }
+function smExportData(){
+  const data = localStorage.getItem(LS_KEY) || '{}';
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'token-tokens-data.json';
+  a.click();
+  showToast('💾 Exported','Your data has been downloaded as JSON.','success');
+}
+function smClearDrawings(){
+  DRW.drawings=[]; DRW.pending=null; updateDrawCount(); renderChart(); saveState();
+  openSettings();
+  showToast('✏️ Cleared','All drawings removed.','info');
+}
+function smClearAlerts(){
+  ALERTS=[]; renderAlerts(); saveState();
+  openSettings();
+  showToast('🔔 Cleared','All alerts removed.','info');
+}
+function smClearEverything(){
+  if(!confirm('Reset ALL data? This cannot be undone.')) return;
+  clearSavedState();
+  closeSettings();
+  showToast('⚠️ Reset','All data cleared. Refresh to start fresh.','warn',6000);
+}
+// Legacy alias
+function showSettingsToast(){ openSettings(); }
 
 /* ══════════════════ CHART INTERACTION ══════════════════ */
 document.getElementById('priceCanvas').addEventListener('wheel',e=>{
@@ -3785,6 +3958,8 @@ async function initApp(){
   // Default pointer active
   document.getElementById('dtPointer')?.classList.add('on');
 
+  // Draw placeholder gauge while loading
+  drawFGGauge(50,'#ffc800');
   setDot('wait');
   await loadPrices();
   await sleep(300);
@@ -3812,5 +3987,91 @@ async function initApp(){
   }
 }
 </script>
+
+<!-- ═════ SETTINGS MODAL ═════ -->
+<div id="settingsModal" class="hide" onclick="smBgClick(event)">
+  <div class="sm-box" id="smBox">
+    <div class="sm-hdr">
+      <span class="sm-title">⚙ SETTINGS</span>
+      <button class="sm-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="sm-body">
+      <div class="sm-section-title">📊 Your Data</div>
+      <div class="sm-row">
+        <div class="sm-row-info">
+          <div class="sm-row-label">Watchlist</div>
+          <div class="sm-row-sub">Tokens you are tracking</div>
+        </div>
+        <span class="sm-val" id="smWlCount">—</span>
+      </div>
+      <div class="sm-row">
+        <div class="sm-row-info">
+          <div class="sm-row-label">Price Alerts</div>
+          <div class="sm-row-sub">Active alert count</div>
+        </div>
+        <span class="sm-val" id="smAlCount">—</span>
+      </div>
+      <div class="sm-row">
+        <div class="sm-row-info">
+          <div class="sm-row-label">Drawings</div>
+          <div class="sm-row-sub">Lines, zones, fib levels saved</div>
+        </div>
+        <span class="sm-val" id="smDrwCount">—</span>
+      </div>
+      <div class="sm-row">
+        <div class="sm-row-info">
+          <div class="sm-row-label">Local Storage</div>
+          <div class="sm-row-sub">Data saved in your browser</div>
+        </div>
+        <span class="sm-val" id="smStorageKB">— KB</span>
+      </div>
+
+      <div class="sm-divider"></div>
+      <div class="sm-section-title">🎨 Appearance</div>
+      <div class="sm-row">
+        <div class="sm-row-info">
+          <div class="sm-row-label">Light Mode</div>
+          <div class="sm-row-sub">Switch between dark and light theme</div>
+        </div>
+        <label class="sm-toggle">
+          <input type="checkbox" id="smThemeToggle" onchange="smToggleTheme(this)">
+          <span class="sm-toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="sm-divider"></div>
+      <div class="sm-section-title">🔑 API</div>
+      <div class="sm-row">
+        <div class="sm-row-info">
+          <div class="sm-row-label">CoinGecko API Key</div>
+          <div class="sm-row-sub" id="smKeyStatus">No key saved — using public rate limit</div>
+        </div>
+        <button class="sm-btn" style="width:auto;padding:6px 12px;font-size:.78rem;" onclick="closeSettings();showKeyScreen()">Change</button>
+      </div>
+
+      <div class="sm-divider"></div>
+      <div class="sm-section-title">🗑 Data Management</div>
+      <button class="sm-btn" onclick="smExportData()">
+        <span class="sm-btn-icon">💾</span>Export All Data (JSON)
+      </button>
+      <button class="sm-btn danger" onclick="smClearDrawings()">
+        <span class="sm-btn-icon">✏️</span>Clear All Drawings
+      </button>
+      <button class="sm-btn danger" onclick="smClearAlerts()">
+        <span class="sm-btn-icon">🔔</span>Clear All Alerts
+      </button>
+      <button class="sm-btn danger" onclick="smClearEverything()">
+        <span class="sm-btn-icon">⚠️</span>Reset Everything
+      </button>
+    </div>
+    <div class="sm-footer">
+      <div class="sm-footer-note">
+        Token-Tokens by HattyHats · All data stored locally in your browser<br>
+        <span style="color:var(--accent2)">Nothing is ever sent to any server</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
