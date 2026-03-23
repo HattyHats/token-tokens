@@ -597,94 +597,97 @@ button{cursor:pointer;font-family:inherit;}
 .ind-panel{display:none !important;}
 .draw-panel{display:none !important;}
 
-/* ── MOBILE: keep old panels visible on mobile, hide right panel ── */
+/* ── MOBILE RESPONSIVE ────────────────────────────────────── */
 @media(max-width:768px){
-  /* Reset app to scroll naturally */
   #app{min-height:100vh;overflow-y:auto;}
   body{overflow-y:auto;}
 
-  /* Header compact */
-  .hdr{padding:8px 12px;flex-wrap:nowrap;}
-  .hdr-logo{font-size:.95rem;}
-  .nb{font-size:.75rem;padding:5px 9px;}
-  .hdr-r{gap:5px;}
+  /* Header: 2-row - logo+right on top, nav strip below */
+  .hdr{padding:0;flex-wrap:wrap;align-items:stretch;}
+  .hdr-logo{font-size:.88rem;padding:9px 12px;}
+  .hdr-nav{order:2;width:100%;background:rgba(10,16,32,.99);border-top:1px solid var(--border);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 4px;gap:0;flex-wrap:nowrap;scrollbar-width:none;}
+  .hdr-nav::-webkit-scrollbar{display:none;}
+  .nb{font-size:.68rem;padding:7px 10px;white-space:nowrap;flex-shrink:0;border-radius:0;}
+  .hdr-r{order:1;padding:5px 8px;gap:4px;margin-left:auto;}
   .api-dot{display:none;}
-  .settings-btn,.theme-btn{padding:5px 9px;font-size:.72rem;}
+  .settings-btn{padding:5px 9px;font-size:.68rem;}
+  .theme-btn{padding:5px 7px;font-size:.68rem;}
+  .hatty-drop{right:0;left:auto;min-width:190px;}
+  .hatty-link-info span{display:none;}
 
-  /* Ticker — hide on mobile */
   .ticker-bar{display:none;}
 
-  /* Layout becomes single column */
-  .layout{display:flex;flex-direction:column;height:auto;min-height:0;}
+  /* Layout */
+  .layout{display:flex;flex-direction:column;height:auto;}
 
-  /* Sidebar — compact horizontal strip at top */
-  .sidebar{width:100%;max-height:none;border-right:none;border-bottom:1px solid var(--border);flex-shrink:0;}
+  /* Sidebar */
+  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);}
+  .sb-top{padding:7px 9px;}
+  .sb-in{font-size:.84rem;padding:7px 10px;}
+  .browse-btn{margin:5px 9px 8px;width:calc(100% - 18px);font-size:.61rem;padding:6px;}
 
-  /* Search and browse */
-  .sb-top{padding:8px;}
-  .browse-btn{margin-top:6px;}
-
-  /* Watchlist — horizontal scroll strip */
-  .wl-hdr{padding:6px 10px 4px;}
-  .wl-list{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;max-height:none;gap:0;}
-  .cc{min-width:140px;flex-direction:column;align-items:flex-start;gap:3px;padding:8px 10px;border-bottom:none;border-right:1px solid rgba(26,45,74,.3);}
-  .cc.on{border-left:none;border-top:2px solid var(--accent);}
-  .cc-info{min-width:0;width:100%;}
+  /* Watchlist horizontal */
+  .wl-hdr{padding:5px 10px 3px;font-size:.58rem;}
+  .wl-list{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .wl-list::-webkit-scrollbar{display:none;}
+  .cc{min-width:108px;max-width:120px;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px;border-bottom:none;border-right:1px solid rgba(26,45,74,.3);flex-shrink:0;}
+  .cc.on{border-left:none;border-top:2px solid var(--accent);background:rgba(0,212,255,.07);}
+  .cc-img,.cc-fb{width:20px;height:20px;font-size:.42rem;}
+  .cc-name{font-size:.74rem;}
+  .cc-sym{font-size:.59rem;}
+  .cc-price{font-size:.72rem;}
+  .cc-chg{font-size:.61rem;}
   .cc-r{text-align:left;}
-  .cc-rm{opacity:.5;font-size:.7rem;}
+  .cc-rm{opacity:.55;font-size:.58rem;top:2px;right:2px;}
+  .cc-info-btn{display:none;}
 
-  /* Trending & Fear/Greed — hide on mobile */
   .tr-sec{display:none;}
   #cntPanel{display:none;}
   .fg-widget{display:none;}
 
-  /* Main area: auto height, scrollable */
+  /* Chart */
   .main{height:auto;overflow:visible;}
+  .ch-hdr{padding:7px 10px;gap:4px;flex-direction:column;align-items:flex-start;}
+  .ch-coin{flex-wrap:wrap;gap:5px;align-items:center;}
+  .ch-img{width:22px;height:22px;}
+  .ch-title{font-size:.84rem;}
+  .ch-price{font-size:1.1rem;}
+  .ch-badge{font-size:.7rem;padding:2px 6px;}
+  .ch-meta{flex-direction:row;flex-wrap:wrap;gap:4px;font-size:.59rem;}
+  .ch-tools{gap:2px;width:100%;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .ch-tools::-webkit-scrollbar{display:none;}
+  .tf,.ct,.live-btn{padding:5px 8px;font-size:.62rem;flex-shrink:0;}
+  .dv{display:none;}
 
-  /* Mini charts — smaller */
-  .mini-charts{padding:4px 8px 0;gap:4px;}
-  .mc-canvas{height:28px;}
+  .mini-charts{padding:3px 8px 0;gap:3px;}
+  .mc-canvas{height:24px;}
+  .mc-lbl{font-size:.57rem;}
 
-  /* Chart header — stack vertically */
-  .ch-hdr{flex-direction:column;align-items:flex-start;gap:6px;padding:8px 12px;}
-  .ch-coin{flex-wrap:wrap;gap:8px;}
-  .ch-title{font-size:.9rem;}
-  .ch-price{font-size:1.2rem;}
-  .ch-meta{flex-direction:row;flex-wrap:wrap;gap:6px;}
-  .ch-tools{gap:3px;width:100%;}
-  .tf{padding:5px 7px;font-size:.67rem;}
-  .ct{padding:5px 8px;font-size:.72rem;}
+  .ohlc{padding:4px 10px;gap:7px;font-size:.62rem;overflow-x:auto;scrollbar-width:none;}
+  .ohlc::-webkit-scrollbar{display:none;}
 
-  /* OHLC bar — scrollable */
-  .ohlc{padding:5px 10px;gap:10px;font-size:.68rem;}
-
-  /* Chart and right panel — hide right panel, go full width */
   .chart-and-right{flex-direction:column;}
   .right-panel{display:none;}
-
-  /* Show the old panels on mobile instead */
-  .ind-panel{display:flex !important;flex-wrap:wrap;gap:5px;padding:7px 10px;}
-  .draw-panel{display:flex !important;flex-wrap:wrap;gap:5px;padding:7px 10px;overflow-x:auto;}
-
-  /* Chart zone — fixed height so it's usable */
-  .chart-zone{min-height:260px;height:260px;max-height:260px;}
+  .chart-zone{min-height:230px;height:230px;max-height:230px;}
   #priceCanvas{touch-action:none;}
 
-  /* Alerts and time machine */
+  .ind-panel{display:flex !important;flex-wrap:nowrap;gap:4px;padding:6px 10px;overflow-x:auto;scrollbar-width:none;}
+  .ind-panel::-webkit-scrollbar{display:none;}
+  .ind{padding:4px 8px;font-size:.62rem;flex-shrink:0;}
+  .draw-panel{display:flex !important;flex-wrap:nowrap;gap:4px;padding:6px 10px;overflow-x:auto;scrollbar-width:none;}
+  .draw-panel::-webkit-scrollbar{display:none;}
+
   .alert-panel{margin:0;}
-  .alert-add-row{flex-wrap:wrap;gap:6px;}
+  .alert-add-row{flex-wrap:wrap;gap:5px;}
   .alert-price-in{width:100%;}
-  .tm-bar{flex-wrap:wrap;gap:8px;padding:8px 12px;}
+  .tm-bar{flex-wrap:wrap;gap:6px;padding:7px 10px;}
   .tm-input{width:100%;}
   .tm-go{width:100%;}
 
-  /* Learn & News sections */
-  #learnSec{height:auto;max-height:none;padding:0;overflow-y:visible;}
-  #newsSec{height:auto;max-height:none;overflow-y:visible;}
-  #newsGrid{grid-template-columns:1fr !important;padding:10px 12px;}
-  #newsSec > div:first-child{padding:16px 14px 14px;}
-  .ls-hero{padding:16px;}
-  .ls-sec{padding:16px;}
+  /* Learn */
+  #learnSec{height:auto;max-height:none;overflow-y:visible;}
+  .ls-hero{padding:16px 14px;}
+  .ls-sec{padding:16px 14px;}
   .ls-candle-demo{flex-direction:column;}
   .ls-fib-wrap{flex-direction:column;}
   .ls-cards{grid-template-columns:1fr;}
@@ -692,16 +695,34 @@ button{cursor:pointer;font-family:inherit;}
   .ls-cl-wrap{grid-template-columns:1fr;}
   .ls-pattern-grid{grid-template-columns:1fr 1fr;}
 
-  /* Modal — full screen on mobile */
-  .modal{width:100%;max-height:100vh;border-radius:0;}
+  /* News */
+  #newsSec{height:auto;max-height:none;overflow-y:visible;}
+  .news-hero{padding:13px 12px 11px;}
+  .news-hero-sub{font-size:.8rem;margin-bottom:10px;}
+  .news-token-row{gap:5px;margin-bottom:10px;}
+  .news-tok-btn{font-size:.61rem;padding:5px 10px;}
+  .news-search-row{max-width:100%;}
+  .news-search-in{font-size:.84rem;padding:7px 11px;}
+  .news-search-btn{font-size:.64rem;padding:7px 14px;}
+  .news-grid{grid-template-columns:1fr !important;padding:10px 11px;gap:9px;}
+  #newsAISummary{margin:10px 11px 0;padding:11px 13px;}
+  #newsFilterBar{padding:6px 11px;}
+
+  /* Modal */
+  .modal{width:100%;max-height:92vh;border-radius:12px 12px 0 0;}
   .m-bg{align-items:flex-end;}
-  .m-cats{gap:4px;}
-  .mc{font-size:.6rem;padding:3px 8px;}
+  .m-cats{gap:3px;padding:5px 10px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;}
+  .m-cats::-webkit-scrollbar{display:none;}
+  .mc{font-size:.58rem;padding:4px 8px;flex-shrink:0;}
   .tg{grid-template-columns:1fr 1fr;}
 
-  /* Touch-friendly: bigger tap targets */
-  .rp-ind,.rp-dtool{min-height:38px;}
-  .tf,.ct,.nb{min-height:34px;}
+  .sm-box{width:94vw;max-height:88vh;}
+}
+@media(max-width:380px){
+  .hdr-logo{font-size:.8rem;}
+  .nb{font-size:.62rem;padding:6px 8px;}
+  .ch-price{font-size:.96rem;}
+  .news-tok-btn{font-size:.57rem;padding:4px 8px;}
 }
 
 /* ── LEARN SECTION ─────────────────────────────────────── */
@@ -1620,66 +1641,59 @@ button{cursor:pointer;font-family:inherit;}
 <!-- ═════ NEWS SECTION ═════ -->
 <div id="newsSec" style="display:none;overflow-y:auto;flex:1;min-height:0;background:var(--bg);">
 
-  <!-- Hero -->
-  <div style="background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(123,47,255,.08));border-bottom:1px solid var(--border);padding:24px 32px 20px;">
-    <div style="font-family:'Orbitron',sans-serif;font-size:clamp(1.1rem,3vw,1.7rem);font-weight:700;color:var(--text);margin-bottom:6px;">📰 Crypto News</div>
-    <div style="color:var(--text2);font-size:.88rem;margin-bottom:16px;">Search any token or topic — get the latest news powered by AI analysis.</div>
+  <!-- News Hero -->
+  <div class="news-hero">
+    <div class="news-hero-title">📰 Crypto News</div>
+    <div class="news-hero-sub">Choose a topic below — or search any token name for targeted news.</div>
 
-    <!-- Search bar -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;max-width:700px;">
-      <div style="flex:1;min-width:200px;position:relative;">
-        <input id="newsSearchIn" type="text" placeholder="🔍  Search: Bitcoin, Cardano, DeFi, ADA…"
-          style="width:100%;background:var(--bg2);border:1.5px solid var(--border);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.95rem;padding:10px 14px;border-radius:6px;outline:none;transition:border-color .2s;"
-          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
-          onkeydown="if(event.key==='Enter')fetchNews()">
-      </div>
-      <button onclick="fetchNews()" style="font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#050810;border:none;padding:10px 22px;border-radius:6px;cursor:pointer;transition:opacity .2s;white-space:nowrap;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">SEARCH NEWS</button>
-      <button onclick="fetchNews('all')" style="font-family:'Share Tech Mono',monospace;font-size:.72rem;background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:10px 16px;border-radius:6px;cursor:pointer;transition:all .2s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">📡 All Crypto News</button>
+    <!-- Token selector buttons -->
+    <div class="news-token-row">
+      <button class="news-tok-btn on" onclick="newsSelectToken(this,'')">📡 All News</button>
+      <button class="news-tok-btn" onclick="newsSelectToken(this,'Cardano')">🔵 Cardano</button>
+      <button class="news-tok-btn" onclick="newsSelectToken(this,'Bitcoin')">₿ Bitcoin</button>
+      <button class="news-tok-btn" onclick="newsSelectToken(this,'Ethereum')">Ξ Ethereum</button>
+      <button class="news-tok-btn" onclick="newsSelectToken(this,'Algorand')">◎ Algorand</button>
+      <button class="news-tok-btn" onclick="newsSelectToken(this,'DeFi')">🏦 DeFi</button>
+      <button class="news-tok-btn" onclick="newsSelectToken(this,'NFT')">🖼 NFT</button>
+      <button class="news-tok-btn" onclick="newsSelectToken(this,'Regulation')">⚖ Rules</button>
     </div>
 
-    <!-- Quick topic chips -->
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
-      <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);align-self:center;margin-right:4px;">QUICK:</span>
-      <button class="news-chip" onclick="newsQuick('Bitcoin')">Bitcoin</button>
-      <button class="news-chip" onclick="newsQuick('Cardano')">Cardano</button>
-      <button class="news-chip" onclick="newsQuick('Ethereum')">Ethereum</button>
-      <button class="news-chip" onclick="newsQuick('Algorand')">Algorand</button>
-      <button class="news-chip" onclick="newsQuick('DeFi')">DeFi</button>
-      <button class="news-chip" onclick="newsQuick('NFT')">NFT</button>
-      <button class="news-chip" onclick="newsQuick('regulation')">Regulation</button>
-      <button class="news-chip" onclick="newsQuick('altcoin')">Altcoin</button>
+    <!-- Custom search -->
+    <div class="news-search-row">
+      <input id="newsSearchIn" class="news-search-in" type="text"
+        placeholder="Or search any token or topic…"
+        onkeydown="if(event.key==='Enter')newsCustomSearch()">
+      <button class="news-search-btn" onclick="newsCustomSearch()">Search</button>
     </div>
   </div>
 
-  <!-- AI Summary bar (shown after search) -->
-  <div id="newsAISummary" style="display:none;margin:16px 24px 0;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.18);border-radius:10px;padding:14px 18px;">
-    <div style="font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--accent);letter-spacing:.12em;margin-bottom:8px;">⚡ AI SUMMARY</div>
-    <div id="newsAISummaryText" style="font-size:.88rem;color:var(--text2);line-height:1.7;"></div>
+  <!-- AI Summary -->
+  <div id="newsAISummary" style="display:none;margin:14px 20px 0;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:13px 16px;">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--accent);letter-spacing:.12em;margin-bottom:7px;">⚡ AI SUMMARY</div>
+    <div id="newsAISummaryText" style="font-size:.86rem;color:var(--text2);line-height:1.7;"></div>
   </div>
 
-  <!-- Filter bar -->
-  <div id="newsFilterBar" style="display:none;padding:10px 24px;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;gap:6px;">
-    <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);">FILTER:</span>
+  <!-- Sentiment filter -->
+  <div id="newsFilterBar" style="display:none;padding:8px 20px;border-bottom:1px solid var(--border);display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
     <button class="news-filter on" onclick="newsFilter(this,'all')">All</button>
     <button class="news-filter" onclick="newsFilter(this,'bullish')">📈 Bullish</button>
     <button class="news-filter" onclick="newsFilter(this,'bearish')">📉 Bearish</button>
     <button class="news-filter" onclick="newsFilter(this,'neutral')">⚖ Neutral</button>
-    <span id="newsResultCount" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--text3);margin-left:auto;"></span>
+    <span id="newsResultCount" style="font-family:'Share Tech Mono',monospace;font-size:.61rem;color:var(--text3);margin-left:auto;"></span>
   </div>
 
-  <!-- News grid -->
-  <div id="newsGrid" style="padding:16px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;">
-    <!-- Placeholder state -->
-    <div id="newsPlaceholder" style="grid-column:1/-1;padding:48px 20px;text-align:center;color:var(--text3);">
-      <div style="font-size:2.5rem;margin-bottom:12px;">📰</div>
-      <div style="font-family:'Orbitron',sans-serif;font-size:1rem;color:var(--text2);margin-bottom:8px;">Search for crypto news above</div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:.75rem;line-height:1.8;">Type any token name, topic, or keyword<br>and hit <b style="color:var(--accent)">Search News</b> — or click a quick chip</div>
+  <!-- News cards -->
+  <div id="newsGrid" class="news-grid">
+    <div id="newsPlaceholder" style="grid-column:1/-1;padding:56px 20px;text-align:center;color:var(--text3);">
+      <div style="font-size:2rem;margin-bottom:10px;">📰</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:.95rem;color:var(--text2);margin-bottom:8px;">Loading news…</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:.72rem;line-height:1.8;color:var(--text3);max-width:360px;margin:0 auto;">Fetching the latest crypto news.<br>If nothing appears, try clicking a topic above.</div>
     </div>
   </div>
 
   <!-- Load more -->
-  <div id="newsLoadMore" style="display:none;text-align:center;padding:0 24px 32px;">
-    <button onclick="newsLoadMore()" style="font-family:'Share Tech Mono',monospace;font-size:.75rem;background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:10px 32px;border-radius:6px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">Load More Articles ↓</button>
+  <div id="newsLoadMore" style="display:none;text-align:center;padding:4px 20px 28px;">
+    <button class="news-more-btn" onclick="newsLoadMore()">Load More ↓</button>
   </div>
 
 </div><!-- /newsSec -->
@@ -3711,40 +3725,6 @@ function checkAlerts(){
 
 function playAlertDing(){
   try{
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-    // Three-note ascending ding: C5 → E5 → G5
-    const notes = [523.25, 659.25, 783.99];
-    notes.forEach((freq, i) => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-
-      const start = ctx.currentTime + i * 0.18;
-      const end   = start + 0.55;
-
-      // Envelope: quick attack, smooth exponential decay
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.45, start + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, end);
-
-      osc.start(start);
-      osc.stop(end);
-    });
-
-    // Auto-close context after sound finishes
-    setTimeout(() => ctx.close(), 1200);
-  }catch(e){
-    console.warn('Alert sound failed:', e);
-  }
-}
-
-function playAlertDing(){
-  try{
     const ctx  = new (window.AudioContext || window.webkitAudioContext)();
     const gain = ctx.createGain();
     gain.connect(ctx.destination);
@@ -4290,7 +4270,7 @@ function showTab(n){
     );
   });
   if(n==='chart') setTimeout(renderChart,50);
-  if(n==='news' && !window._newsInitialized){ fetchNews('all'); window._newsInitialized=true; }
+  if(n==='news'&&!window._newsInitialized){window._newsInitialized=true;fetchNews('');}
 }
 function ck(li){li.classList.toggle('done');li.querySelector('.ck').textContent=li.classList.contains('done')?'✓':'';}
 let lm=false;
@@ -4557,285 +4537,350 @@ function toggleTrendingPanel(){
   btn.textContent = collapsed ? '▼' : '▶';
 }
 
-/* ══════════════════ NEWS ENGINE ══════════════════ */
-let _newsData = [];      // all fetched articles
-let _newsFilter = 'all'; // current sentiment filter
-let _newsPage   = 0;     // pagination offset
-const NEWS_PER_PAGE = 12;
-
-// CryptoPanic public API — no key needed for basic use
-const CP = 'https://cryptopanic.com/api/v1/posts/';
-// RSS-to-JSON bridge for CoinDesk, Cointelegraph, Decrypt
-const RSS_BRIDGE = 'https://api.rss2json.com/v1/api.json?rss_url=';
-const NEWS_FEEDS = [
-  { name:'CoinDesk',       url:'https://www.coindesk.com/arc/outboundfeeds/rss/' },
-  { name:'Cointelegraph',  url:'https://cointelegraph.com/rss' },
-  { name:'Decrypt',        url:'https://decrypt.co/feed' },
-  { name:'The Block',      url:'https://www.theblock.co/rss.xml' },
-];
-
-// Sentiment keywords
-const BULL_KW = ['rally','surge','soar','gain','rise','bull','breakout','ath','record','adoption','partnership','launch','upgrade','bullish','pump','recover','outperform','moon','milestone','positive'];
-const BEAR_KW = ['crash','dump','fall','drop','plunge','bear','hack','exploit','ban','lawsuit','sec','fine','scam','rug','fraud','fear','panic','sell','bearish','correction','warning','risk'];
+/* ════════════════════ NEWS ENGINE ════════════════════ */
+let _newsData=[], _newsQuery="", _newsFilter="all", _newsPage=0;
+const NEWS_PER_PAGE=9;
+const BULL_KW=['rally','surge','soar','gain','rise','bull','breakout','ath','record','adoption','partnership','launch','upgrade','bullish','pump','recover','outperform','milestone','approve','buy','accumulate','growth','positive','boost'];
+const BEAR_KW=['crash','dump','fall','drop','plunge','bear','hack','exploit','ban','lawsuit','sec','fine','scam','rug','fraud','fear','panic','sell','bearish','correction','warning','risk','stolen','breach','attack','seized','delist'];
 
 function scoreSentiment(text){
-  const t = (text||'').toLowerCase();
-  let bull=0, bear=0;
-  BULL_KW.forEach(w=>{ if(t.includes(w)) bull++; });
-  BEAR_KW.forEach(w=>{ if(t.includes(w)) bear++; });
-  if(bull > bear+1) return 'bullish';
-  if(bear > bull+1) return 'bearish';
-  return 'neutral';
+  const t=(text||"").toLowerCase();
+  let b=0,r=0;
+  BULL_KW.forEach(w=>{if(t.includes(w))b++;});
+  BEAR_KW.forEach(w=>{if(t.includes(w))r++;});
+  if(b>r+1)return"bullish";
+  if(r>b+1)return"bearish";
+  return"neutral";
+}
+function timeAgo(ts){
+  if(!ts)return"recently";
+  const sec=typeof ts==="number"?ts:Math.floor(new Date(ts).getTime()/1000);
+  const diff=Math.floor(Date.now()/1000)-sec;
+  if(diff<60)return"just now";
+  if(diff<3600)return Math.floor(diff/60)+"m ago";
+  if(diff<86400)return Math.floor(diff/3600)+"h ago";
+  return Math.floor(diff/86400)+"d ago";
 }
 
-function timeAgo(dateStr){
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const m = Math.floor(diff/60000);
-  if(m < 1)  return 'just now';
-  if(m < 60) return m+'m ago';
-  const h = Math.floor(m/60);
-  if(h < 24) return h+'h ago';
-  return Math.floor(h/24)+'d ago';
-}
+const CC_CAT_MAP={Cardano:"ADA",Bitcoin:"BTC",Ethereum:"ETH",Algorand:"ALGO",DeFi:"DEX",NFT:"NFT",Regulation:"REGULATION"};
 
-function newsQuick(topic){
-  document.getElementById('newsSearchIn').value = topic;
-  fetchNews();
+function newsSelectToken(btn, topic){
+  document.querySelectorAll(".news-tok-btn").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  document.getElementById("newsSearchIn").value="";
+  _newsQuery=topic;
+  fetchNews(topic);
 }
-
+function newsCustomSearch(){
+  const q=document.getElementById("newsSearchIn").value.trim();
+  if(!q){showToast("Search","Type a token name or keyword","info",2000);return;}
+  document.querySelectorAll(".news-tok-btn").forEach(b=>b.classList.remove("on"));
+  _newsQuery=q;
+  fetchNews(q);
+}
 function newsFilter(btn, filter){
-  _newsFilter = filter;
-  document.querySelectorAll('.news-filter').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
+  _newsFilter=filter;
+  document.querySelectorAll(".news-filter").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
   renderNewsGrid();
 }
+function newsLoadMore(){_newsPage++;renderNewsGrid(true);}
 
-function newsLoadMore(){
-  _newsPage++;
-  renderNewsGrid(true);
+// ── MAIN NEWS FETCHER ────────────────────────────────────────────────────────
+// Strategy 1: CryptoCompare (CORS-safe, no key needed)
+// Strategy 2: Anthropic API with web_search (always works, real live news)
+async function fetchNews(query){
+  if(query===undefined)query=_newsQuery;
+  _newsData=[];_newsFilter="all";_newsPage=0;
+  document.querySelectorAll(".news-filter").forEach(b=>b.classList.toggle("on",b.textContent.includes("All")));
+  const grid=document.getElementById("newsGrid");
+  const label=query||"All Crypto";
+  grid.innerHTML=`<div class="news-loading"><div class="spin" style="width:26px;height:26px;border-width:2.5px;"></div><span>Fetching ${label} news…</span></div>`;
+  document.getElementById("newsAISummary").style.display="none";
+  document.getElementById("newsFilterBar").style.display="none";
+  document.getElementById("newsLoadMore").style.display="none";
+
+  // Try CryptoCompare first (fast, structured, no API key)
+  let gotArticles = await tryCC(query);
+
+  // If CC fails or returns nothing, use Anthropic web_search (guaranteed live news)
+  if(!gotArticles){
+    // Update loading message to indicate fallback
+    grid.innerHTML=`<div class="news-loading"><div class="spin" style="width:26px;height:26px;border-width:2.5px;"></div><span>Searching the web for <b style="color:var(--accent)">${label}</b> news…</span></div>`;
+    gotArticles = await tryAnthropicSearch(query);
+  }
+
+  if(_newsData.length){
+    document.getElementById("newsFilterBar").style.display="flex";
+    document.getElementById("newsResultCount").textContent=_newsData.length+" articles";
+    renderNewsGrid();
+    if(query) generateAISummary(query, _newsData.slice(0,6));
+  } else {
+    grid.innerHTML=`<div class="news-loading" style="gap:14px;">
+      <div style="font-size:2rem;">📡</div>
+      <div style="color:var(--text);font-family:'Orbitron',sans-serif;font-size:.9rem;">News Unavailable Here</div>
+      <div style="color:var(--text2);font-size:.82rem;line-height:1.8;max-width:400px;text-align:center;">
+        News requires a live internet connection.<br>
+        <span style="color:var(--text3);font-size:.75rem;">This preview environment blocks external requests — news will load fully once the site is <b style="color:var(--accent)">deployed to Netlify or GitHub Pages</b>.</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px;">
+        <button onclick="fetchNews('${(query||"").replace(/'/g,"")}')" style="padding:7px 18px;border-radius:5px;border:1px solid var(--accent);color:var(--accent);background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:.72rem;">↻ Try Again</button>
+        <a href="https://www.coindesk.com" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid var(--border);color:var(--text2);background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:.72rem;text-decoration:none;">📰 CoinDesk ↗</a>
+        <a href="https://cointelegraph.com" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid var(--border);color:var(--text2);background:transparent;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:.72rem;text-decoration:none;">📰 CoinTelegraph ↗</a>
+      </div>
+    </div>`;
+  }
 }
 
-async function fetchNews(mode){
-  const q = mode === 'all' ? '' : (document.getElementById('newsSearchIn').value.trim());
-  _newsData = [];
-  _newsFilter = 'all';
-  _newsPage = 0;
-  document.querySelectorAll('.news-filter').forEach(b=>b.classList.toggle('on', b.textContent.includes('All')));
-
-  // Show loading state
-  const grid = document.getElementById('newsGrid');
-  grid.innerHTML = `<div class="news-loading"><div class="spin" style="width:28px;height:28px;border-width:2.5px;"></div><span>Fetching latest news${q?' for <b style="color:var(--accent)">'+q+'</b>':''}…</span></div>`;
-  document.getElementById('newsPlaceholder')?.remove();
-  document.getElementById('newsAISummary').style.display = 'none';
-  document.getElementById('newsFilterBar').style.display = 'none';
-  document.getElementById('newsLoadMore').style.display  = 'none';
-
-  const articles = [];
-
-  // ── Strategy 1: CryptoPanic (token-specific or latest) ──────────────────
+// ── STRATEGY 1: CryptoCompare News API ──────────────────────────────────────
+async function tryCC(query){
   try{
-    const cpUrl = q
-      ? `${CP}?auth_token=&kind=news&filter=hot&currencies=${encodeURIComponent(q)}&public=true`
-      : `${CP}?auth_token=&kind=news&filter=rising&public=true`;
-    const res = await fetch(cpUrl, {headers:{Accept:'application/json'}});
-    if(res.ok){
-      const json = await res.json();
-      (json.results||[]).slice(0,20).forEach(item=>{
-        articles.push({
-          title:   item.title,
-          url:     item.url,
-          source:  item.source?.title || 'CryptoPanic',
-          pubDate: item.published_at,
-          desc:    '',
-          image:   '',
-          tags:    (item.currencies||[]).map(c=>c.code).slice(0,4),
-          sentiment: scoreSentiment(item.title),
-        });
-      });
+    const base="https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50";
+    const ccCat=CC_CAT_MAP[query];
+    let url=base;
+    if(query && ccCat) url+="&categories="+encodeURIComponent(ccCat);
+    else if(query){
+      const sym=query.toUpperCase().replace(/[^A-Z0-9]/g,"").substring(0,15);
+      if(sym) url+="&categories="+encodeURIComponent(sym);
     }
-  }catch(e){ console.warn('CryptoPanic failed:',e); }
-
-  // ── Strategy 2: RSS feeds via rss2json ───────────────────────────────────
-  const feedPromises = NEWS_FEEDS.map(async feed => {
-    try{
-      const url = RSS_BRIDGE + encodeURIComponent(feed.url) + '&count=15&api_key=';
-      const res = await fetch(url);
-      if(!res.ok) return [];
-      const json = await res.json();
-      if(json.status !== 'ok') return [];
-      return (json.items||[]).map(item => ({
-        title:    item.title,
-        url:      item.link,
-        source:   feed.name,
-        pubDate:  item.pubDate,
-        desc:     (item.description||'').replace(/<[^>]+>/g,'').substring(0,200),
-        image:    item.thumbnail || item.enclosure?.link || '',
-        tags:     [],
-        sentiment: scoreSentiment(item.title + ' ' + item.description),
-      }));
-    }catch(e){ return []; }
-  });
-
-  const feedResults = await Promise.allSettled(feedPromises);
-  feedResults.forEach(r=>{ if(r.status==='fulfilled') r.value.forEach(a=>articles.push(a)); });
-
-  // ── Filter by query keyword ──────────────────────────────────────────────
-  let filtered = articles;
-  if(q){
-    const qlo = q.toLowerCase();
-    // Score and filter: exact mention = 2pts, partial = 1pt
-    filtered = articles
-      .map(a => {
-        const combined = ((a.title||'')+(a.desc||'')+(a.tags||[]).join(' ')).toLowerCase();
-        const score = combined.includes(qlo) ? (a.title.toLowerCase().includes(qlo) ? 2 : 1) : 0;
-        return {...a, _score: score};
-      })
-      .filter(a => a._score > 0)
-      .sort((a,b) => b._score - a._score);
-
-    // If still nothing, keep all — broadest possible match
-    if(!filtered.length) filtered = articles;
-  }
-
-  // ── Deduplicate by title similarity ─────────────────────────────────────
-  const seen = new Set();
-  const deduped = filtered.filter(a => {
-    const key = (a.title||'').substring(0,60).toLowerCase().replace(/\W+/g,' ').trim();
-    if(seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  // ── Sort by date ─────────────────────────────────────────────────────────
-  deduped.sort((a,b) => new Date(b.pubDate||0) - new Date(a.pubDate||0));
-  _newsData = deduped;
-
-  // ── AI Summary (via Anthropic API) ──────────────────────────────────────
-  if(_newsData.length > 0 && q){
-    generateAISummary(q, _newsData.slice(0,8));
-  }
-
-  renderNewsGrid();
-
-  // Show filter bar
-  if(_newsData.length > 0){
-    document.getElementById('newsFilterBar').style.display = 'flex';
-    document.getElementById('newsResultCount').textContent = _newsData.length + ' articles found';
+    // 5s timeout so we fall through quickly to Anthropic if CC is blocked
+    const controller = new AbortController();
+    const timer = setTimeout(()=>controller.abort(), 5000);
+    const res=await fetch(url,{headers:{Accept:"application/json"}, signal:controller.signal});
+    clearTimeout(timer);
+    if(!res.ok) return false;
+    const json=await res.json();
+    let items=json.Data||[];
+    // For custom non-mapped queries, filter client-side
+    if(query && !ccCat){
+      const qlo=query.toLowerCase();
+      const filtered=items.filter(a=>(a.title||"").toLowerCase().includes(qlo)||(a.categories||"").toLowerCase().includes(qlo));
+      if(filtered.length) items=filtered;
+    }
+    if(!items.length) return false;
+    _newsData=items.map(item=>({
+      title:   item.title||"",
+      url:     item.url||"#",
+      source:  item.source_info?.name||item.source||"CryptoCompare",
+      pubDate: item.published_on,
+      desc:    (item.body||"").replace(/<[^>]+>/g,"").substring(0,220),
+      image:   item.imageurl||"",
+      tags:    (item.categories||"").split("|").filter(Boolean).slice(0,4),
+      sentiment: scoreSentiment((item.title||"")+(item.body||"")),
+    }));
+    return _newsData.length>0;
+  }catch(e){
+    console.warn("CC news failed:",e.message);
+    return false;
   }
 }
 
-async function generateAISummary(query, articles){
-  const summaryEl = document.getElementById('newsAISummary');
-  const summaryText = document.getElementById('newsAISummaryText');
-  summaryEl.style.display = 'block';
-  summaryText.innerHTML = '<span style="color:var(--text3);font-size:.78rem;"><div class="spin" style="display:inline-block;width:10px;height:10px;border-width:1.5px;vertical-align:middle;margin-right:6px;"></div>AI is analyzing the news…</span>';
-
+// ── STRATEGY 2: Anthropic API + web_search ───────────────────────────────────
+async function tryAnthropicSearch(query){
   try{
-    const headlines = articles.map((a,i)=>`${i+1}. ${a.title} (${a.source}, ${timeAgo(a.pubDate)})`).join('\n');
-    const response = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+    const searchQuery = query
+      ? `latest ${query} crypto news March 2026`
+      : "latest cryptocurrency news today March 2026";
+
+    // Step 1: Ask Claude to search and return structured JSON
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:320,
-        messages:[{
-          role:'user',
-          content:`You are a concise crypto news analyst. Given these recent headlines about "${query}", write a 2-3 sentence plain-English summary of the current news sentiment and key themes. Be factual, balanced, and note if sentiment is mostly bullish, bearish, or mixed. Do not use markdown, bullet points, or headers. Just clean sentences.\n\nHeadlines:\n${headlines}`
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2500,
+        tools: [{type:"web_search_20250305", name:"web_search"}],
+        system: "You are a crypto news aggregator assistant. When asked for news, use the web_search tool to find recent articles, then respond with ONLY a valid JSON array. No markdown fences, no explanation, just the raw JSON array. Each item: {\"title\":\"...\",\"url\":\"...\",\"source\":\"...\",\"desc\":\"1-2 sentence summary\",\"pubDate\":\"ISO date string\",\"sentiment\":\"bullish|bearish|neutral\"}. Return 8-12 real articles with real URLs from search results.",
+        messages: [{
+          role: "user",
+          content: `Search the web and give me the latest news about: ${searchQuery}. Return ONLY the JSON array, nothing else.`
         }]
       })
     });
-    if(!response.ok) throw new Error('api_error');
-    const data = await response.json();
-    const text = (data.content||[]).find(c=>c.type==='text')?.text || '';
-    if(text){
-      // Detect overall sentiment for border color
-      const sent = scoreSentiment(text);
-      summaryEl.style.borderColor = sent==='bullish'?'rgba(0,255,136,.35)':sent==='bearish'?'rgba(255,51,102,.35)':'rgba(0,212,255,.18)';
-      summaryEl.style.background  = sent==='bullish'?'rgba(0,255,136,.04)':sent==='bearish'?'rgba(255,51,102,.04)':'rgba(0,212,255,.05)';
-      summaryText.textContent = text;
-    } else {
-      summaryEl.style.display = 'none';
+
+    if(!response.ok){
+      console.warn("Anthropic API error:", response.status, await response.text().catch(()=>""));
+      return false;
     }
+
+    const data = await response.json();
+
+    // The response may have multiple content blocks including tool_use results
+    // We want the LAST text block which contains the final JSON answer
+    const textBlocks = (data.content||[]).filter(c => c.type === "text");
+    if(!textBlocks.length){
+      console.warn("No text block in Anthropic response. Stop reason:", data.stop_reason);
+      // If stop_reason is tool_use, we need to continue the conversation
+      if(data.stop_reason === "tool_use"){
+        return await continueAnthropicSearch(data, query);
+      }
+      return false;
+    }
+
+    const raw = extractJSONArray(textBlocks[textBlocks.length - 1].text);
+    if(!raw) return false;
+
+    const articles = JSON.parse(raw);
+    if(!Array.isArray(articles) || !articles.length) return false;
+
+    _newsData = articles.map(a=>({
+      title:     String(a.title||"").trim(),
+      url:       String(a.url||"#"),
+      source:    String(a.source||"Web"),
+      pubDate:   a.pubDate ? Math.floor(new Date(a.pubDate).getTime()/1000) : Math.floor(Date.now()/1000),
+      desc:      String(a.desc||a.description||"").trim(),
+      image:     "",
+      tags:      [],
+      sentiment: a.sentiment || scoreSentiment((a.title||"")+(a.desc||"")),
+    })).filter(a => a.title.length > 5);
+
+    return _newsData.length > 0;
   }catch(e){
-    summaryEl.style.display = 'none';
+    console.warn("tryAnthropicSearch failed:", e.message);
+    return false;
   }
 }
 
+// Continue the conversation when Claude stopped to use a tool
+async function continueAnthropicSearch(firstResponse, query){
+  try{
+    // Build the tool_result messages required by the API
+    const toolUseBlock = (firstResponse.content||[]).find(c => c.type === "tool_use");
+    if(!toolUseBlock) return false;
+
+    const searchQuery = query
+      ? `latest ${query} crypto news March 2026`
+      : "latest cryptocurrency news today March 2026";
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2500,
+        tools: [{type:"web_search_20250305", name:"web_search"}],
+        system: "You are a crypto news aggregator. Respond with ONLY a valid JSON array of news articles. Format: [{\"title\":\"...\",\"url\":\"...\",\"source\":\"...\",\"desc\":\"...\",\"pubDate\":\"...\",\"sentiment\":\"bullish|bearish|neutral\"}]. No markdown, no explanation.",
+        messages: [
+          {role:"user", content:`Search the web and give me the latest news about: ${searchQuery}. Return ONLY the JSON array.`},
+          {role:"assistant", content: firstResponse.content},
+          {role:"user", content:[{
+            type:"tool_result",
+            tool_use_id: toolUseBlock.id,
+            content: "Search completed. Now return the JSON array of articles based on your search results."
+          }]}
+        ]
+      })
+    });
+
+    if(!response.ok) return false;
+    const data = await response.json();
+    const textBlocks = (data.content||[]).filter(c => c.type === "text");
+    if(!textBlocks.length) return false;
+
+    const raw = extractJSONArray(textBlocks[textBlocks.length - 1].text);
+    if(!raw) return false;
+
+    const articles = JSON.parse(raw);
+    if(!Array.isArray(articles) || !articles.length) return false;
+
+    _newsData = articles.map(a=>({
+      title:     String(a.title||"").trim(),
+      url:       String(a.url||"#"),
+      source:    String(a.source||"Web"),
+      pubDate:   a.pubDate ? Math.floor(new Date(a.pubDate).getTime()/1000) : Math.floor(Date.now()/1000),
+      desc:      String(a.desc||a.description||"").trim(),
+      image:     "",
+      tags:      [],
+      sentiment: a.sentiment || scoreSentiment((a.title||"")+(a.desc||"")),
+    })).filter(a => a.title.length > 5);
+
+    return _newsData.length > 0;
+  }catch(e){
+    console.warn("continueAnthropicSearch failed:", e.message);
+    return false;
+  }
+}
+
+// Extract a JSON array from a string that might have markdown or extra text
+function extractJSONArray(text){
+  if(!text) return null;
+  let raw = text.trim();
+  // Remove markdown fences
+  raw = raw.replace(/^```(?:json)?\s*/i,"").replace(/```\s*$/,"").trim();
+  // Find outermost [ ... ]
+  const start = raw.indexOf("[");
+  const end   = raw.lastIndexOf("]");
+  if(start === -1 || end === -1 || end <= start) return null;
+  return raw.slice(start, end + 1);
+}
+
+
+// ── AI SUMMARY ───────────────────────────────────────────────────────────────
+async function generateAISummary(query, articles){
+  const el=document.getElementById("newsAISummary");
+  const txt=document.getElementById("newsAISummaryText");
+  el.style.display="block";
+  txt.innerHTML=`<span style="color:var(--text3);font-size:.76rem;"><div class="spin" style="display:inline-block;width:9px;height:9px;border-width:1.5px;vertical-align:middle;margin-right:5px;"></div>AI reading the news…</span>`;
+  try{
+    const headlines=articles.map((a,i)=>(i+1)+". "+a.title).join("\n");
+    const r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,
+        messages:[{role:"user",content:"Crypto news analyst. Write 2 plain sentences summarizing the current "+query+" news sentiment and key themes. Note if mostly bullish, bearish, or mixed. No markdown, no lists.\n\n"+headlines}]})
+    });
+    if(!r.ok)throw new Error("api");
+    const d=await r.json();
+    const text=(d.content||[]).find(c=>c.type==="text")?.text||"";
+    if(text){
+      const s=scoreSentiment(text);
+      el.style.borderColor=s==="bullish"?"rgba(0,255,136,.4)":s==="bearish"?"rgba(255,51,102,.4)":"rgba(0,212,255,.2)";
+      el.style.background=s==="bullish"?"rgba(0,255,136,.04)":s==="bearish"?"rgba(255,51,102,.04)":"rgba(0,212,255,.05)";
+      txt.textContent=text;
+    }else el.style.display="none";
+  }catch(e){el.style.display="none";}
+}
+
+// ── RENDER GRID ───────────────────────────────────────────────────────────────
 function renderNewsGrid(append){
-  const grid   = document.getElementById('newsGrid');
-  if(!append) grid.innerHTML = '';
-
-  // Apply sentiment filter
-  let display = _newsData;
-  if(_newsFilter !== 'all') display = _newsData.filter(a=>a.sentiment===_newsFilter);
-
-  // Pagination
-  const start = _newsPage * NEWS_PER_PAGE;
-  const page  = display.slice(start, start + NEWS_PER_PAGE);
-
+  const grid=document.getElementById("newsGrid");
+  if(!append)grid.innerHTML="";
+  let display=_newsData;
+  if(_newsFilter!=="all")display=_newsData.filter(a=>a.sentiment===_newsFilter);
+  const page=display.slice(_newsPage*NEWS_PER_PAGE,(_newsPage+1)*NEWS_PER_PAGE);
   if(!display.length){
-    grid.innerHTML = `<div style="grid-column:1/-1;padding:56px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;">
-      <div style="font-size:1.8rem;margin-bottom:10px;">🔍</div>
-      No news matched this filter. Try <b style="color:var(--text)">All</b> or change your search.
-    </div>`;
-    document.getElementById('newsLoadMore').style.display = 'none';
+    grid.innerHTML='<div style="grid-column:1/-1;padding:48px;text-align:center;color:var(--text3);">No articles matched this filter.</div>';
+    document.getElementById("newsLoadMore").style.display="none";
     return;
   }
-
-  if(!page.length && !append){
-    grid.innerHTML='';
-    document.getElementById('newsLoadMore').style.display='none';
-    return;
-  }
-
   page.forEach(a=>{
-    const sentClass = a.sentiment||'neutral';
-    const sentLabel = sentClass==='bullish'?'📈 Bullish':sentClass==='bearish'?'📉 Bearish':'⚖ Neutral';
-    const imgHtml = a.image
-      ? `<img class="news-card-img" src="${a.image}" alt="" loading="lazy" onerror="this.parentNode.querySelector('.news-card-img-placeholder')&&(this.style.display='none');this.style.display='none';">`
-      : '';
-    const placeholderEmoji = sentClass==='bullish'?'📈':sentClass==='bearish'?'📉':'📰';
-    const tagsHtml = (a.tags||[]).filter(Boolean).map(t=>`<span class="news-card-tag">${t}</span>`).join('');
-
-    const card = document.createElement('a');
-    card.className = 'news-card';
-    card.href = a.url || '#';
-    card.target = '_blank';
-    card.rel = 'noopener noreferrer';
-    card.innerHTML = `
-      ${imgHtml ? imgHtml : `<div class="news-card-img-placeholder">${placeholderEmoji}</div>`}
-      <div class="news-card-body">
-        <div class="news-card-source">
-          <span class="news-card-src">${a.source||'Unknown'}</span>
+    const sc=a.sentiment||"neutral";
+    const sl=sc==="bullish"?"📈 Bullish":sc==="bearish"?"📉 Bearish":"⚖ Neutral";
+    const tags=(a.tags||[]).filter(Boolean).map(t=>`<span class="news-card-tag">${t}</span>`).join("");
+    const card=document.createElement("a");
+    card.className="news-card";
+    card.href=a.url||"#";
+    card.target="_blank";
+    card.rel="noopener noreferrer";
+    const img=a.image
+      ?`<img class="news-card-img" src="${a.image}" alt="" loading="lazy" onerror="this.outerHTML='<div class=news-card-noimg>📰</div>'">`
+      :'<div class="news-card-noimg">📰</div>';
+    card.innerHTML=img+
+      `<div class="news-card-body">
+        <div class="news-card-meta">
+          <span class="news-card-src">${a.source}</span>
           <span class="news-card-time">${timeAgo(a.pubDate)}</span>
-          <span class="news-card-sentiment ${sentClass}">${sentLabel}</span>
+          <span class="news-card-sent ${sc}">${sl}</span>
         </div>
-        <div class="news-card-title">${a.title||''}</div>
-        ${a.desc ? `<div class="news-card-desc">${a.desc.substring(0,160)}${a.desc.length>160?'…':''}</div>` : ''}
-        ${tagsHtml ? `<div class="news-card-tags">${tagsHtml}</div>` : ''}
+        <div class="news-card-title">${a.title}</div>
+        ${a.desc?`<div class="news-card-desc">${a.desc.substring(0,180)}${a.desc.length>180?"…":""}</div>`:""}
+        ${tags?`<div class="news-card-tags">${tags}</div>`:""}
       </div>`;
     grid.appendChild(card);
   });
-
-  // Show/hide load more
-  const hasMore = display.length > ((_newsPage+1)*NEWS_PER_PAGE);
-  document.getElementById('newsLoadMore').style.display = hasMore ? 'block' : 'none';
+  document.getElementById("newsLoadMore").style.display=display.length>((_newsPage+1)*NEWS_PER_PAGE)?"block":"none";
 }
 
 
-
-/* ── HATTY LINKS DROPDOWN ─────────────────────────────── */
-function toggleHattyDrop(e){
-  e.stopPropagation();
-  document.getElementById('hattyDropWrap').classList.toggle('open');
-}
-document.addEventListener('click',e=>{
-  const w=document.getElementById('hattyDropWrap');
-  if(w&&!w.contains(e.target))w.classList.remove('open');
-});
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')document.getElementById('hattyDropWrap')?.classList.remove('open');
-});
 </script>
 
 
