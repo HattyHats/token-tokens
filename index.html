@@ -517,6 +517,40 @@ button{cursor:pointer;font-family:inherit;}
 .cip-footer{padding:7px 14px;background:rgba(0,0,0,.2);border-top:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text3);text-align:center;}
 .cip-loading{padding:20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;font-size:.75rem;}
 
+/* ── CNT QUICK-ADD CHIPS ────────────────────────────────── */
+.cnt-chip{font-family:'Share Tech Mono',monospace;font-size:.63rem;padding:3px 8px;border-radius:20px;border:1px solid rgba(0,212,255,.3);color:var(--accent);background:rgba(0,212,255,.06);cursor:pointer;transition:all .18s;white-space:nowrap;}
+.cnt-chip:hover{background:rgba(0,212,255,.18);border-color:var(--accent);transform:scale(1.07);}
+.cnt-chip:active{transform:scale(.97);}
+
+/* ── NEWS SECTION ────────────────────────────────────────── */
+.news-chip{font-family:'Share Tech Mono',monospace;font-size:.65rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:transparent;cursor:pointer;transition:all .18s;white-space:nowrap;}
+.news-chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.07);}
+.news-filter{font-family:'Share Tech Mono',monospace;font-size:.65rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:transparent;cursor:pointer;transition:all .18s;}
+.news-filter:hover{border-color:var(--accent2);color:var(--accent2);}
+.news-filter.on{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+.news-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,transform .15s;cursor:pointer;text-decoration:none;}
+.news-card:hover{border-color:var(--accent2);transform:translateY(-2px);}
+.news-card-img{width:100%;height:160px;object-fit:cover;background:var(--bg2);flex-shrink:0;}
+.news-card-img-placeholder{width:100%;height:100px;display:flex;align-items:center;justify-content:center;font-size:2rem;background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(123,47,255,.06));flex-shrink:0;}
+.news-card-body{padding:13px 15px;flex:1;display:flex;flex-direction:column;gap:7px;}
+.news-card-source{display:flex;align-items:center;gap:7px;}
+.news-card-src{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.news-card-time{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);}
+.news-card-sentiment{font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:2px 7px;border-radius:20px;margin-left:auto;}
+.news-card-sentiment.bullish{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.3);}
+.news-card-sentiment.bearish{background:rgba(255,51,102,.1);color:var(--red);border:1px solid rgba(255,51,102,.3);}
+.news-card-sentiment.neutral{background:rgba(122,156,192,.1);color:var(--text2);border:1px solid rgba(122,156,192,.2);}
+.news-card-title{font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;color:var(--text);line-height:1.4;}
+.news-card-desc{font-size:.8rem;color:var(--text2);line-height:1.55;flex:1;}
+.news-card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;}
+.news-card-tag{font-family:'Share Tech Mono',monospace;font-size:.57rem;padding:2px 7px;border-radius:20px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.18);color:var(--accent);}
+.news-loading{grid-column:1/-1;padding:56px 20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;font-size:.8rem;display:flex;flex-direction:column;align-items:center;gap:12px;}
+
+/* ── TRENDING COLLAPSIBLE ────────────────────────────────── */
+.tr-body-collapsed{display:none;}
+.tr-sec .wl-hdr{cursor:pointer;user-select:none;}
+.tr-sec .wl-hdr:hover{color:var(--text);}
+
 /* scrollbar */
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
@@ -601,6 +635,7 @@ button{cursor:pointer;font-family:inherit;}
 
   /* Trending & Fear/Greed — hide on mobile */
   .tr-sec{display:none;}
+  #cntPanel{display:none;}
   .fg-widget{display:none;}
 
   /* Main area: auto height, scrollable */
@@ -643,8 +678,11 @@ button{cursor:pointer;font-family:inherit;}
   .tm-input{width:100%;}
   .tm-go{width:100%;}
 
-  /* Learn section */
+  /* Learn & News sections */
   #learnSec{height:auto;max-height:none;padding:0;overflow-y:visible;}
+  #newsSec{height:auto;max-height:none;overflow-y:visible;}
+  #newsGrid{grid-template-columns:1fr !important;padding:10px 12px;}
+  #newsSec > div:first-child{padding:16px 14px 14px;}
   .ls-hero{padding:16px;}
   .ls-sec{padding:16px;}
   .ls-candle-demo{flex-direction:column;}
@@ -668,6 +706,7 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── LEARN SECTION ─────────────────────────────────────── */
 #learnSec{display:none;padding:0;overflow-y:auto;height:calc(100vh - 92px);}
+#newsSec{display:none;overflow-y:auto;height:calc(100vh - 92px);}
 .ls-hero{background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(123,47,255,.08));border-bottom:1px solid var(--border);padding:28px 32px 22px;text-align:center;}
 .ls-hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(1.2rem,3vw,1.9rem);font-weight:700;color:var(--text);margin-bottom:8px;}
 .ls-hero-sub{color:var(--text2);font-size:.95rem;max-width:600px;margin:0 auto 16px;line-height:1.6;}
@@ -797,6 +836,7 @@ button{cursor:pointer;font-family:inherit;}
   <nav class="hdr-nav">
     <button class="nb on" onclick="showTab('chart')">📊 Chart</button>
     <button class="nb" onclick="showTab('learn')">📚 Learn</button>
+    <button class="nb" onclick="showTab('news')">📰 News</button>
     <div class="hatty-drop-wrap" id="hattyDropWrap">
       <button class="nb hatty-drop-btn" onclick="toggleHattyDrop(event)">
         🔗 HattyHats <span class="hatty-chevron" id="hattyChevron">▾</span>
@@ -872,8 +912,40 @@ button{cursor:pointer;font-family:inherit;}
     </div>
     <div class="wl-hdr">◈ My Watchlist <button class="wl-ref" onclick="refreshWL()" title="Refresh prices">↻</button></div>
     <div class="wl-list" id="wlList"><div style="padding:20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;font-size:.75rem;"><div class="spin" style="margin:0 auto 10px;"></div>Loading…</div></div>
-    <div class="tr-sec">
-      <div class="wl-hdr">🔥 Trending</div>
+    <!-- CARDANO ECOSYSTEM PANEL -->
+    <div class="tr-sec" id="cntPanel">
+      <div class="wl-hdr" style="color:var(--accent);letter-spacing:.1em;">🔵 CARDANO ECOSYSTEM
+        <button class="wl-ref" onclick="toggleCNTPanel()" id="cntToggle" title="Collapse">▼</button>
+      </div>
+      <div id="cntList" style="padding:4px 8px 6px;">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text3);padding:3px 4px 6px;letter-spacing:.08em;">QUICK ADD — POPULAR CNTs</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;padding:0 2px;">
+          <button class="cnt-chip" onclick="quickAddCNT('cardano','Cardano','ADA','')">ADA</button>
+          <button class="cnt-chip" onclick="quickAddCNT('minswap','Minswap','MIN','')">MIN</button>
+          <button class="cnt-chip" onclick="quickAddCNT('sundaeswap','SundaeSwap','SUNDAE','')">SUNDAE</button>
+          <button class="cnt-chip" onclick="quickAddCNT('wingriders','WingRiders','WRT','')">WRT</button>
+          <button class="cnt-chip" onclick="quickAddCNT('liqwid-finance','Liqwid','LQ','')">LQ</button>
+          <button class="cnt-chip" onclick="quickAddCNT('indigo-dao','Indigo','INDY','')">INDY</button>
+          <button class="cnt-chip" onclick="quickAddCNT('djed','DJED','DJED','')">DJED</button>
+          <button class="cnt-chip" onclick="quickAddCNT('world-mobile-token','World Mobile','WMT','')">WMT</button>
+          <button class="cnt-chip" onclick="quickAddCNT('iagon','Iagon','IAG','')">IAG</button>
+          <button class="cnt-chip" onclick="quickAddCNT('snek','Snek','SNEK','')">SNEK</button>
+          <button class="cnt-chip" onclick="quickAddCNT('nmkr','NMKR','NMKR','')">NMKR</button>
+          <button class="cnt-chip" onclick="quickAddCNT('genius-yield','Genius Yield','GENS','')">GENS</button>
+          <button class="cnt-chip" onclick="quickAddCNT('empowa','Empowa','EMP','')">EMP</button>
+          <button class="cnt-chip" onclick="quickAddCNT('lenfi','Lenfi','LENFI','')">LENFI</button>
+          <button class="cnt-chip" onclick="quickAddCNT('hosky-token','Hosky','HOSKY','')">HOSKY</button>
+          <button class="cnt-chip" onclick="quickAddCNT('optim-finance','Optim','OPTIM','')">OPTIM</button>
+          <button class="cnt-chip" onclick="openCardanoModal()" style="background:rgba(123,47,255,.15);border-color:rgba(123,47,255,.5);color:var(--accent2);">+ More ↗</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tr-sec" id="trendingPanel">
+      <div class="wl-hdr" style="cursor:pointer;" onclick="toggleTrendingPanel()" title="Click to collapse">
+        🔥 Trending
+        <button class="wl-ref" id="trendingToggle" style="font-size:.75rem;pointer-events:none;">▼</button>
+      </div>
       <div id="trList"><div style="padding:12px;text-align:center;color:var(--text3);font-size:.75rem;">Loading…</div></div>
     </div>
 
@@ -904,7 +976,7 @@ button{cursor:pointer;font-family:inherit;}
     <div class="ch-hdr">
       <div class="ch-coin">
         <img class="ch-img" id="chImg" src="" alt="" style="display:none" onerror="this.style.display='none'">
-        <div><div class="ch-sub" id="chSub">BTC/USD</div><div class="ch-title" id="chTitle">Bitcoin</div></div>
+        <div><div class="ch-sub" id="chSub">ADA/USD</div><div class="ch-title" id="chTitle">Cardano</div></div>
         <div class="ch-price" id="chPrice">$—</div>
         <div class="ch-badge pos" id="chBadge">—</div>
         <div class="ch-meta"><span id="chMcap">MCap: —</span><span id="chVol">Vol 24h: —</span><span id="chATH" style="color:var(--accent3);font-size:.62rem;"></span></div>
@@ -1080,7 +1152,7 @@ button{cursor:pointer;font-family:inherit;}
       </div>
       <div class="alert-body" id="alertBody">
         <div class="alert-add-row">
-          <span class="alert-coin-name" id="alertCoinName">BTC</span>
+          <span class="alert-coin-name" id="alertCoinName">ADA</span>
           <select class="alert-dir" id="alertDir">
             <option value="above">↑ Above</option>
             <option value="below">↓ Below</option>
@@ -1544,7 +1616,76 @@ button{cursor:pointer;font-family:inherit;}
 
 </div>
 
+
+<!-- ═════ NEWS SECTION ═════ -->
+<div id="newsSec" style="display:none;overflow-y:auto;flex:1;min-height:0;background:var(--bg);">
+
+  <!-- Hero -->
+  <div style="background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(123,47,255,.08));border-bottom:1px solid var(--border);padding:24px 32px 20px;">
+    <div style="font-family:'Orbitron',sans-serif;font-size:clamp(1.1rem,3vw,1.7rem);font-weight:700;color:var(--text);margin-bottom:6px;">📰 Crypto News</div>
+    <div style="color:var(--text2);font-size:.88rem;margin-bottom:16px;">Search any token or topic — get the latest news powered by AI analysis.</div>
+
+    <!-- Search bar -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;max-width:700px;">
+      <div style="flex:1;min-width:200px;position:relative;">
+        <input id="newsSearchIn" type="text" placeholder="🔍  Search: Bitcoin, Cardano, DeFi, ADA…"
+          style="width:100%;background:var(--bg2);border:1.5px solid var(--border);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.95rem;padding:10px 14px;border-radius:6px;outline:none;transition:border-color .2s;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+          onkeydown="if(event.key==='Enter')fetchNews()">
+      </div>
+      <button onclick="fetchNews()" style="font-family:'Orbitron',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.1em;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#050810;border:none;padding:10px 22px;border-radius:6px;cursor:pointer;transition:opacity .2s;white-space:nowrap;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">SEARCH NEWS</button>
+      <button onclick="fetchNews('all')" style="font-family:'Share Tech Mono',monospace;font-size:.72rem;background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:10px 16px;border-radius:6px;cursor:pointer;transition:all .2s;white-space:nowrap;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">📡 All Crypto News</button>
+    </div>
+
+    <!-- Quick topic chips -->
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);align-self:center;margin-right:4px;">QUICK:</span>
+      <button class="news-chip" onclick="newsQuick('Bitcoin')">Bitcoin</button>
+      <button class="news-chip" onclick="newsQuick('Cardano')">Cardano</button>
+      <button class="news-chip" onclick="newsQuick('Ethereum')">Ethereum</button>
+      <button class="news-chip" onclick="newsQuick('Algorand')">Algorand</button>
+      <button class="news-chip" onclick="newsQuick('DeFi')">DeFi</button>
+      <button class="news-chip" onclick="newsQuick('NFT')">NFT</button>
+      <button class="news-chip" onclick="newsQuick('regulation')">Regulation</button>
+      <button class="news-chip" onclick="newsQuick('altcoin')">Altcoin</button>
+    </div>
+  </div>
+
+  <!-- AI Summary bar (shown after search) -->
+  <div id="newsAISummary" style="display:none;margin:16px 24px 0;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.18);border-radius:10px;padding:14px 18px;">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--accent);letter-spacing:.12em;margin-bottom:8px;">⚡ AI SUMMARY</div>
+    <div id="newsAISummaryText" style="font-size:.88rem;color:var(--text2);line-height:1.7;"></div>
+  </div>
+
+  <!-- Filter bar -->
+  <div id="newsFilterBar" style="display:none;padding:10px 24px;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;gap:6px;">
+    <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);">FILTER:</span>
+    <button class="news-filter on" onclick="newsFilter(this,'all')">All</button>
+    <button class="news-filter" onclick="newsFilter(this,'bullish')">📈 Bullish</button>
+    <button class="news-filter" onclick="newsFilter(this,'bearish')">📉 Bearish</button>
+    <button class="news-filter" onclick="newsFilter(this,'neutral')">⚖ Neutral</button>
+    <span id="newsResultCount" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--text3);margin-left:auto;"></span>
+  </div>
+
+  <!-- News grid -->
+  <div id="newsGrid" style="padding:16px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;">
+    <!-- Placeholder state -->
+    <div id="newsPlaceholder" style="grid-column:1/-1;padding:48px 20px;text-align:center;color:var(--text3);">
+      <div style="font-size:2.5rem;margin-bottom:12px;">📰</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:1rem;color:var(--text2);margin-bottom:8px;">Search for crypto news above</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:.75rem;line-height:1.8;">Type any token name, topic, or keyword<br>and hit <b style="color:var(--accent)">Search News</b> — or click a quick chip</div>
+    </div>
+  </div>
+
+  <!-- Load more -->
+  <div id="newsLoadMore" style="display:none;text-align:center;padding:0 24px 32px;">
+    <button onclick="newsLoadMore()" style="font-family:'Share Tech Mono',monospace;font-size:.75rem;background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:10px 32px;border-radius:6px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">Load More Articles ↓</button>
+  </div>
+
+</div><!-- /newsSec -->
+
 </div><!-- /app -->
+
 
 
 <!-- NOTE INPUT OVERLAY -->
@@ -1562,6 +1703,7 @@ button{cursor:pointer;font-family:inherit;}
     </div>
     <div class="m-cats">
       <button class="mc on" onclick="setMCat(this,'')">🌐 All</button>
+      <button class="mc" onclick="setMCat(this,'cardano-ecosystem')" style="border-color:rgba(0,212,255,.5);color:var(--accent);">🔵 Cardano</button>
       <button class="mc" onclick="setMCat(this,'layer-1')">⛓ Layer 1</button>
       <button class="mc" onclick="setMCat(this,'layer-2')">🔗 Layer 2</button>
       <button class="mc" onclick="setMCat(this,'decentralized-finance-defi')">🏦 DeFi</button>
@@ -1696,14 +1838,12 @@ function setDot(s){
 
 /* ══════════════════ STATE ══════════════════ */
 const ST={
-  coin:{id:'bitcoin',name:'Bitcoin',symbol:'BTC',image:'',price:0,change:0,mcap:0,vol:0,ath:0},
+  coin:{id:'cardano',name:'Cardano',symbol:'ADA',image:'',price:0,change:0,mcap:0,vol:0,ath:0},
   wl:[
+    {id:'cardano',name:'Cardano',symbol:'ADA'},
     {id:'bitcoin',name:'Bitcoin',symbol:'BTC'},
     {id:'ethereum',name:'Ethereum',symbol:'ETH'},
-    {id:'solana',name:'Solana',symbol:'SOL'},
-    {id:'binancecoin',name:'BNB',symbol:'BNB'},
-    {id:'ripple',name:'XRP',symbol:'XRP'},
-    {id:'dogecoin',name:'Dogecoin',symbol:'DOGE'},
+    {id:'algorand',name:'Algorand',symbol:'ALGO'},
   ],
   tf:'30',ct:'candle',
   inds:new Set(),candles:[],
@@ -1901,6 +2041,24 @@ const CC_SYM = {
   'ontology':'ONT','nano':'XNO','wax':'WAXP','band-protocol':'BAND',
   'kyber-network-crystal':'KNC','loopring':'LRC','storj':'STORJ',
   'ankr':'ANKR','celer-network':'CELR','api3':'API3',
+  // ── Cardano Native Tokens (CNTs) ──────────────────────────────────────────
+  'meld':'MELD','minswap':'MIN','sundaeswap':'SUNDAE',
+  'wingriders':'WRT','liqwid-finance':'LQ','indigo-dao':'INDY',
+  'djed':'DJED','iagon':'IAG','jpg-store':'JPEG',
+  'cornucopias':'COPI','genius-yield':'GENS','clarity-dao':'CLAP',
+  'nunet':'NTX','book-io':'BOOK','charli3':'C3',
+  'fluid-tokens':'FLUID','vyfi':'VYFI','lenfi':'LENFI',
+  'encoins':'ENCS','derp-finance':'DERP','optim-finance':'OPTIM',
+  'snek':'SNEK','clay-nation':'CLAY','hosky-token':'HOSKY',
+  'catsky':'CATSKY','mean-finance':'MEAN','flac-finance':'FLAC',
+  'yamfore':'YFP','pavia':'PAVIA','world-mobile-token':'WMT',
+  'empowa':'EMP','ibilecoin':'IBILE','gero-wallet':'GERO',
+  'adax-pro':'ADAX','astarter':'AA','cardax':'CDX',
+  'maiadao':'MAIA','ikigai-tech':'IKIGAI','yamfore-ii':'YFP2',
+  'nmkr':'NMKR','tokenmania':'TOKEN','spacebudz':'BUD',
+  'aada-finance':'AADA','paribus':'PBX','mix-token':'MIX',
+  'arcade-network':'ARC','adadao':'ADAO','milk-alliance':'MILK',
+  'ada-handle':'HANDLE',
 };
 
 // TF → CryptoCompare endpoint + candle count
@@ -2239,6 +2397,7 @@ const CG_SORT_MAP = {
 // CoinGecko category slugs
 const CG_CATS = {
   '':                             '',
+  'cardano-ecosystem':            'cardano-ecosystem',
   'layer-1':                      'layer-1',
   'layer-2':                      'layer-2',
   'decentralized-finance-defi':   'decentralized-finance-defi',
@@ -4118,7 +4277,21 @@ function activateIndicator(name){
 }
 
 /* ══════════════════ TABS / THEME / CHECKLIST ══════════════════ */
-function showTab(n){document.getElementById('chartTab').style.display=n==='chart'?'block':'none';document.getElementById('learnSec').style.display=n==='learn'?'block':'none';document.querySelectorAll('.nb').forEach((b,i)=>b.classList.toggle('on',(i===0&&n==='chart')||(i===1&&n==='learn')));if(n==='chart')setTimeout(renderChart,50);}
+function showTab(n){
+  document.getElementById('chartTab').style.display  = n==='chart' ? 'block':'none';
+  document.getElementById('learnSec').style.display  = n==='learn' ? 'block':'none';
+  document.getElementById('newsSec').style.display   = n==='news'  ? 'block':'none';
+  // Sync nav buttons (Chart=0, Learn=1, News=2)
+  document.querySelectorAll('.nb').forEach((b,i)=>{
+    b.classList.toggle('on',
+      (i===0 && n==='chart') ||
+      (i===1 && n==='learn') ||
+      (i===2 && n==='news')
+    );
+  });
+  if(n==='chart') setTimeout(renderChart,50);
+  if(n==='news' && !window._newsInitialized){ fetchNews('all'); window._newsInitialized=true; }
+}
 function ck(li){li.classList.toggle('done');li.querySelector('.ck').textContent=li.classList.contains('done')?'✓':'';}
 let lm=false;
 function toggleTheme(){lm=!lm;const v=(k,d,l)=>document.documentElement.style.setProperty(k,lm?l:d);v('--bg','#050810','#f0f4fa');v('--bg2','#0a1020','#e4eaf5');v('--surface','#0d1628','#d8e2f0');v('--border','#1a2d4a','#a0b4d0');v('--text','#e0eeff','#0a1020');v('--text2','#7a9cc0','#2a4060');v('--text3','#3a5a80','#6080a0');renderChart();}
@@ -4347,6 +4520,309 @@ function initCoinInfoPopup(){
   popup.addEventListener('mouseenter',()=>clearTimeout(_cipHideTimeout));
   popup.addEventListener('mouseleave',hideCoinInfo);
 }
+
+/* ══════════════════ CNT HELPERS ══════════════════ */
+async function quickAddCNT(id, name, sym, img){
+  const existing = ST.wl.find(c => c.id === id);
+  if(existing){ await selectCoin(id, name, sym, img || existing.image || ''); return; }
+  showToast('🔵 Adding '+sym, 'Fetching '+name+' price…', 'info', 2000);
+  await addToWL(id, name, sym, img);
+  await selectCoin(id, name, sym, img || ST.wl.find(c=>c.id===id)?.image || '');
+}
+
+function toggleCNTPanel(){
+  const list = document.getElementById('cntList');
+  const btn  = document.getElementById('cntToggle');
+  if(!list || !btn) return;
+  const collapsed = list.style.display === 'none';
+  list.style.display = collapsed ? '' : 'none';
+  btn.textContent = collapsed ? '▼' : '▶';
+}
+
+function openCardanoModal(){
+  openModal();
+  setTimeout(()=>{
+    const btn = [...document.querySelectorAll('.mc')].find(b => b.textContent.includes('Cardano'));
+    if(btn){ document.querySelectorAll('.mc').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); ST.mb.cat='cardano-ecosystem'; ST.mb.page=1; fetchModal(); }
+  }, 80);
+}
+
+/* ══════════════════ TRENDING COLLAPSE ══════════════════ */
+function toggleTrendingPanel(){
+  const body = document.getElementById('trList');
+  const btn  = document.getElementById('trendingToggle');
+  if(!body || !btn) return;
+  const collapsed = body.style.display === 'none';
+  body.style.display = collapsed ? '' : 'none';
+  btn.textContent = collapsed ? '▼' : '▶';
+}
+
+/* ══════════════════ NEWS ENGINE ══════════════════ */
+let _newsData = [];      // all fetched articles
+let _newsFilter = 'all'; // current sentiment filter
+let _newsPage   = 0;     // pagination offset
+const NEWS_PER_PAGE = 12;
+
+// CryptoPanic public API — no key needed for basic use
+const CP = 'https://cryptopanic.com/api/v1/posts/';
+// RSS-to-JSON bridge for CoinDesk, Cointelegraph, Decrypt
+const RSS_BRIDGE = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const NEWS_FEEDS = [
+  { name:'CoinDesk',       url:'https://www.coindesk.com/arc/outboundfeeds/rss/' },
+  { name:'Cointelegraph',  url:'https://cointelegraph.com/rss' },
+  { name:'Decrypt',        url:'https://decrypt.co/feed' },
+  { name:'The Block',      url:'https://www.theblock.co/rss.xml' },
+];
+
+// Sentiment keywords
+const BULL_KW = ['rally','surge','soar','gain','rise','bull','breakout','ath','record','adoption','partnership','launch','upgrade','bullish','pump','recover','outperform','moon','milestone','positive'];
+const BEAR_KW = ['crash','dump','fall','drop','plunge','bear','hack','exploit','ban','lawsuit','sec','fine','scam','rug','fraud','fear','panic','sell','bearish','correction','warning','risk'];
+
+function scoreSentiment(text){
+  const t = (text||'').toLowerCase();
+  let bull=0, bear=0;
+  BULL_KW.forEach(w=>{ if(t.includes(w)) bull++; });
+  BEAR_KW.forEach(w=>{ if(t.includes(w)) bear++; });
+  if(bull > bear+1) return 'bullish';
+  if(bear > bull+1) return 'bearish';
+  return 'neutral';
+}
+
+function timeAgo(dateStr){
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff/60000);
+  if(m < 1)  return 'just now';
+  if(m < 60) return m+'m ago';
+  const h = Math.floor(m/60);
+  if(h < 24) return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
+
+function newsQuick(topic){
+  document.getElementById('newsSearchIn').value = topic;
+  fetchNews();
+}
+
+function newsFilter(btn, filter){
+  _newsFilter = filter;
+  document.querySelectorAll('.news-filter').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderNewsGrid();
+}
+
+function newsLoadMore(){
+  _newsPage++;
+  renderNewsGrid(true);
+}
+
+async function fetchNews(mode){
+  const q = mode === 'all' ? '' : (document.getElementById('newsSearchIn').value.trim());
+  _newsData = [];
+  _newsFilter = 'all';
+  _newsPage = 0;
+  document.querySelectorAll('.news-filter').forEach(b=>b.classList.toggle('on', b.textContent.includes('All')));
+
+  // Show loading state
+  const grid = document.getElementById('newsGrid');
+  grid.innerHTML = `<div class="news-loading"><div class="spin" style="width:28px;height:28px;border-width:2.5px;"></div><span>Fetching latest news${q?' for <b style="color:var(--accent)">'+q+'</b>':''}…</span></div>`;
+  document.getElementById('newsPlaceholder')?.remove();
+  document.getElementById('newsAISummary').style.display = 'none';
+  document.getElementById('newsFilterBar').style.display = 'none';
+  document.getElementById('newsLoadMore').style.display  = 'none';
+
+  const articles = [];
+
+  // ── Strategy 1: CryptoPanic (token-specific or latest) ──────────────────
+  try{
+    const cpUrl = q
+      ? `${CP}?auth_token=&kind=news&filter=hot&currencies=${encodeURIComponent(q)}&public=true`
+      : `${CP}?auth_token=&kind=news&filter=rising&public=true`;
+    const res = await fetch(cpUrl, {headers:{Accept:'application/json'}});
+    if(res.ok){
+      const json = await res.json();
+      (json.results||[]).slice(0,20).forEach(item=>{
+        articles.push({
+          title:   item.title,
+          url:     item.url,
+          source:  item.source?.title || 'CryptoPanic',
+          pubDate: item.published_at,
+          desc:    '',
+          image:   '',
+          tags:    (item.currencies||[]).map(c=>c.code).slice(0,4),
+          sentiment: scoreSentiment(item.title),
+        });
+      });
+    }
+  }catch(e){ console.warn('CryptoPanic failed:',e); }
+
+  // ── Strategy 2: RSS feeds via rss2json ───────────────────────────────────
+  const feedPromises = NEWS_FEEDS.map(async feed => {
+    try{
+      const url = RSS_BRIDGE + encodeURIComponent(feed.url) + '&count=15&api_key=';
+      const res = await fetch(url);
+      if(!res.ok) return [];
+      const json = await res.json();
+      if(json.status !== 'ok') return [];
+      return (json.items||[]).map(item => ({
+        title:    item.title,
+        url:      item.link,
+        source:   feed.name,
+        pubDate:  item.pubDate,
+        desc:     (item.description||'').replace(/<[^>]+>/g,'').substring(0,200),
+        image:    item.thumbnail || item.enclosure?.link || '',
+        tags:     [],
+        sentiment: scoreSentiment(item.title + ' ' + item.description),
+      }));
+    }catch(e){ return []; }
+  });
+
+  const feedResults = await Promise.allSettled(feedPromises);
+  feedResults.forEach(r=>{ if(r.status==='fulfilled') r.value.forEach(a=>articles.push(a)); });
+
+  // ── Filter by query keyword ──────────────────────────────────────────────
+  let filtered = articles;
+  if(q){
+    const qlo = q.toLowerCase();
+    // Score and filter: exact mention = 2pts, partial = 1pt
+    filtered = articles
+      .map(a => {
+        const combined = ((a.title||'')+(a.desc||'')+(a.tags||[]).join(' ')).toLowerCase();
+        const score = combined.includes(qlo) ? (a.title.toLowerCase().includes(qlo) ? 2 : 1) : 0;
+        return {...a, _score: score};
+      })
+      .filter(a => a._score > 0)
+      .sort((a,b) => b._score - a._score);
+
+    // If still nothing, keep all — broadest possible match
+    if(!filtered.length) filtered = articles;
+  }
+
+  // ── Deduplicate by title similarity ─────────────────────────────────────
+  const seen = new Set();
+  const deduped = filtered.filter(a => {
+    const key = (a.title||'').substring(0,60).toLowerCase().replace(/\W+/g,' ').trim();
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // ── Sort by date ─────────────────────────────────────────────────────────
+  deduped.sort((a,b) => new Date(b.pubDate||0) - new Date(a.pubDate||0));
+  _newsData = deduped;
+
+  // ── AI Summary (via Anthropic API) ──────────────────────────────────────
+  if(_newsData.length > 0 && q){
+    generateAISummary(q, _newsData.slice(0,8));
+  }
+
+  renderNewsGrid();
+
+  // Show filter bar
+  if(_newsData.length > 0){
+    document.getElementById('newsFilterBar').style.display = 'flex';
+    document.getElementById('newsResultCount').textContent = _newsData.length + ' articles found';
+  }
+}
+
+async function generateAISummary(query, articles){
+  const summaryEl = document.getElementById('newsAISummary');
+  const summaryText = document.getElementById('newsAISummaryText');
+  summaryEl.style.display = 'block';
+  summaryText.innerHTML = '<span style="color:var(--text3);font-size:.78rem;"><div class="spin" style="display:inline-block;width:10px;height:10px;border-width:1.5px;vertical-align:middle;margin-right:6px;"></div>AI is analyzing the news…</span>';
+
+  try{
+    const headlines = articles.map((a,i)=>`${i+1}. ${a.title} (${a.source}, ${timeAgo(a.pubDate)})`).join('\n');
+    const response = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:320,
+        messages:[{
+          role:'user',
+          content:`You are a concise crypto news analyst. Given these recent headlines about "${query}", write a 2-3 sentence plain-English summary of the current news sentiment and key themes. Be factual, balanced, and note if sentiment is mostly bullish, bearish, or mixed. Do not use markdown, bullet points, or headers. Just clean sentences.\n\nHeadlines:\n${headlines}`
+        }]
+      })
+    });
+    if(!response.ok) throw new Error('api_error');
+    const data = await response.json();
+    const text = (data.content||[]).find(c=>c.type==='text')?.text || '';
+    if(text){
+      // Detect overall sentiment for border color
+      const sent = scoreSentiment(text);
+      summaryEl.style.borderColor = sent==='bullish'?'rgba(0,255,136,.35)':sent==='bearish'?'rgba(255,51,102,.35)':'rgba(0,212,255,.18)';
+      summaryEl.style.background  = sent==='bullish'?'rgba(0,255,136,.04)':sent==='bearish'?'rgba(255,51,102,.04)':'rgba(0,212,255,.05)';
+      summaryText.textContent = text;
+    } else {
+      summaryEl.style.display = 'none';
+    }
+  }catch(e){
+    summaryEl.style.display = 'none';
+  }
+}
+
+function renderNewsGrid(append){
+  const grid   = document.getElementById('newsGrid');
+  if(!append) grid.innerHTML = '';
+
+  // Apply sentiment filter
+  let display = _newsData;
+  if(_newsFilter !== 'all') display = _newsData.filter(a=>a.sentiment===_newsFilter);
+
+  // Pagination
+  const start = _newsPage * NEWS_PER_PAGE;
+  const page  = display.slice(start, start + NEWS_PER_PAGE);
+
+  if(!display.length){
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:56px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;">
+      <div style="font-size:1.8rem;margin-bottom:10px;">🔍</div>
+      No news matched this filter. Try <b style="color:var(--text)">All</b> or change your search.
+    </div>`;
+    document.getElementById('newsLoadMore').style.display = 'none';
+    return;
+  }
+
+  if(!page.length && !append){
+    grid.innerHTML='';
+    document.getElementById('newsLoadMore').style.display='none';
+    return;
+  }
+
+  page.forEach(a=>{
+    const sentClass = a.sentiment||'neutral';
+    const sentLabel = sentClass==='bullish'?'📈 Bullish':sentClass==='bearish'?'📉 Bearish':'⚖ Neutral';
+    const imgHtml = a.image
+      ? `<img class="news-card-img" src="${a.image}" alt="" loading="lazy" onerror="this.parentNode.querySelector('.news-card-img-placeholder')&&(this.style.display='none');this.style.display='none';">`
+      : '';
+    const placeholderEmoji = sentClass==='bullish'?'📈':sentClass==='bearish'?'📉':'📰';
+    const tagsHtml = (a.tags||[]).filter(Boolean).map(t=>`<span class="news-card-tag">${t}</span>`).join('');
+
+    const card = document.createElement('a');
+    card.className = 'news-card';
+    card.href = a.url || '#';
+    card.target = '_blank';
+    card.rel = 'noopener noreferrer';
+    card.innerHTML = `
+      ${imgHtml ? imgHtml : `<div class="news-card-img-placeholder">${placeholderEmoji}</div>`}
+      <div class="news-card-body">
+        <div class="news-card-source">
+          <span class="news-card-src">${a.source||'Unknown'}</span>
+          <span class="news-card-time">${timeAgo(a.pubDate)}</span>
+          <span class="news-card-sentiment ${sentClass}">${sentLabel}</span>
+        </div>
+        <div class="news-card-title">${a.title||''}</div>
+        ${a.desc ? `<div class="news-card-desc">${a.desc.substring(0,160)}${a.desc.length>160?'…':''}</div>` : ''}
+        ${tagsHtml ? `<div class="news-card-tags">${tagsHtml}</div>` : ''}
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  // Show/hide load more
+  const hasMore = display.length > ((_newsPage+1)*NEWS_PER_PAGE);
+  document.getElementById('newsLoadMore').style.display = hasMore ? 'block' : 'none';
+}
+
+
 
 /* ── HATTY LINKS DROPDOWN ─────────────────────────────── */
 function toggleHattyDrop(e){
