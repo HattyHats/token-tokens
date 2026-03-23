@@ -721,7 +721,7 @@ button{cursor:pointer;font-family:inherit;}
   .ls-pattern-grid{grid-template-columns:1fr 1fr;}
 
   /* News */
-  #newsSec{min-height:auto;overflow-y:visible;}
+  #newsSec{position:fixed;top:80px;left:0;right:0;bottom:0;overflow-y:auto;}
   .news-hero{padding:13px 12px 11px;}
   .news-hero-sub{font-size:.8rem;margin-bottom:10px;}
   .news-token-row{gap:5px;margin-bottom:10px;}
@@ -752,7 +752,7 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── LEARN SECTION ─────────────────────────────────────── */
 #learnSec{display:none;padding:0;overflow-y:auto;height:calc(100vh - 92px);}
-#newsSec{display:none;overflow-y:auto;background:#050810;color:#e0eeff;}
+#newsSec{display:none;position:fixed;top:92px;left:0;right:0;bottom:0;overflow-y:auto;background:#050810;color:#e0eeff;z-index:100;}
 .ls-hero{background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(123,47,255,.08));border-bottom:1px solid var(--border);padding:28px 32px 22px;text-align:center;}
 .ls-hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(1.2rem,3vw,1.9rem);font-weight:700;color:var(--text);margin-bottom:8px;}
 .ls-hero-sub{color:var(--text2);font-size:.95rem;max-width:600px;margin:0 auto 16px;line-height:1.6;}
@@ -4284,9 +4284,9 @@ function showTab(n){
       (i===2 && n==='news')
     );
   });
+
   if(n==='chart') setTimeout(renderChart,50);
   if(n==='news'){
-    console.log('[News] tab opened, initialized:', window._newsInitialized);
     if(!window._newsInitialized){
       window._newsInitialized=true;
       setTimeout(()=>fetchNews(''), 100);
