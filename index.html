@@ -48,7 +48,7 @@ button{cursor:pointer;font-family:inherit;}
 
 
 /* ── APP SHELL ──────────────────────────────────────── */
-#app{display:none;min-height:100vh;flex-direction:column;}
+#app{display:none;flex-direction:column;min-height:100vh;}
 .ticker-bar{background:var(--bg2);border-bottom:1px solid var(--border);height:30px;display:flex;align-items:center;overflow:hidden;}
 .ticker-lbl{font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--accent);letter-spacing:.1em;padding:0 12px;border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0;height:100%;display:flex;align-items:center;}
 .ticker-wrap{overflow:hidden;flex:1;}
@@ -721,7 +721,7 @@ button{cursor:pointer;font-family:inherit;}
   .ls-pattern-grid{grid-template-columns:1fr 1fr;}
 
   /* News */
-  #newsSec{height:auto !important;overflow-y:visible !important;}
+  #newsSec{min-height:auto;overflow-y:visible;}
   .news-hero{padding:13px 12px 11px;}
   .news-hero-sub{font-size:.8rem;margin-bottom:10px;}
   .news-token-row{gap:5px;margin-bottom:10px;}
@@ -752,7 +752,7 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── LEARN SECTION ─────────────────────────────────────── */
 #learnSec{display:none;padding:0;overflow-y:auto;height:calc(100vh - 92px);}
-#newsSec{display:none;overflow-y:auto;height:calc(100vh - 92px);min-height:400px;background:#050810;width:100%;color:#e0eeff;}
+#newsSec{display:none;overflow-y:auto;min-height:500px;background:#050810;color:#e0eeff;}
 .ls-hero{background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(123,47,255,.08));border-bottom:1px solid var(--border);padding:28px 32px 22px;text-align:center;}
 .ls-hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(1.2rem,3vw,1.9rem);font-weight:700;color:var(--text);margin-bottom:8px;}
 .ls-hero-sub{color:var(--text2);font-size:.95rem;max-width:600px;margin:0 auto 16px;line-height:1.6;}
@@ -1666,7 +1666,7 @@ button{cursor:pointer;font-family:inherit;}
 <!-- ═════ NEWS SECTION ═════ -->
 <div id="newsSec">
 
-  <!-- News Hero - hardcoded colors for reliability -->
+  <!-- News Hero -->
   <div style="background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(123,47,255,.07));border-bottom:1px solid #1a2d4a;padding:22px 26px 18px;">
     <div style="font-family:'Orbitron',sans-serif;font-size:clamp(1rem,2.5vw,1.4rem);font-weight:700;color:#e0eeff;margin-bottom:5px;">📰 Crypto News</div>
     <div style="color:#7a9cc0;font-size:.86rem;margin-bottom:14px;line-height:1.5;">Choose a topic below — or search any token for targeted news.</div>
@@ -1710,10 +1710,10 @@ button{cursor:pointer;font-family:inherit;}
 
   <!-- News cards -->
   <div id="newsGrid" style="padding:16px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">
-    <div id="newsPlaceholder" style="grid-column:1/-1;padding:56px 20px;text-align:center;color:var(--text3);">
-      <div style="font-size:2rem;margin-bottom:10px;">📰</div>
-      <div style="font-family:'Orbitron',sans-serif;font-size:.95rem;color:var(--text2);margin-bottom:8px;">Loading news…</div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:.72rem;line-height:1.8;color:var(--text3);max-width:360px;margin:0 auto;">Fetching the latest crypto news.<br>If nothing appears, try clicking a topic above.</div>
+    <div id="newsPlaceholder" style="grid-column:1/-1;padding:56px 20px;text-align:center;color:#3a5a80;">
+      <div class="spin" style="width:28px;height:28px;border-width:2.5px;border-color:#1a2d4a;border-top-color:#00d4ff;margin:0 auto 16px;"></div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:.95rem;color:#7a9cc0;margin-bottom:8px;">Loading news…</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:.72rem;line-height:1.8;color:#3a5a80;max-width:360px;margin:0 auto;">Click a topic above or wait for news to load.</div>
     </div>
   </div>
 
@@ -4297,6 +4297,8 @@ function showTab(n){
   });
   if(n==='chart') setTimeout(renderChart,50);
   if(n==='news'){
+    const ns=document.getElementById('newsSec');
+    if(ns) ns.scrollTop=0;
     if(!window._newsInitialized){
       window._newsInitialized=true;
       fetchNews('');
@@ -4692,7 +4694,7 @@ async function fetchNews(query){
         <span style="color:#3a5a80;font-size:.72rem;">Try again in a moment, or visit a news site directly:</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
-        <button onclick="fetchNews('${(query||"").replace(/['"]/g,"")}')" style="padding:7px 18px;border-radius:5px;border:1px solid #00d4ff;color:#00d4ff;background:transparent;cursor:pointer;font-size:.72rem;">↻ Retry</button>
+        <button onclick="fetchNews()" style="padding:7px 18px;border-radius:5px;border:1px solid #00d4ff;color:#00d4ff;background:transparent;cursor:pointer;font-size:.72rem;">↻ Retry</button>
         <a href="https://www.coindesk.com" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid #1a2d4a;color:#7a9cc0;background:transparent;font-size:.72rem;text-decoration:none;">CoinDesk ↗</a>
         <a href="https://cointelegraph.com" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid #1a2d4a;color:#7a9cc0;background:transparent;font-size:.72rem;text-decoration:none;">CoinTelegraph ↗</a>
         <a href="https://decrypt.co" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid #1a2d4a;color:#7a9cc0;background:transparent;font-size:.72rem;text-decoration:none;">Decrypt ↗</a>
