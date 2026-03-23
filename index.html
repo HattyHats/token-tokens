@@ -721,7 +721,7 @@ button{cursor:pointer;font-family:inherit;}
   .ls-pattern-grid{grid-template-columns:1fr 1fr;}
 
   /* News */
-  #newsSec{height:auto;max-height:none;overflow-y:visible;}
+  #newsSec{height:auto !important;overflow-y:visible !important;}
   .news-hero{padding:13px 12px 11px;}
   .news-hero-sub{font-size:.8rem;margin-bottom:10px;}
   .news-token-row{gap:5px;margin-bottom:10px;}
@@ -752,7 +752,7 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── LEARN SECTION ─────────────────────────────────────── */
 #learnSec{display:none;padding:0;overflow-y:auto;height:calc(100vh - 92px);}
-#newsSec{display:none;overflow-y:auto;height:calc(100vh - 92px);background:var(--bg);}
+#newsSec{display:none;overflow-y:auto;height:calc(100vh - 92px);min-height:400px;background:#050810;width:100%;color:#e0eeff;}
 .ls-hero{background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(123,47,255,.08));border-bottom:1px solid var(--border);padding:28px 32px 22px;text-align:center;}
 .ls-hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(1.2rem,3vw,1.9rem);font-weight:700;color:var(--text);margin-bottom:8px;}
 .ls-hero-sub{color:var(--text2);font-size:.95rem;max-width:600px;margin:0 auto 16px;line-height:1.6;}
@@ -1664,15 +1664,15 @@ button{cursor:pointer;font-family:inherit;}
 
 
 <!-- ═════ NEWS SECTION ═════ -->
-<div id="newsSec" style="display:none;overflow-y:auto;background:var(--bg);">
+<div id="newsSec">
 
-  <!-- News Hero -->
-  <div class="news-hero">
-    <div class="news-hero-title">📰 Crypto News</div>
-    <div class="news-hero-sub">Choose a topic below — or search any token name for targeted news.</div>
+  <!-- News Hero - hardcoded colors for reliability -->
+  <div style="background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(123,47,255,.07));border-bottom:1px solid #1a2d4a;padding:22px 26px 18px;">
+    <div style="font-family:'Orbitron',sans-serif;font-size:clamp(1rem,2.5vw,1.4rem);font-weight:700;color:#e0eeff;margin-bottom:5px;">📰 Crypto News</div>
+    <div style="color:#7a9cc0;font-size:.86rem;margin-bottom:14px;line-height:1.5;">Choose a topic below — or search any token for targeted news.</div>
 
     <!-- Token selector buttons -->
-    <div class="news-token-row">
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px;">
       <button class="news-tok-btn on" onclick="newsSelectToken(this,'')">📡 All News</button>
       <button class="news-tok-btn" onclick="newsSelectToken(this,'Cardano')">🔵 Cardano</button>
       <button class="news-tok-btn" onclick="newsSelectToken(this,'Bitcoin')">₿ Bitcoin</button>
@@ -1684,11 +1684,12 @@ button{cursor:pointer;font-family:inherit;}
     </div>
 
     <!-- Custom search -->
-    <div class="news-search-row">
-      <input id="newsSearchIn" class="news-search-in" type="text"
+    <div style="display:flex;gap:8px;max-width:540px;">
+      <input id="newsSearchIn" style="flex:1;background:#0a1020;border:1.5px solid #1a2d4a;color:#e0eeff;font-family:'Rajdhani',sans-serif;font-size:.92rem;padding:8px 14px;border-radius:6px;outline:none;" type="text"
         placeholder="Or search any token or topic…"
-        onkeydown="if(event.key==='Enter')newsCustomSearch()">
-      <button class="news-search-btn" onclick="newsCustomSearch()">Search</button>
+        onkeydown="if(event.key==='Enter')newsCustomSearch()"
+        onfocus="this.style.borderColor='#00d4ff'" onblur="this.style.borderColor='#1a2d4a'">
+      <button onclick="newsCustomSearch()" style="font-family:'Orbitron',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(135deg,#00d4ff,#7b2fff);color:#050810;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;white-space:nowrap;">Search</button>
     </div>
   </div>
 
@@ -1708,7 +1709,7 @@ button{cursor:pointer;font-family:inherit;}
   </div>
 
   <!-- News cards -->
-  <div id="newsGrid" class="news-grid">
+  <div id="newsGrid" style="padding:16px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">
     <div id="newsPlaceholder" style="grid-column:1/-1;padding:56px 20px;text-align:center;color:var(--text3);">
       <div style="font-size:2rem;margin-bottom:10px;">📰</div>
       <div style="font-family:'Orbitron',sans-serif;font-size:.95rem;color:var(--text2);margin-bottom:8px;">Loading news…</div>
@@ -4295,7 +4296,12 @@ function showTab(n){
     );
   });
   if(n==='chart') setTimeout(renderChart,50);
-  if(n==='news'&&!window._newsInitialized){window._newsInitialized=true;fetchNews('');}
+  if(n==='news'){
+    if(!window._newsInitialized){
+      window._newsInitialized=true;
+      try{ fetchNews(''); }catch(e){ console.error('news init error:',e); }
+    }
+  }
 }
 function ck(li){li.classList.toggle('done');li.querySelector('.ck').textContent=li.classList.contains('done')?'✓':'';}
 let lm=false;
