@@ -752,7 +752,7 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── LEARN SECTION ─────────────────────────────────────── */
 #learnSec{display:none;padding:0;overflow-y:auto;height:calc(100vh - 92px);}
-#newsSec{display:none;overflow-y:auto;min-height:500px;background:#050810;color:#e0eeff;}
+#newsSec{display:none;overflow-y:auto;background:#050810;color:#e0eeff;}
 .ls-hero{background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(123,47,255,.08));border-bottom:1px solid var(--border);padding:28px 32px 22px;text-align:center;}
 .ls-hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(1.2rem,3vw,1.9rem);font-weight:700;color:var(--text);margin-bottom:8px;}
 .ls-hero-sub{color:var(--text2);font-size:.95rem;max-width:600px;margin:0 auto 16px;line-height:1.6;}
@@ -1666,13 +1666,11 @@ button{cursor:pointer;font-family:inherit;}
 <!-- ═════ NEWS SECTION ═════ -->
 <div id="newsSec">
 
-  <!-- News Hero -->
-  <div style="background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(123,47,255,.07));border-bottom:1px solid #1a2d4a;padding:22px 26px 18px;">
-    <div style="font-family:'Orbitron',sans-serif;font-size:clamp(1rem,2.5vw,1.4rem);font-weight:700;color:#e0eeff;margin-bottom:5px;">📰 Crypto News</div>
-    <div style="color:#7a9cc0;font-size:.86rem;margin-bottom:14px;line-height:1.5;">Choose a topic below — or search any token for targeted news.</div>
-
-    <!-- Token selector buttons -->
-    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px;">
+  <!-- News Header - always visible, no JS needed -->
+  <div id="newsHeader" style="background:#0a1020;border-bottom:2px solid #00d4ff;padding:18px 22px 16px;">
+    <div style="font-family:'Orbitron',sans-serif;font-size:1.2rem;font-weight:700;color:#00d4ff;margin-bottom:4px;">📰 Crypto News</div>
+    <div style="color:#7a9cc0;font-size:.84rem;margin-bottom:14px;">Choose a topic or search any token</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="newsTopicBtns">
       <button class="news-tok-btn on" onclick="newsSelectToken(this,'')">📡 All News</button>
       <button class="news-tok-btn" onclick="newsSelectToken(this,'Cardano')">🔵 Cardano</button>
       <button class="news-tok-btn" onclick="newsSelectToken(this,'Bitcoin')">₿ Bitcoin</button>
@@ -1682,43 +1680,34 @@ button{cursor:pointer;font-family:inherit;}
       <button class="news-tok-btn" onclick="newsSelectToken(this,'NFT')">🖼 NFT</button>
       <button class="news-tok-btn" onclick="newsSelectToken(this,'Regulation')">⚖ Rules</button>
     </div>
-
-    <!-- Custom search -->
-    <div style="display:flex;gap:8px;max-width:540px;">
-      <input id="newsSearchIn" style="flex:1;background:#0a1020;border:1.5px solid #1a2d4a;color:#e0eeff;font-family:'Rajdhani',sans-serif;font-size:.92rem;padding:8px 14px;border-radius:6px;outline:none;" type="text"
-        placeholder="Or search any token or topic…"
+    <div style="display:flex;gap:8px;max-width:520px;">
+      <input id="newsSearchIn" type="text" placeholder="Search any token or topic…"
+        style="flex:1;background:#050810;border:1.5px solid #1a2d4a;color:#e0eeff;font-family:'Rajdhani',sans-serif;font-size:.9rem;padding:8px 12px;border-radius:6px;outline:none;"
         onkeydown="if(event.key==='Enter')newsCustomSearch()"
         onfocus="this.style.borderColor='#00d4ff'" onblur="this.style.borderColor='#1a2d4a'">
-      <button onclick="newsCustomSearch()" style="font-family:'Orbitron',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(135deg,#00d4ff,#7b2fff);color:#050810;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;white-space:nowrap;">Search</button>
+      <button onclick="newsCustomSearch()" style="background:#00d4ff;color:#050810;border:none;padding:8px 18px;border-radius:6px;font-family:'Orbitron',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;">Search</button>
     </div>
   </div>
 
-  <!-- AI Summary -->
-  <div id="newsAISummary" style="display:none;margin:14px 20px 0;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:13px 16px;">
-    <div style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--accent);letter-spacing:.12em;margin-bottom:7px;">⚡ AI SUMMARY</div>
-    <div id="newsAISummaryText" style="font-size:.86rem;color:var(--text2);line-height:1.7;"></div>
-  </div>
-
-  <!-- Sentiment filter -->
-  <div id="newsFilterBar" style="display:none;padding:8px 20px;border-bottom:1px solid var(--border);display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
+  <!-- Sentiment filter bar -->
+  <div id="newsFilterBar" style="display:none;padding:8px 20px;border-bottom:1px solid #1a2d4a;display:flex;gap:5px;flex-wrap:wrap;align-items:center;background:#050810;">
     <button class="news-filter on" onclick="newsFilter(this,'all')">All</button>
     <button class="news-filter" onclick="newsFilter(this,'bullish')">📈 Bullish</button>
     <button class="news-filter" onclick="newsFilter(this,'bearish')">📉 Bearish</button>
     <button class="news-filter" onclick="newsFilter(this,'neutral')">⚖ Neutral</button>
-    <span id="newsResultCount" style="font-family:'Share Tech Mono',monospace;font-size:.61rem;color:var(--text3);margin-left:auto;"></span>
+    <span id="newsResultCount" style="font-family:'Share Tech Mono',monospace;font-size:.61rem;color:#3a5a80;margin-left:auto;"></span>
   </div>
 
-  <!-- News cards -->
-  <div id="newsGrid" style="padding:16px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">
-    <div id="newsPlaceholder" style="grid-column:1/-1;padding:56px 20px;text-align:center;color:#3a5a80;">
-      <div class="spin" style="width:28px;height:28px;border-width:2.5px;border-color:#1a2d4a;border-top-color:#00d4ff;margin:0 auto 16px;"></div>
-      <div style="font-family:'Orbitron',sans-serif;font-size:.95rem;color:#7a9cc0;margin-bottom:8px;">Loading news…</div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:.72rem;line-height:1.8;color:#3a5a80;max-width:360px;margin:0 auto;">Click a topic above or wait for news to load.</div>
+  <!-- News cards grid -->
+  <div id="newsGrid" style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;background:#050810;">
+    <div style="grid-column:1/-1;padding:40px 20px;text-align:center;color:#3a5a80;display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <div class="spin" style="width:26px;height:26px;border-width:2.5px;border-color:#1a2d4a;border-top-color:#00d4ff;"></div>
+      <div style="color:#7a9cc0;font-family:'Share Tech Mono',monospace;font-size:.8rem;">Loading news…</div>
     </div>
   </div>
 
   <!-- Load more -->
-  <div id="newsLoadMore" style="display:none;text-align:center;padding:4px 20px 28px;">
+  <div id="newsLoadMore" style="display:none;text-align:center;padding:8px 20px 24px;background:#050810;">
     <button class="news-more-btn" onclick="newsLoadMore()">Load More ↓</button>
   </div>
 
@@ -4297,11 +4286,10 @@ function showTab(n){
   });
   if(n==='chart') setTimeout(renderChart,50);
   if(n==='news'){
-    const ns=document.getElementById('newsSec');
-    if(ns) ns.scrollTop=0;
+    console.log('[News] tab opened, initialized:', window._newsInitialized);
     if(!window._newsInitialized){
       window._newsInitialized=true;
-      fetchNews('');
+      setTimeout(()=>fetchNews(''), 100);
     }
   }
 }
@@ -4657,6 +4645,7 @@ function newsStatus(msg){
 
 async function fetchNews(query){
   if(query===undefined)query=_newsQuery;
+  console.log('[News] fetchNews called with query:', query);
   _newsData=[];_newsFilter="all";_newsPage=0;
   document.querySelectorAll(".news-filter").forEach(b=>b.classList.toggle("on",b.textContent.includes("All")));
 
@@ -4744,7 +4733,7 @@ async function tryCCNews(query){
     }));
     return _newsData.length>0;
   }catch(e){
-    console.warn("CC news:",e.message);
+    console.warn("[News] CC failed:",e.message);
     return false;
   }
 }
@@ -4809,6 +4798,7 @@ async function tryRSSFeeds(query){
     seen.add(k);
     return true;
   });
+  console.log("[News] RSS result:", _newsData.length, "articles");
   return _newsData.length>0;
 }
 
