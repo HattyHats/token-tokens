@@ -48,7 +48,7 @@ button{cursor:pointer;font-family:inherit;}
 
 
 /* ── APP SHELL ──────────────────────────────────────── */
-#app{display:none;flex-direction:column;min-height:100vh;}
+#app{display:none;min-height:100vh;flex-direction:column;}
 .ticker-bar{background:var(--bg2);border-bottom:1px solid var(--border);height:30px;display:flex;align-items:center;overflow:hidden;}
 .ticker-lbl{font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--accent);letter-spacing:.1em;padding:0 12px;border-right:1px solid var(--border);white-space:nowrap;flex-shrink:0;height:100%;display:flex;align-items:center;}
 .ticker-wrap{overflow:hidden;flex:1;}
@@ -57,7 +57,7 @@ button{cursor:pointer;font-family:inherit;}
 .ti b{color:var(--text);}
 
 /* ── HEADER ─────────────────────────────────────────── */
-.hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 20px;background:rgba(10,16,32,.98);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 20px;background:rgba(10,16,32,.98);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:400;overflow:visible;}
 .hdr-logo{font-family:'Orbitron',sans-serif;font-size:1.15rem;font-weight:900;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .hdr-nav{display:flex;gap:3px;align-items:center;}
 
@@ -517,65 +517,6 @@ button{cursor:pointer;font-family:inherit;}
 .cip-footer{padding:7px 14px;background:rgba(0,0,0,.2);border-top:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text3);text-align:center;}
 .cip-loading{padding:20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;font-size:.75rem;}
 
-/* ── CNT QUICK-ADD CHIPS ────────────────────────────────── */
-.cnt-chip{font-family:'Share Tech Mono',monospace;font-size:.63rem;padding:3px 8px;border-radius:20px;border:1px solid rgba(0,212,255,.3);color:var(--accent);background:rgba(0,212,255,.06);cursor:pointer;transition:all .18s;white-space:nowrap;}
-.cnt-chip:hover{background:rgba(0,212,255,.18);border-color:var(--accent);transform:scale(1.07);}
-.cnt-chip:active{transform:scale(.97);}
-
-/* ── NEWS SECTION ────────────────────────────────────────── */
-.news-chip{font-family:'Share Tech Mono',monospace;font-size:.65rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:transparent;cursor:pointer;transition:all .18s;white-space:nowrap;}
-.news-chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.07);}
-.news-filter{font-family:'Share Tech Mono',monospace;font-size:.65rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:transparent;cursor:pointer;transition:all .18s;}
-.news-filter:hover{border-color:var(--accent2);color:var(--accent2);}
-.news-filter.on{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
-.news-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,transform .15s;cursor:pointer;text-decoration:none;}
-.news-card:hover{border-color:var(--accent2);transform:translateY(-2px);}
-.news-card-img{width:100%;height:160px;object-fit:cover;background:var(--bg2);flex-shrink:0;}
-.news-card-img-placeholder{width:100%;height:100px;display:flex;align-items:center;justify-content:center;font-size:2rem;background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(123,47,255,.06));flex-shrink:0;}
-.news-card-body{padding:13px 15px;flex:1;display:flex;flex-direction:column;gap:7px;}
-.news-card-source{display:flex;align-items:center;gap:7px;}
-.news-card-src{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
-.news-card-time{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);}
-.news-card-sentiment{font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:2px 7px;border-radius:20px;margin-left:auto;}
-.news-card-sentiment.bullish{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.3);}
-.news-card-sentiment.bearish{background:rgba(255,51,102,.1);color:var(--red);border:1px solid rgba(255,51,102,.3);}
-.news-card-sentiment.neutral{background:rgba(122,156,192,.1);color:var(--text2);border:1px solid rgba(122,156,192,.2);}
-.news-card-title{font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;color:var(--text);line-height:1.4;}
-.news-card-desc{font-size:.8rem;color:var(--text2);line-height:1.55;flex:1;}
-.news-card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;}
-.news-card-tag{font-family:'Share Tech Mono',monospace;font-size:.57rem;padding:2px 7px;border-radius:20px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.18);color:var(--accent);}
-.news-loading{grid-column:1/-1;padding:56px 20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;font-size:.8rem;display:flex;flex-direction:column;align-items:center;gap:12px;}
-
-/* ── NEWS SECTION DESKTOP ────────────────────────────────── */
-.news-hero{background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(123,47,255,.07));border-bottom:1px solid var(--border);padding:22px 26px 18px;}
-.news-hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(1rem,2.5vw,1.5rem);font-weight:700;color:var(--text);margin-bottom:5px;}
-.news-hero-sub{color:var(--text2);font-size:.86rem;margin-bottom:14px;line-height:1.5;}
-.news-token-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px;}
-.news-tok-btn{font-family:'Share Tech Mono',monospace;font-size:.7rem;padding:6px 14px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:transparent;cursor:pointer;transition:all .18s;white-space:nowrap;}
-.news-tok-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
-.news-tok-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.13);font-weight:700;}
-.news-search-row{display:flex;gap:8px;max-width:540px;}
-.news-search-in{flex:1;background:var(--bg2);border:1.5px solid var(--border);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.92rem;padding:8px 14px;border-radius:6px;outline:none;transition:border-color .2s;}
-.news-search-in:focus{border-color:var(--accent);}
-.news-search-in::placeholder{color:var(--text3);}
-.news-search-btn{font-family:'Orbitron',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.08em;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#050810;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;white-space:nowrap;transition:opacity .2s;}
-.news-search-btn:hover{opacity:.85;}
-.news-grid{padding:16px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
-.news-more-btn{font-family:'Share Tech Mono',monospace;font-size:.74rem;background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:9px 30px;border-radius:6px;cursor:pointer;transition:all .2s;}
-.news-more-btn:hover{border-color:var(--accent);color:var(--accent);}
-/* news card sub-classes that were missing */
-.news-card-noimg{width:100%;height:80px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(123,47,255,.05));flex-shrink:0;}
-.news-card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-.news-card-sent{font-family:'Share Tech Mono',monospace;font-size:.56rem;padding:2px 6px;border-radius:20px;margin-left:auto;}
-.news-card-sent.bullish{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.3);}
-.news-card-sent.bearish{background:rgba(255,51,102,.1);color:var(--red);border:1px solid rgba(255,51,102,.3);}
-.news-card-sent.neutral{background:rgba(122,156,192,.08);color:var(--text2);border:1px solid rgba(122,156,192,.2);}
-
-/* ── TRENDING COLLAPSIBLE ────────────────────────────────── */
-.tr-body-collapsed{display:none;}
-.tr-sec .wl-hdr{cursor:pointer;user-select:none;}
-.tr-sec .wl-hdr:hover{color:var(--text);}
-
 /* scrollbar */
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
@@ -622,97 +563,90 @@ button{cursor:pointer;font-family:inherit;}
 .ind-panel{display:none !important;}
 .draw-panel{display:none !important;}
 
-/* ── MOBILE RESPONSIVE ────────────────────────────────────── */
+/* ── MOBILE: keep old panels visible on mobile, hide right panel ── */
 @media(max-width:768px){
+  /* Reset app to scroll naturally */
   #app{min-height:100vh;overflow-y:auto;}
   body{overflow-y:auto;}
 
-  /* Header: 2-row - logo+right on top, nav strip below */
-  .hdr{padding:0;flex-wrap:wrap;align-items:stretch;}
-  .hdr-logo{font-size:.88rem;padding:9px 12px;}
-  .hdr-nav{order:2;width:100%;background:rgba(10,16,32,.99);border-top:1px solid var(--border);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 4px;gap:0;flex-wrap:nowrap;scrollbar-width:none;}
-  .hdr-nav::-webkit-scrollbar{display:none;}
-  .nb{font-size:.68rem;padding:7px 10px;white-space:nowrap;flex-shrink:0;border-radius:0;}
-  .hdr-r{order:1;padding:5px 8px;gap:4px;margin-left:auto;}
+  /* Header compact */
+  .hdr{padding:8px 12px;flex-wrap:nowrap;}
+  .hdr-logo{font-size:.95rem;}
+  .nb{font-size:.75rem;padding:5px 9px;}
+  .hdr-r{gap:5px;}
   .api-dot{display:none;}
-  .settings-btn{padding:5px 9px;font-size:.68rem;}
-  .theme-btn{padding:5px 7px;font-size:.68rem;}
-  .hatty-drop{right:0;left:auto;min-width:190px;}
-  .hatty-link-info span{display:none;}
+  .settings-btn,.theme-btn{padding:5px 9px;font-size:.72rem;}
 
+  /* Ticker — hide on mobile */
   .ticker-bar{display:none;}
 
-  /* Layout */
-  .layout{display:flex;flex-direction:column;height:auto;}
+  /* Layout becomes single column */
+  .layout{display:flex;flex-direction:column;height:auto;min-height:0;}
 
-  /* Sidebar */
-  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);}
-  .sb-top{padding:7px 9px;}
-  .sb-in{font-size:.84rem;padding:7px 10px;}
-  .browse-btn{margin:5px 9px 8px;width:calc(100% - 18px);font-size:.61rem;padding:6px;}
+  /* Sidebar — compact horizontal strip at top */
+  .sidebar{width:100%;max-height:none;border-right:none;border-bottom:1px solid var(--border);flex-shrink:0;}
 
-  /* Watchlist horizontal */
-  .wl-hdr{padding:5px 10px 3px;font-size:.58rem;}
-  .wl-list{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-  .wl-list::-webkit-scrollbar{display:none;}
-  .cc{min-width:108px;max-width:120px;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px;border-bottom:none;border-right:1px solid rgba(26,45,74,.3);flex-shrink:0;}
-  .cc.on{border-left:none;border-top:2px solid var(--accent);background:rgba(0,212,255,.07);}
-  .cc-img,.cc-fb{width:20px;height:20px;font-size:.42rem;}
-  .cc-name{font-size:.74rem;}
-  .cc-sym{font-size:.59rem;}
-  .cc-price{font-size:.72rem;}
-  .cc-chg{font-size:.61rem;}
+  /* Search and browse */
+  .sb-top{padding:8px;}
+  .browse-btn{margin-top:6px;}
+
+  /* Watchlist — horizontal scroll strip */
+  .wl-hdr{padding:6px 10px 4px;}
+  .wl-list{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;max-height:none;gap:0;}
+  .cc{min-width:140px;flex-direction:column;align-items:flex-start;gap:3px;padding:8px 10px;border-bottom:none;border-right:1px solid rgba(26,45,74,.3);}
+  .cc.on{border-left:none;border-top:2px solid var(--accent);}
+  .cc-info{min-width:0;width:100%;}
   .cc-r{text-align:left;}
-  .cc-rm{opacity:.55;font-size:.58rem;top:2px;right:2px;}
-  .cc-info-btn{display:none;}
+  .cc-rm{opacity:.5;font-size:.7rem;}
 
+  /* Trending & Fear/Greed — hide on mobile */
   .tr-sec{display:none;}
-  #cntPanel{display:none;}
   .fg-widget{display:none;}
 
-  /* Chart */
+  /* Main area: auto height, scrollable */
   .main{height:auto;overflow:visible;}
-  .ch-hdr{padding:7px 10px;gap:4px;flex-direction:column;align-items:flex-start;}
-  .ch-coin{flex-wrap:wrap;gap:5px;align-items:center;}
-  .ch-img{width:22px;height:22px;}
-  .ch-title{font-size:.84rem;}
-  .ch-price{font-size:1.1rem;}
-  .ch-badge{font-size:.7rem;padding:2px 6px;}
-  .ch-meta{flex-direction:row;flex-wrap:wrap;gap:4px;font-size:.59rem;}
-  .ch-tools{gap:2px;width:100%;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-  .ch-tools::-webkit-scrollbar{display:none;}
-  .tf,.ct,.live-btn{padding:5px 8px;font-size:.62rem;flex-shrink:0;}
-  .dv{display:none;}
 
-  .mini-charts{padding:3px 8px 0;gap:3px;}
-  .mc-canvas{height:24px;}
-  .mc-lbl{font-size:.57rem;}
+  /* Mini charts — smaller */
+  .mini-charts{padding:4px 8px 0;gap:4px;}
+  .mc-canvas{height:28px;}
 
-  .ohlc{padding:4px 10px;gap:7px;font-size:.62rem;overflow-x:auto;scrollbar-width:none;}
-  .ohlc::-webkit-scrollbar{display:none;}
+  /* Chart header — stack vertically */
+  .ch-hdr{flex-direction:column;align-items:flex-start;gap:6px;padding:8px 12px;}
+  .ch-coin{flex-wrap:wrap;gap:8px;}
+  .ch-title{font-size:.9rem;}
+  .ch-price{font-size:1.2rem;}
+  .ch-meta{flex-direction:row;flex-wrap:wrap;gap:6px;}
+  .ch-tools{gap:3px;width:100%;}
+  .tf{padding:5px 7px;font-size:.67rem;}
+  .ct{padding:5px 8px;font-size:.72rem;}
 
+  /* OHLC bar — scrollable */
+  .ohlc{padding:5px 10px;gap:10px;font-size:.68rem;}
+
+  /* Chart and right panel — hide right panel, go full width */
   .chart-and-right{flex-direction:column;}
   .right-panel{display:none;}
-  .chart-zone{min-height:230px;height:230px;max-height:230px;}
+
+  /* Show the old panels on mobile instead */
+  .ind-panel{display:flex !important;flex-wrap:wrap;gap:5px;padding:7px 10px;}
+  .draw-panel{display:flex !important;flex-wrap:wrap;gap:5px;padding:7px 10px;overflow-x:auto;}
+
+  /* Chart zone — fixed height so it's usable */
+  .chart-zone{min-height:260px;height:260px;max-height:260px;}
   #priceCanvas{touch-action:none;}
 
-  .ind-panel{display:flex !important;flex-wrap:nowrap;gap:4px;padding:6px 10px;overflow-x:auto;scrollbar-width:none;}
-  .ind-panel::-webkit-scrollbar{display:none;}
-  .ind{padding:4px 8px;font-size:.62rem;flex-shrink:0;}
-  .draw-panel{display:flex !important;flex-wrap:nowrap;gap:4px;padding:6px 10px;overflow-x:auto;scrollbar-width:none;}
-  .draw-panel::-webkit-scrollbar{display:none;}
-
+  /* Alerts and time machine */
   .alert-panel{margin:0;}
-  .alert-add-row{flex-wrap:wrap;gap:5px;}
+  .alert-add-row{flex-wrap:wrap;gap:6px;}
   .alert-price-in{width:100%;}
-  .tm-bar{flex-wrap:wrap;gap:6px;padding:7px 10px;}
+  .tm-bar{flex-wrap:wrap;gap:8px;padding:8px 12px;}
   .tm-input{width:100%;}
   .tm-go{width:100%;}
 
-  /* Learn */
-  #learnSec{height:auto;max-height:none;overflow-y:visible;}
-  .ls-hero{padding:16px 14px;}
-  .ls-sec{padding:16px 14px;}
+  /* Learn section */
+  #learnSec{height:auto;max-height:none;padding:0;overflow-y:visible;}
+  .ls-hero{padding:16px;}
+  .ls-sec{padding:16px;}
   .ls-candle-demo{flex-direction:column;}
   .ls-fib-wrap{flex-direction:column;}
   .ls-cards{grid-template-columns:1fr;}
@@ -720,39 +654,22 @@ button{cursor:pointer;font-family:inherit;}
   .ls-cl-wrap{grid-template-columns:1fr;}
   .ls-pattern-grid{grid-template-columns:1fr 1fr;}
 
-  /* News */
-  #newsSec{position:fixed;top:80px;left:0;right:0;bottom:0;overflow-y:auto;}
-  .news-hero{padding:13px 12px 11px;}
-  .news-hero-sub{font-size:.8rem;margin-bottom:10px;}
-  .news-token-row{gap:5px;margin-bottom:10px;}
-  .news-tok-btn{font-size:.61rem;padding:5px 10px;}
-  .news-search-row{max-width:100%;}
-  .news-search-in{font-size:.84rem;padding:7px 11px;}
-  .news-search-btn{font-size:.64rem;padding:7px 14px;}
-  .news-grid{grid-template-columns:1fr !important;padding:10px 11px;gap:9px;}
-  #newsAISummary{margin:10px 11px 0;padding:11px 13px;}
-  #newsFilterBar{padding:6px 11px;}
-
-  /* Modal */
-  .modal{width:100%;max-height:92vh;border-radius:12px 12px 0 0;}
+  /* Modal — full screen on mobile */
+  .modal{width:100%;max-height:100vh;border-radius:0;}
   .m-bg{align-items:flex-end;}
-  .m-cats{gap:3px;padding:5px 10px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;}
-  .m-cats::-webkit-scrollbar{display:none;}
-  .mc{font-size:.58rem;padding:4px 8px;flex-shrink:0;}
+  .m-cats{gap:4px;}
+  .mc{font-size:.6rem;padding:3px 8px;}
   .tg{grid-template-columns:1fr 1fr;}
 
-  .sm-box{width:94vw;max-height:88vh;}
-}
-@media(max-width:380px){
-  .hdr-logo{font-size:.8rem;}
-  .nb{font-size:.62rem;padding:6px 8px;}
-  .ch-price{font-size:.96rem;}
-  .news-tok-btn{font-size:.57rem;padding:4px 8px;}
+  /* Touch-friendly: bigger tap targets */
+  .rp-ind,.rp-dtool{min-height:38px;}
+  .tf,.ct,.nb{min-height:34px;}
+  .hdr-nav{overflow:visible !important;}
+  .hatty-drop{left:auto;right:-8px;min-width:200px;}
 }
 
 /* ── LEARN SECTION ─────────────────────────────────────── */
 #learnSec{display:none;padding:0;overflow-y:auto;height:calc(100vh - 92px);}
-#newsSec{display:none;position:fixed;top:92px;left:0;right:0;bottom:0;overflow-y:auto;background:#050810;color:#e0eeff;z-index:100;}
 .ls-hero{background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(123,47,255,.08));border-bottom:1px solid var(--border);padding:28px 32px 22px;text-align:center;}
 .ls-hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(1.2rem,3vw,1.9rem);font-weight:700;color:var(--text);margin-bottom:8px;}
 .ls-hero-sub{color:var(--text2);font-size:.95rem;max-width:600px;margin:0 auto 16px;line-height:1.6;}
@@ -849,6 +766,55 @@ button{cursor:pointer;font-family:inherit;}
 .hl-yellow{color:var(--yellow);font-weight:600;}
 @media(max-width:768px){.ls-sec{padding:18px 16px;}.ls-hero{padding:18px 16px;}.ls-candle-demo{flex-direction:column;}.ls-fib-wrap{flex-direction:column;}}
 
+
+/* ── TOAST NOTIFICATIONS ─────────────────────────────────── */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{display:flex;align-items:flex-start;gap:10px;background:linear-gradient(135deg,var(--bg2),var(--surface));border:1px solid var(--border);border-radius:10px;padding:12px 14px;min-width:260px;max-width:360px;box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04);pointer-events:auto;animation:toastIn .3s cubic-bezier(.34,1.3,.64,1) forwards;}
+.toast.success{border-color:rgba(0,255,136,.35);}
+.toast.warn{border-color:rgba(255,200,0,.35);}
+.toast.info{border-color:rgba(0,212,255,.25);}
+.toast-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px;}
+.toast-body{flex:1;min-width:0;}
+.toast-title{font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;color:var(--text);margin-bottom:3px;letter-spacing:.04em;}
+.toast-msg{font-family:'Share Tech Mono',monospace;font-size:.7rem;color:var(--text2);line-height:1.5;}
+.toast-close{color:var(--text3);cursor:pointer;font-size:.8rem;padding:0 2px;transition:color .15s;flex-shrink:0;background:none;border:none;}
+.toast-close:hover{color:var(--red);}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px) scale(.95)}to{opacity:1;transform:translateX(0) scale(1)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(20px) scale(.95)}}
+
+/* ── NEWS SECTION ───────────────────────────────────────── */
+#newsSec{display:none;overflow-y:auto;background:var(--bg);color:var(--text);}
+#newsHeader{background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(123,47,255,.05));border-bottom:2px solid var(--accent);padding:20px 24px 16px;}
+.news-hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(1rem,2.5vw,1.4rem);font-weight:700;color:var(--accent);margin-bottom:4px;}
+.news-hero-sub{color:var(--text2);font-size:.84rem;margin-bottom:14px;line-height:1.5;}
+.news-tok-btn{font-family:'Share Tech Mono',monospace;font-size:.7rem;padding:6px 14px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:transparent;cursor:pointer;transition:all .18s;white-space:nowrap;}
+.news-tok-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+.news-tok-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.13);}
+.news-search-in{flex:1;background:var(--bg2);border:1.5px solid var(--border);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.9rem;padding:8px 12px;border-radius:6px;outline:none;transition:border-color .2s;}
+.news-search-in:focus{border-color:var(--accent);}
+.news-search-in::placeholder{color:var(--text3);}
+.news-search-btn{background:var(--accent);color:#050810;border:none;padding:8px 18px;border-radius:6px;font-family:'Orbitron',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;}
+.news-search-btn:hover{opacity:.85;}
+#newsFilterBar{padding:8px 20px;border-bottom:1px solid var(--border);display:flex;gap:5px;flex-wrap:wrap;align-items:center;background:var(--bg2);}
+.news-filter{font-family:'Share Tech Mono',monospace;font-size:.65rem;padding:4px 12px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:transparent;cursor:pointer;transition:all .18s;}
+.news-filter:hover{border-color:var(--accent2);color:var(--accent2);}
+.news-filter.on{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+#newsGrid{padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;background:var(--bg);}
+.news-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,transform .15s;cursor:pointer;text-decoration:none;color:inherit;}
+.news-card:hover{border-color:var(--accent2);transform:translateY(-2px);}
+.news-more-btn{font-family:'Share Tech Mono',monospace;font-size:.74rem;background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:9px 30px;border-radius:6px;cursor:pointer;transition:all .2s;}
+.news-more-btn:hover{border-color:var(--accent);color:var(--accent);}
+@media(max-width:768px){
+  #newsSec{height:auto;min-height:calc(100vh - 80px);}
+  #newsGrid{grid-template-columns:1fr !important;padding:10px 11px;gap:9px;}
+  #newsHeader{padding:13px 12px 11px;}
+  .news-tok-btn{font-size:.61rem;padding:5px 10px;}
+}
+
+/* ── CNT QUICK-ADD CHIPS ─────────────────────────────── */
+.cnt-chip{font-family:'Share Tech Mono',monospace;font-size:.63rem;padding:3px 8px;border-radius:20px;border:1px solid rgba(0,212,255,.3);color:var(--accent);background:rgba(0,212,255,.06);cursor:pointer;transition:all .18s;white-space:nowrap;}
+.cnt-chip:hover{background:rgba(0,212,255,.18);border-color:var(--accent);transform:scale(1.07);}
+.cnt-chip:active{transform:scale(.97);}
 </style>
 </head>
 <body>
@@ -882,7 +848,6 @@ button{cursor:pointer;font-family:inherit;}
   <nav class="hdr-nav">
     <button class="nb on" onclick="showTab('chart')">📊 Chart</button>
     <button class="nb" onclick="showTab('learn')">📚 Learn</button>
-    <button class="nb" onclick="showTab('news')">📰 News</button>
     <div class="hatty-drop-wrap" id="hattyDropWrap">
       <button class="nb hatty-drop-btn" onclick="toggleHattyDrop(event)">
         🔗 HattyHats <span class="hatty-chevron" id="hattyChevron">▾</span>
@@ -960,8 +925,9 @@ button{cursor:pointer;font-family:inherit;}
     <div class="wl-list" id="wlList"><div style="padding:20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;font-size:.75rem;"><div class="spin" style="margin:0 auto 10px;"></div>Loading…</div></div>
     <!-- CARDANO ECOSYSTEM PANEL -->
     <div class="tr-sec" id="cntPanel">
-      <div class="wl-hdr" style="color:var(--accent);letter-spacing:.1em;">🔵 CARDANO ECOSYSTEM
-        <button class="wl-ref" onclick="toggleCNTPanel()" id="cntToggle" title="Collapse">▼</button>
+      <div class="wl-hdr" style="color:var(--accent);letter-spacing:.1em;cursor:pointer;" onclick="toggleCNTPanel()">
+        🔵 CARDANO ECOSYSTEM
+        <button class="wl-ref" id="cntToggle" title="Collapse" style="pointer-events:none;">▼</button>
       </div>
       <div id="cntList" style="padding:4px 8px 6px;">
         <div style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text3);padding:3px 4px 6px;letter-spacing:.08em;">QUICK ADD — POPULAR CNTs</div>
@@ -972,7 +938,6 @@ button{cursor:pointer;font-family:inherit;}
           <button class="cnt-chip" onclick="quickAddCNT('wingriders','WingRiders','WRT','')">WRT</button>
           <button class="cnt-chip" onclick="quickAddCNT('liqwid-finance','Liqwid','LQ','')">LQ</button>
           <button class="cnt-chip" onclick="quickAddCNT('indigo-dao','Indigo','INDY','')">INDY</button>
-          <button class="cnt-chip" onclick="quickAddCNT('djed','DJED','DJED','')">DJED</button>
           <button class="cnt-chip" onclick="quickAddCNT('world-mobile-token','World Mobile','WMT','')">WMT</button>
           <button class="cnt-chip" onclick="quickAddCNT('iagon','Iagon','IAG','')">IAG</button>
           <button class="cnt-chip" onclick="quickAddCNT('snek','Snek','SNEK','')">SNEK</button>
@@ -1022,7 +987,7 @@ button{cursor:pointer;font-family:inherit;}
     <div class="ch-hdr">
       <div class="ch-coin">
         <img class="ch-img" id="chImg" src="" alt="" style="display:none" onerror="this.style.display='none'">
-        <div><div class="ch-sub" id="chSub">ADA/USD</div><div class="ch-title" id="chTitle">Cardano</div></div>
+        <div><div class="ch-sub" id="chSub">BTC/USD</div><div class="ch-title" id="chTitle">Bitcoin</div></div>
         <div class="ch-price" id="chPrice">$—</div>
         <div class="ch-badge pos" id="chBadge">—</div>
         <div class="ch-meta"><span id="chMcap">MCap: —</span><span id="chVol">Vol 24h: —</span><span id="chATH" style="color:var(--accent3);font-size:.62rem;"></span></div>
@@ -1198,7 +1163,7 @@ button{cursor:pointer;font-family:inherit;}
       </div>
       <div class="alert-body" id="alertBody">
         <div class="alert-add-row">
-          <span class="alert-coin-name" id="alertCoinName">ADA</span>
+          <span class="alert-coin-name" id="alertCoinName">BTC</span>
           <select class="alert-dir" id="alertDir">
             <option value="above">↑ Above</option>
             <option value="below">↓ Below</option>
@@ -1663,13 +1628,12 @@ button{cursor:pointer;font-family:inherit;}
 </div>
 
 
+
 <!-- ═════ NEWS SECTION ═════ -->
 <div id="newsSec">
-
-  <!-- News Header - always visible, no JS needed -->
-  <div id="newsHeader" style="background:#0a1020;border-bottom:2px solid #00d4ff;padding:18px 22px 16px;">
-    <div style="font-family:'Orbitron',sans-serif;font-size:1.2rem;font-weight:700;color:#00d4ff;margin-bottom:4px;">📰 Crypto News</div>
-    <div style="color:#7a9cc0;font-size:.84rem;margin-bottom:14px;">Choose a topic or search any token</div>
+  <div id="newsHeader">
+    <div class="news-hero-title">📰 Crypto News</div>
+    <div class="news-hero-sub">Live headlines from across the crypto space</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="newsTopicBtns">
       <button class="news-tok-btn on" onclick="newsSelectToken(this,'')">📡 All News</button>
       <button class="news-tok-btn" onclick="newsSelectToken(this,'Cardano')">🔵 Cardano</button>
@@ -1681,40 +1645,30 @@ button{cursor:pointer;font-family:inherit;}
       <button class="news-tok-btn" onclick="newsSelectToken(this,'Regulation')">⚖ Rules</button>
     </div>
     <div style="display:flex;gap:8px;max-width:520px;">
-      <input id="newsSearchIn" type="text" placeholder="Search any token or topic…"
-        style="flex:1;background:#050810;border:1.5px solid #1a2d4a;color:#e0eeff;font-family:'Rajdhani',sans-serif;font-size:.9rem;padding:8px 12px;border-radius:6px;outline:none;"
-        onkeydown="if(event.key==='Enter')newsCustomSearch()"
-        onfocus="this.style.borderColor='#00d4ff'" onblur="this.style.borderColor='#1a2d4a'">
-      <button onclick="newsCustomSearch()" style="background:#00d4ff;color:#050810;border:none;padding:8px 18px;border-radius:6px;font-family:'Orbitron',sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;">Search</button>
+      <input id="newsSearchIn" class="news-search-in" type="text" placeholder="Search any token or topic…"
+        onkeydown="if(event.key==='Enter')newsCustomSearch()">
+      <button class="news-search-btn" onclick="newsCustomSearch()">Search</button>
     </div>
   </div>
-
-  <!-- Sentiment filter bar -->
-  <div id="newsFilterBar" style="display:none;padding:8px 20px;border-bottom:1px solid #1a2d4a;display:flex;gap:5px;flex-wrap:wrap;align-items:center;background:#050810;">
+  <div id="newsFilterBar">
     <button class="news-filter on" onclick="newsFilter(this,'all')">All</button>
     <button class="news-filter" onclick="newsFilter(this,'bullish')">📈 Bullish</button>
     <button class="news-filter" onclick="newsFilter(this,'bearish')">📉 Bearish</button>
     <button class="news-filter" onclick="newsFilter(this,'neutral')">⚖ Neutral</button>
-    <span id="newsResultCount" style="font-family:'Share Tech Mono',monospace;font-size:.61rem;color:#3a5a80;margin-left:auto;"></span>
+    <span id="newsResultCount" style="font-family:'Share Tech Mono',monospace;font-size:.61rem;color:var(--text3);margin-left:auto;"></span>
   </div>
-
-  <!-- News cards grid -->
-  <div id="newsGrid" style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;background:#050810;">
-    <div style="grid-column:1/-1;padding:40px 20px;text-align:center;color:#3a5a80;display:flex;flex-direction:column;align-items:center;gap:12px;">
-      <div class="spin" style="width:26px;height:26px;border-width:2.5px;border-color:#1a2d4a;border-top-color:#00d4ff;"></div>
-      <div style="color:#7a9cc0;font-family:'Share Tech Mono',monospace;font-size:.8rem;">Loading news…</div>
+  <div id="newsGrid">
+    <div style="grid-column:1/-1;padding:48px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <div class="spin" style="width:26px;height:26px;border-width:2.5px;"></div>
+      <div style="color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:.8rem;">Loading news…</div>
     </div>
   </div>
-
-  <!-- Load more -->
-  <div id="newsLoadMore" style="display:none;text-align:center;padding:8px 20px 24px;background:#050810;">
+  <div id="newsLoadMore" style="display:none;text-align:center;padding:8px 20px 24px;background:var(--bg);">
     <button class="news-more-btn" onclick="newsLoadMore()">Load More ↓</button>
   </div>
-
-</div><!-- /newsSec -->
+</div>
 
 </div><!-- /app -->
-
 
 
 <!-- NOTE INPUT OVERLAY -->
@@ -1732,7 +1686,6 @@ button{cursor:pointer;font-family:inherit;}
     </div>
     <div class="m-cats">
       <button class="mc on" onclick="setMCat(this,'')">🌐 All</button>
-      <button class="mc" onclick="setMCat(this,'cardano-ecosystem')" style="border-color:rgba(0,212,255,.5);color:var(--accent);">🔵 Cardano</button>
       <button class="mc" onclick="setMCat(this,'layer-1')">⛓ Layer 1</button>
       <button class="mc" onclick="setMCat(this,'layer-2')">🔗 Layer 2</button>
       <button class="mc" onclick="setMCat(this,'decentralized-finance-defi')">🏦 DeFi</button>
@@ -1867,12 +1820,14 @@ function setDot(s){
 
 /* ══════════════════ STATE ══════════════════ */
 const ST={
-  coin:{id:'cardano',name:'Cardano',symbol:'ADA',image:'',price:0,change:0,mcap:0,vol:0,ath:0},
+  coin:{id:'bitcoin',name:'Bitcoin',symbol:'BTC',image:'',price:0,change:0,mcap:0,vol:0,ath:0},
   wl:[
-    {id:'cardano',name:'Cardano',symbol:'ADA'},
     {id:'bitcoin',name:'Bitcoin',symbol:'BTC'},
     {id:'ethereum',name:'Ethereum',symbol:'ETH'},
-    {id:'algorand',name:'Algorand',symbol:'ALGO'},
+    {id:'solana',name:'Solana',symbol:'SOL'},
+    {id:'binancecoin',name:'BNB',symbol:'BNB'},
+    {id:'ripple',name:'XRP',symbol:'XRP'},
+    {id:'dogecoin',name:'Dogecoin',symbol:'DOGE'},
   ],
   tf:'30',ct:'candle',
   inds:new Set(),candles:[],
@@ -2070,24 +2025,6 @@ const CC_SYM = {
   'ontology':'ONT','nano':'XNO','wax':'WAXP','band-protocol':'BAND',
   'kyber-network-crystal':'KNC','loopring':'LRC','storj':'STORJ',
   'ankr':'ANKR','celer-network':'CELR','api3':'API3',
-  // ── Cardano Native Tokens (CNTs) ──────────────────────────────────────────
-  'meld':'MELD','minswap':'MIN','sundaeswap':'SUNDAE',
-  'wingriders':'WRT','liqwid-finance':'LQ','indigo-dao':'INDY',
-  'djed':'DJED','iagon':'IAG','jpg-store':'JPEG',
-  'cornucopias':'COPI','genius-yield':'GENS','clarity-dao':'CLAP',
-  'nunet':'NTX','book-io':'BOOK','charli3':'C3',
-  'fluid-tokens':'FLUID','vyfi':'VYFI','lenfi':'LENFI',
-  'encoins':'ENCS','derp-finance':'DERP','optim-finance':'OPTIM',
-  'snek':'SNEK','clay-nation':'CLAY','hosky-token':'HOSKY',
-  'catsky':'CATSKY','mean-finance':'MEAN','flac-finance':'FLAC',
-  'yamfore':'YFP','pavia':'PAVIA','world-mobile-token':'WMT',
-  'empowa':'EMP','ibilecoin':'IBILE','gero-wallet':'GERO',
-  'adax-pro':'ADAX','astarter':'AA','cardax':'CDX',
-  'maiadao':'MAIA','ikigai-tech':'IKIGAI','yamfore-ii':'YFP2',
-  'nmkr':'NMKR','tokenmania':'TOKEN','spacebudz':'BUD',
-  'aada-finance':'AADA','paribus':'PBX','mix-token':'MIX',
-  'arcade-network':'ARC','adadao':'ADAO','milk-alliance':'MILK',
-  'ada-handle':'HANDLE',
 };
 
 // TF → CryptoCompare endpoint + candle count
@@ -2426,7 +2363,6 @@ const CG_SORT_MAP = {
 // CoinGecko category slugs
 const CG_CATS = {
   '':                             '',
-  'cardano-ecosystem':            'cardano-ecosystem',
   'layer-1':                      'layer-1',
   'layer-2':                      'layer-2',
   'decentralized-finance-defi':   'decentralized-finance-defi',
@@ -3740,6 +3676,40 @@ function checkAlerts(){
 
 function playAlertDing(){
   try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Three-note ascending ding: C5 → E5 → G5
+    const notes = [523.25, 659.25, 783.99];
+    notes.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+      const start = ctx.currentTime + i * 0.18;
+      const end   = start + 0.55;
+
+      // Envelope: quick attack, smooth exponential decay
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.45, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, end);
+
+      osc.start(start);
+      osc.stop(end);
+    });
+
+    // Auto-close context after sound finishes
+    setTimeout(() => ctx.close(), 1200);
+  }catch(e){
+    console.warn('Alert sound failed:', e);
+  }
+}
+
+function playAlertDing(){
+  try{
     const ctx  = new (window.AudioContext || window.webkitAudioContext)();
     const gain = ctx.createGain();
     gain.connect(ctx.destination);
@@ -4273,24 +4243,23 @@ function activateIndicator(name){
 
 /* ══════════════════ TABS / THEME / CHECKLIST ══════════════════ */
 function showTab(n){
-  document.getElementById('chartTab').style.display  = n==='chart' ? 'block':'none';
-  document.getElementById('learnSec').style.display  = n==='learn' ? 'block':'none';
-  document.getElementById('newsSec').style.display   = n==='news'  ? 'block':'none';
-  // Sync nav buttons (Chart=0, Learn=1, News=2)
-  document.querySelectorAll('.nb').forEach((b,i)=>{
+  document.getElementById('chartTab').style.display = n==='chart'?'block':'none';
+  document.getElementById('learnSec').style.display = n==='learn'?'block':'none';
+  const ns = document.getElementById('newsSec');
+  if(ns) ns.style.display = n==='news'?'block':'none';
+  // Sync nav buttons by text content
+  document.querySelectorAll('.hdr-nav .nb').forEach(b=>{
+    const txt=b.textContent||'';
     b.classList.toggle('on',
-      (i===0 && n==='chart') ||
-      (i===1 && n==='learn') ||
-      (i===2 && n==='news')
+      (n==='chart'&&txt.includes('Chart'))||
+      (n==='learn'&&txt.includes('Learn'))||
+      (n==='news' &&txt.includes('News'))
     );
   });
-
   if(n==='chart') setTimeout(renderChart,50);
-  if(n==='news'){
-    if(!window._newsInitialized){
-      window._newsInitialized=true;
-      setTimeout(()=>fetchNews(''), 100);
-    }
+  if(n==='news' && !window._newsInitialized){
+    window._newsInitialized=true;
+    setTimeout(()=>fetchNews(''),120);
   }
 }
 function ck(li){li.classList.toggle('done');li.querySelector('.ck').textContent=li.classList.contains('done')?'✓':'';}
@@ -4522,6 +4491,20 @@ function initCoinInfoPopup(){
   popup.addEventListener('mouseleave',hideCoinInfo);
 }
 
+/* ── HATTY LINKS DROPDOWN ─────────────────────────────── */
+function toggleHattyDrop(e){
+  e.stopPropagation();
+  document.getElementById('hattyDropWrap').classList.toggle('open');
+}
+document.addEventListener('click',e=>{
+  const w=document.getElementById('hattyDropWrap');
+  if(w&&!w.contains(e.target))w.classList.remove('open');
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')document.getElementById('hattyDropWrap')?.classList.remove('open');
+});
+
+
 /* ══════════════════ CNT HELPERS ══════════════════ */
 async function quickAddCNT(id, name, sym, img){
   const existing = ST.wl.find(c => c.id === id);
@@ -4530,7 +4513,6 @@ async function quickAddCNT(id, name, sym, img){
   await addToWL(id, name, sym, img);
   await selectCoin(id, name, sym, img || ST.wl.find(c=>c.id===id)?.image || '');
 }
-
 function toggleCNTPanel(){
   const list = document.getElementById('cntList');
   const btn  = document.getElementById('cntToggle');
@@ -4539,7 +4521,6 @@ function toggleCNTPanel(){
   list.style.display = collapsed ? '' : 'none';
   btn.textContent = collapsed ? '▼' : '▶';
 }
-
 function openCardanoModal(){
   openModal();
   setTimeout(()=>{
@@ -4588,7 +4569,6 @@ function timeAgo(ts){
   return Math.floor(diff/86400)+"d ago";
 }
 
-// Map topic buttons -> CC category + search keywords
 const NEWS_TOPICS={
   "":          {cc:"",        q:"crypto cryptocurrency"},
   "Cardano":   {cc:"ADA",     q:"Cardano ADA blockchain"},
@@ -4597,257 +4577,283 @@ const NEWS_TOPICS={
   "Algorand":  {cc:"ALGO",    q:"Algorand ALGO blockchain"},
   "DeFi":      {cc:"DEX",     q:"DeFi decentralized finance"},
   "NFT":       {cc:"NFT",     q:"NFT non-fungible token"},
-  "Regulation":{cc:"REGULATION", q:"crypto regulation SEC law"},
+  "Regulation":{cc:"REGULATION",q:"crypto regulation SEC law"},
 };
 
-// RSS feeds via allorigins CORS proxy - works from any domain, no key needed
-const CORS_PROXY = "https://api.allorigins.win/get?url=";
 const RSS_FEEDS = [
   {name:"CoinDesk",      url:"https://www.coindesk.com/arc/outboundfeeds/rss/"},
   {name:"Cointelegraph", url:"https://cointelegraph.com/rss"},
   {name:"Decrypt",       url:"https://decrypt.co/feed"},
   {name:"Bitcoin Mag",   url:"https://bitcoinmagazine.com/feed"},
   {name:"The Block",     url:"https://www.theblock.co/rss.xml"},
+  {name:"CryptoSlate",   url:"https://cryptoslate.com/feed/"},
+  {name:"BeInCrypto",    url:"https://beincrypto.com/feed/"},
+  {name:"NewsBTC",       url:"https://www.newsbtc.com/feed/"},
+  {name:"AMBCrypto",     url:"https://ambcrypto.com/feed/"},
+  {name:"Crypto.news",   url:"https://crypto.news/feed/"},
+];
+
+const CORS_PROXIES = [
+  url => "https://api.allorigins.win/get?url=" + encodeURIComponent(url),
+  url => "https://corsproxy.io/?" + encodeURIComponent(url),
+  url => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url),
 ];
 
 function newsSelectToken(btn, topic){
   document.querySelectorAll(".news-tok-btn").forEach(b=>b.classList.remove("on"));
   btn.classList.add("on");
-  document.getElementById("newsSearchIn").value="";
-  _newsQuery=topic;
+  const inp = document.getElementById("newsSearchIn");
+  if(inp) inp.value = "";
+  _newsQuery = topic;
   fetchNews(topic);
 }
 function newsCustomSearch(){
-  const q=document.getElementById("newsSearchIn").value.trim();
-  if(!q){showToast("Search","Type a token name or keyword","info",2000);return;}
+  const q = (document.getElementById("newsSearchIn")?.value||"").trim();
+  if(!q){ showToast("Search","Type a token name or keyword","info",2000); return; }
   document.querySelectorAll(".news-tok-btn").forEach(b=>b.classList.remove("on"));
-  _newsQuery=q;
+  _newsQuery = q;
   fetchNews(q);
 }
 function newsFilter(btn, filter){
-  _newsFilter=filter;
+  _newsFilter = filter;
   document.querySelectorAll(".news-filter").forEach(b=>b.classList.remove("on"));
   btn.classList.add("on");
+  _newsPage = 0;
   renderNewsGrid();
 }
-function newsLoadMore(){_newsPage++;renderNewsGrid(true);}
+function newsLoadMore(){ _newsPage++; renderNewsGrid(true); }
 
-function setNewsGrid(html){
-  const g=document.getElementById("newsGrid");
-  if(g)g.innerHTML=html;
-}
 function newsStatus(msg){
-  setNewsGrid(`<div style="grid-column:1/-1;padding:48px 20px;text-align:center;color:#7a9cc0;font-family:'Share Tech Mono',monospace;font-size:.8rem;display:flex;flex-direction:column;align-items:center;gap:12px;">
-    <div class="spin" style="width:26px;height:26px;border-width:2.5px;border-color:#1a2d4a;border-top-color:#00d4ff;"></div>
-    <span>${msg}</span>
-  </div>`);
+  const g = document.getElementById("newsGrid");
+  if(g) g.innerHTML = `<div style="grid-column:1/-1;padding:48px 20px;text-align:center;color:var(--text2);display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <div class="spin" style="width:26px;height:26px;border-width:2.5px;"></div>
+    <span style="font-family:'Share Tech Mono',monospace;font-size:.8rem;">${msg}</span>
+  </div>`;
 }
 
 async function fetchNews(query){
-  if(query===undefined)query=_newsQuery;
-  console.log('[News] fetchNews called with query:', query);
-  _newsData=[];_newsFilter="all";_newsPage=0;
-  document.querySelectorAll(".news-filter").forEach(b=>b.classList.toggle("on",b.textContent.includes("All")));
+  if(query === undefined) query = _newsQuery;
+  _newsData = []; _newsFilter = "all"; _newsPage = 0;
+  document.querySelectorAll(".news-filter").forEach(b => b.classList.toggle("on", b.textContent.includes("All")));
+  const filterBar = document.getElementById("newsFilterBar");
+  const loadMore  = document.getElementById("newsLoadMore");
+  if(filterBar) filterBar.style.display = "none";
+  if(loadMore)  loadMore.style.display  = "none";
+  newsStatus("Fetching " + (query || "All Crypto") + " news…");
 
-  const filterBar=document.getElementById("newsFilterBar");
-  const summaryEl=document.getElementById("newsAISummary");
-  const loadMore=document.getElementById("newsLoadMore");
-  if(filterBar)filterBar.style.display="none";
-  if(summaryEl)summaryEl.style.display="none";
-  if(loadMore)loadMore.style.display="none";
-
-  const label=query||"All Crypto";
-  newsStatus("Fetching "+label+" news…");
-
-  // Strategy 1: CryptoCompare (fast, structured, CORS ok on deployed sites)
+  // Strategy 1: CryptoCompare News API (fast, no CORS issues)
   let ok = await tryCCNews(query);
 
-  // Strategy 2: RSS feeds via allorigins CORS proxy
-  if(!ok){
-    newsStatus("Loading RSS feeds…");
-    ok = await tryRSSFeeds(query);
+  // Strategy 2: RSS feeds via CORS proxies (fallback + supplement)
+  if(!ok || _newsData.length < 5){
+    newsStatus("Loading from RSS feeds…");
+    const rssOk = await tryRSSFeeds(query);
+    ok = ok || rssOk;
   }
 
   if(_newsData.length){
-    if(filterBar)filterBar.style.display="flex";
-    const countEl=document.getElementById("newsResultCount");
-    if(countEl)countEl.textContent=_newsData.length+" articles";
+    if(filterBar) filterBar.style.display = "flex";
+    const cnt = document.getElementById("newsResultCount");
+    if(cnt) cnt.textContent = _newsData.length + " articles";
     renderNewsGrid();
   } else {
-    // Show the "unavailable" message with links
-    setNewsGrid(`<div style="grid-column:1/-1;padding:48px 20px;text-align:center;font-family:'Share Tech Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:14px;">
+    const g = document.getElementById("newsGrid");
+    if(g) g.innerHTML = `<div style="grid-column:1/-1;padding:48px 20px;text-align:center;font-family:'Share Tech Mono',monospace;display:flex;flex-direction:column;align-items:center;gap:14px;">
       <div style="font-size:2rem;">📡</div>
-      <div style="font-family:'Orbitron',sans-serif;font-size:.95rem;color:#e0eeff;">Could Not Load News</div>
-      <div style="color:#7a9cc0;font-size:.78rem;line-height:1.8;max-width:380px;text-align:center;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:.95rem;color:var(--text);">Could Not Load News</div>
+      <div style="color:var(--text2);font-size:.78rem;line-height:1.8;max-width:380px;text-align:center;">
         Both news sources failed. This can happen due to network issues or rate limiting.<br>
-        <span style="color:#3a5a80;font-size:.72rem;">Try again in a moment, or visit a news site directly:</span>
+        <span style="color:var(--text3);font-size:.72rem;">Try again in a moment, or visit a news site directly:</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
-        <button onclick="fetchNews()" style="padding:7px 18px;border-radius:5px;border:1px solid #00d4ff;color:#00d4ff;background:transparent;cursor:pointer;font-size:.72rem;">↻ Retry</button>
-        <a href="https://www.coindesk.com" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid #1a2d4a;color:#7a9cc0;background:transparent;font-size:.72rem;text-decoration:none;">CoinDesk ↗</a>
-        <a href="https://cointelegraph.com" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid #1a2d4a;color:#7a9cc0;background:transparent;font-size:.72rem;text-decoration:none;">CoinTelegraph ↗</a>
-        <a href="https://decrypt.co" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid #1a2d4a;color:#7a9cc0;background:transparent;font-size:.72rem;text-decoration:none;">Decrypt ↗</a>
+        <button onclick="fetchNews()" style="padding:7px 18px;border-radius:5px;border:1px solid var(--accent);color:var(--accent);background:transparent;cursor:pointer;font-size:.72rem;font-family:'Share Tech Mono',monospace;">↻ Retry</button>
+        <a href="https://www.coindesk.com" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid var(--border);color:var(--text2);background:transparent;font-size:.72rem;text-decoration:none;">CoinDesk ↗</a>
+        <a href="https://cointelegraph.com" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid var(--border);color:var(--text2);background:transparent;font-size:.72rem;text-decoration:none;">CoinTelegraph ↗</a>
+        <a href="https://decrypt.co" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid var(--border);color:var(--text2);background:transparent;font-size:.72rem;text-decoration:none;">Decrypt ↗</a>
+        <a href="https://beincrypto.com" target="_blank" rel="noopener" style="padding:7px 18px;border-radius:5px;border:1px solid var(--border);color:var(--text2);background:transparent;font-size:.72rem;text-decoration:none;">BeInCrypto ↗</a>
       </div>
-    </div>`);
+    </div>`;
   }
 }
 
-// ── Strategy 1: CryptoCompare News (CORS-safe from deployed domains) ──────────
 async function tryCCNews(query){
   try{
-    const topic=NEWS_TOPICS[query];
-    const cat=topic?.cc||"";
-    let url="https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50";
-    if(cat) url+="&categories="+encodeURIComponent(cat);
-
-    const controller=new AbortController();
-    const t=setTimeout(()=>controller.abort(),6000);
-    const res=await fetch(url,{signal:controller.signal});
+    const topic = NEWS_TOPICS[query];
+    const cat   = topic?.cc || "";
+    let url = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN&sortOrder=latest&limit=50";
+    if(cat) url += "&categories=" + encodeURIComponent(cat);
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(url, {signal: controller.signal});
     clearTimeout(t);
-
-    if(!res.ok)return false;
-    const json=await res.json();
-    let items=json.Data||[];
-
-    // Client-side keyword filter for custom searches
-    if(query&&!topic){
-      const qlo=query.toLowerCase();
-      const filtered=items.filter(a=>
-        (a.title||"").toLowerCase().includes(qlo)||
-        (a.categories||"").toLowerCase().includes(qlo)||
+    if(!res.ok) return false;
+    const json = await res.json();
+    let items = json.Data || [];
+    if(!items.length) return false;
+    // Client-side keyword filter for free-text searches
+    if(query && !topic){
+      const qlo = query.toLowerCase();
+      const filtered = items.filter(a =>
+        (a.title||"").toLowerCase().includes(qlo) ||
+        (a.categories||"").toLowerCase().includes(qlo) ||
         (a.body||"").toLowerCase().includes(qlo)
       );
-      if(filtered.length)items=filtered;
+      if(filtered.length) items = filtered;
     }
-    if(!items.length)return false;
-
-    _newsData=items.map(item=>({
-      title:   item.title||"",
-      url:     item.url||"#",
-      source:  item.source_info?.name||item.source||"CryptoCompare",
-      pubDate: item.published_on,
-      desc:    (item.body||"").replace(/<[^>]+>/g,"").substring(0,200),
-      image:   item.imageurl||"",
-      tags:    (item.categories||"").split("|").filter(Boolean).slice(0,4),
-      sentiment:scoreSentiment((item.title||"")+(item.body||"")),
+    _newsData = items.map(item => ({
+      title:     item.title || "",
+      url:       item.url || "#",
+      source:    item.source_info?.name || item.source || "CryptoCompare",
+      pubDate:   item.published_on,
+      desc:      (item.body||"").replace(/<[^>]+>/g,"").substring(0,200),
+      image:     item.imageurl || "",
+      tags:      (item.categories||"").split("|").filter(Boolean).slice(0,4),
+      sentiment: scoreSentiment((item.title||"") + (item.body||"")),
     }));
-    return _newsData.length>0;
+    return _newsData.length > 0;
   }catch(e){
-    console.warn("[News] CC failed:",e.message);
+    console.warn("[News] CC failed:", e.message);
     return false;
   }
 }
 
-// ── Strategy 2: RSS via allorigins CORS proxy ─────────────────────────────────
 async function tryRSSFeeds(query){
-  const qlo=(query||"").toLowerCase();
-  const results=[];
+  const qlo = (query || "").toLowerCase();
+  const results = [];
 
-  const fetchers=RSS_FEEDS.map(async feed=>{
-    try{
-      const proxyUrl=CORS_PROXY+encodeURIComponent(feed.url);
-      const controller=new AbortController();
-      const t=setTimeout(()=>controller.abort(),8000);
-      const res=await fetch(proxyUrl,{signal:controller.signal});
-      clearTimeout(t);
-      if(!res.ok)return;
-      const json=await res.json();
-      const xml=json.contents||"";
-      if(!xml)return;
+  const fetchFeed = async (feed) => {
+    for(const makeProxy of CORS_PROXIES){
+      try{
+        const proxyUrl = makeProxy(feed.url);
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 10000);
+        const res = await fetch(proxyUrl, {signal: controller.signal});
+        clearTimeout(t);
+        if(!res.ok) continue;
 
-      // Parse RSS XML manually
-      const parser=new DOMParser();
-      const doc=parser.parseFromString(xml,"text/xml");
-      const items=Array.from(doc.querySelectorAll("item"));
+        // allorigins returns {contents:...}, corsproxy returns raw text
+        let xml = "";
+        const ct = res.headers.get("content-type") || "";
+        if(ct.includes("json")){
+          const json = await res.json().catch(()=>null);
+          xml = json?.contents || "";
+        } else {
+          xml = await res.text().catch(()=>"");
+        }
+        if(!xml || xml.length < 100) continue;
 
-      items.forEach(item=>{
-        const title=(item.querySelector("title")?.textContent||"").trim();
-        const link=(item.querySelector("link")?.textContent||"").trim();
-        const desc=(item.querySelector("description")?.textContent||"").replace(/<[^>]+>/g,"").trim().substring(0,200);
-        const pubDate=item.querySelector("pubDate")?.textContent||"";
-        const encImg=item.querySelector("enclosure[type^='image']")?.getAttribute("url")||
-                     item.querySelector("media\\:thumbnail,thumbnail")?.getAttribute("url")||"";
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xml, "text/xml");
+        const items = Array.from(doc.querySelectorAll("item"));
+        if(!items.length) continue;
 
-        if(!title||!link)return;
-        // Filter by query if provided
-        if(qlo&&!title.toLowerCase().includes(qlo)&&!desc.toLowerCase().includes(qlo))return;
-
-        results.push({
-          title, url:link, source:feed.name,
-          pubDate: pubDate?Math.floor(new Date(pubDate).getTime()/1000):Math.floor(Date.now()/1000),
-          desc, image:encImg,
-          tags:[],
-          sentiment:scoreSentiment(title+" "+desc),
+        items.forEach(item => {
+          const title   = (item.querySelector("title")?.textContent || "").trim();
+          const link    = (item.querySelector("link")?.textContent || item.querySelector("guid")?.textContent || "").trim();
+          const descRaw = item.querySelector("description")?.textContent || "";
+          const desc    = descRaw.replace(/<[^>]+>/g,"").trim().substring(0,200);
+          const pubDate = item.querySelector("pubDate")?.textContent || "";
+          // Try multiple image source patterns
+          const encImg  = item.querySelector("enclosure[type^='image']")?.getAttribute("url")
+            || item.getElementsByTagNameNS("http://search.yahoo.com/mrss/","thumbnail")[0]?.getAttribute("url")
+            || item.getElementsByTagNameNS("http://search.yahoo.com/mrss/","content")[0]?.getAttribute("url")
+            || item.querySelector("image > url")?.textContent
+            || "";
+          if(!title || !link) return;
+          if(qlo && !title.toLowerCase().includes(qlo) && !desc.toLowerCase().includes(qlo)) return;
+          results.push({
+            title, url: link, source: feed.name,
+            pubDate: pubDate ? Math.floor(new Date(pubDate).getTime()/1000) : Math.floor(Date.now()/1000),
+            desc, image: encImg, tags: [],
+            sentiment: scoreSentiment(title + " " + desc),
+          });
         });
-      });
-    }catch(e){
-      console.warn("RSS feed failed:",feed.name,e.message);
+        break; // success — skip remaining proxies for this feed
+      }catch(e){
+        console.warn("RSS feed failed:", feed.name, e.message);
+      }
     }
-  });
+  };
 
-  await Promise.allSettled(fetchers);
+  // Fetch all feeds in parallel
+  await Promise.allSettled(RSS_FEEDS.map(fetchFeed));
 
-  if(!results.length)return false;
+  if(!results.length) return false;
 
-  // Sort by date, deduplicate by title
-  results.sort((a,b)=>b.pubDate-a.pubDate);
-  const seen=new Set();
-  _newsData=results.filter(a=>{
-    const k=a.title.toLowerCase().substring(0,50);
-    if(seen.has(k))return false;
+  // Sort by date, deduplicate by title prefix
+  results.sort((a,b) => b.pubDate - a.pubDate);
+  const seen = new Set();
+  const fresh = results.filter(a => {
+    const k = a.title.toLowerCase().substring(0,50);
+    if(seen.has(k)) return false;
     seen.add(k);
     return true;
   });
-  console.log("[News] RSS result:", _newsData.length, "articles");
-  return _newsData.length>0;
+
+  // Merge with existing CC news, re-sort, deduplicate
+  const all = [..._newsData, ...fresh];
+  all.sort((a,b) => b.pubDate - a.pubDate);
+  const deduped = new Set();
+  _newsData = all.filter(a => {
+    const k = a.title.toLowerCase().substring(0,50);
+    if(deduped.has(k)) return false;
+    deduped.add(k);
+    return true;
+  });
+
+  return _newsData.length > 0;
 }
 
 function renderNewsGrid(append){
-  const grid=document.getElementById("newsGrid");
-  if(!grid)return;
-  if(!append)grid.innerHTML="";
-  let display=_newsData;
-  if(_newsFilter!=="all")display=_newsData.filter(a=>a.sentiment===_newsFilter);
-  const page=display.slice(_newsPage*NEWS_PER_PAGE,(_newsPage+1)*NEWS_PER_PAGE);
+  const grid = document.getElementById("newsGrid");
+  if(!grid) return;
+  if(!append) grid.innerHTML = "";
+
+  let display = _newsData;
+  if(_newsFilter !== "all") display = _newsData.filter(a => a.sentiment === _newsFilter);
+
+  const page = display.slice(_newsPage * NEWS_PER_PAGE, (_newsPage+1) * NEWS_PER_PAGE);
   if(!display.length){
-    grid.innerHTML='<div style="grid-column:1/-1;padding:48px;text-align:center;color:#3a5a80;font-family:Share Tech Mono,monospace;">No articles matched this filter. Try <b style="color:#e0eeff">All</b>.</div>';
-    const lm=document.getElementById("newsLoadMore");
-    if(lm)lm.style.display="none";
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:48px;text-align:center;color:var(--text3);font-family:Share Tech Mono,monospace;">No articles matched this filter. Try <b style="color:var(--text)">All</b>.</div>';
+    const lm = document.getElementById("newsLoadMore");
+    if(lm) lm.style.display = "none";
     return;
   }
-  page.forEach(a=>{
-    const sc=a.sentiment||"neutral";
-    const sl=sc==="bullish"?"📈 Bullish":sc==="bearish"?"📉 Bearish":"⚖ Neutral";
-    const sentCol=sc==="bullish"?"rgba(0,255,136,.12)":sc==="bearish"?"rgba(255,51,102,.12)":"rgba(122,156,192,.08)";
-    const sentBorder=sc==="bullish"?"rgba(0,255,136,.3)":sc==="bearish"?"rgba(255,51,102,.3)":"rgba(122,156,192,.2)";
-    const sentTxt=sc==="bullish"?"#00ff88":sc==="bearish"?"#ff3366":"#7a9cc0";
-    const tags=(a.tags||[]).filter(Boolean).map(t=>`<span style="font-family:Share Tech Mono,monospace;font-size:.55rem;padding:2px 6px;border-radius:20px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.16);color:#00d4ff;">${t}</span>`).join("");
-    const imgHtml=a.image
-      ?`<img src="${a.image}" alt="" loading="lazy" style="width:100%;height:150px;object-fit:cover;background:#0a1020;flex-shrink:0;" onerror="this.style.display='none'">`
-      :`<div style="width:100%;height:72px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(123,47,255,.05));flex-shrink:0;">📰</div>`;
 
-    const card=document.createElement("a");
-    card.href=a.url||"#";
-    card.target="_blank";
-    card.rel="noopener noreferrer";
-    card.style.cssText="background:#0d1628;border:1px solid #1a2d4a;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .2s,transform .15s;cursor:pointer;";
-    card.onmouseenter=()=>{card.style.borderColor="#7b2fff";card.style.transform="translateY(-2px)";};
-    card.onmouseleave=()=>{card.style.borderColor="#1a2d4a";card.style.transform="";};
-    card.innerHTML=imgHtml+`
+  page.forEach(a => {
+    const sc = a.sentiment || "neutral";
+    const sl = sc==="bullish"?"📈 Bullish":sc==="bearish"?"📉 Bearish":"⚖ Neutral";
+    const sentBg = sc==="bullish"?"rgba(0,255,136,.1)":sc==="bearish"?"rgba(255,51,102,.1)":"rgba(122,156,192,.07)";
+    const sentBd = sc==="bullish"?"rgba(0,255,136,.3)":sc==="bearish"?"rgba(255,51,102,.3)":"rgba(122,156,192,.2)";
+    const sentTx = sc==="bullish"?"#00ff88":sc==="bearish"?"#ff3366":"#7a9cc0";
+    const tags = (a.tags||[]).filter(Boolean).map(t =>
+      `<span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 6px;border-radius:20px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.16);color:#00d4ff;">${t}</span>`
+    ).join("");
+    const imgHtml = a.image
+      ? `<img src="${a.image}" alt="" loading="lazy" style="width:100%;height:148px;object-fit:cover;background:var(--bg2);flex-shrink:0;" onerror="this.style.display='none'">`
+      : `<div style="width:100%;height:68px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(123,47,255,.05));flex-shrink:0;">📰</div>`;
+
+    const card = document.createElement("a");
+    card.className = "news-card";
+    card.href = a.url || "#";
+    card.target = "_blank";
+    card.rel = "noopener noreferrer";
+    card.innerHTML = imgHtml + `
       <div style="padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:6px;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span style="font-family:Share Tech Mono,monospace;font-size:.58rem;color:#3a5a80;text-transform:uppercase;letter-spacing:.05em;">${a.source}</span>
-          <span style="font-family:Share Tech Mono,monospace;font-size:.58rem;color:#3a5a80;">${timeAgo(a.pubDate)}</span>
-          <span style="font-family:Share Tech Mono,monospace;font-size:.56rem;padding:2px 7px;border-radius:20px;margin-left:auto;background:${sentCol};border:1px solid ${sentBorder};color:${sentTxt};">${sl}</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;">${a.source}</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text3);">${timeAgo(a.pubDate)}</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.56rem;padding:2px 7px;border-radius:20px;margin-left:auto;background:${sentBg};border:1px solid ${sentBd};color:${sentTx};">${sl}</span>
         </div>
-        <div style="font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;color:#e0eeff;line-height:1.4;">${a.title}</div>
-        ${a.desc?`<div style="font-size:.78rem;color:#7a9cc0;line-height:1.5;flex:1;">${a.desc.substring(0,160)}${a.desc.length>160?"…":""}</div>`:""}
-        ${tags?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;">${tags}</div>`:""}
+        <div style="font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:700;color:var(--text);line-height:1.4;">${a.title}</div>
+        ${a.desc ? `<div style="font-size:.78rem;color:var(--text2);line-height:1.5;flex:1;">${a.desc.substring(0,160)}${a.desc.length>160?"…":""}</div>` : ""}
+        ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;">${tags}</div>` : ""}
       </div>`;
     grid.appendChild(card);
   });
-  const lm=document.getElementById("newsLoadMore");
-  if(lm)lm.style.display=display.length>((_newsPage+1)*NEWS_PER_PAGE)?"block":"none";
+
+  const lm = document.getElementById("newsLoadMore");
+  if(lm) lm.style.display = display.length > ((_newsPage+1)*NEWS_PER_PAGE) ? "block" : "none";
 }
 
 </script>
