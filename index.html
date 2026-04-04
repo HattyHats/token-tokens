@@ -848,6 +848,7 @@ button{cursor:pointer;font-family:inherit;}
   <nav class="hdr-nav">
     <button class="nb on" onclick="showTab('chart')">📊 Chart</button>
     <button class="nb" onclick="showTab('learn')">📚 Learn</button>
+    <button class="nb" onclick="showTab('news')">📰 News</button>
     <div class="hatty-drop-wrap" id="hattyDropWrap">
       <button class="nb hatty-drop-btn" onclick="toggleHattyDrop(event)">
         🔗 HattyHats <span class="hatty-chevron" id="hattyChevron">▾</span>
@@ -1667,6 +1668,7 @@ button{cursor:pointer;font-family:inherit;}
     <button class="news-more-btn" onclick="newsLoadMore()">Load More ↓</button>
   </div>
 </div>
+
 
 </div><!-- /app -->
 
@@ -4325,16 +4327,28 @@ async function initApp(){
   await sleep(300);
   await loadChart(ST.coin.id, ST.tf);
 
-  // ── Auto-save on changes ────────────────────────────────
-  // Save when watchlist changes, alerts change, etc.
-  setInterval(saveState, 30000); // autosave every 30s
-  setInterval(loadPrices, 90000);
-  setInterval(loadTicker, 240000);
-  setInterval(checkAlerts, 15000); // check alerts every 15s
+  // ── Auto-save + polling — staggered so they don't all fire at once ─────
+  // Intervals are paused when tab is hidden to reduce CPU burn and
+  // prevent the browser's document_idle from never settling.
+  let _ivSave, _ivPrices, _ivTicker, _ivAlerts, _ivFG;
+  function startIntervals(){
+    _ivSave   = setInterval(saveState,   30000);
+    setTimeout(()=>{ _ivPrices = setInterval(loadPrices,  90000); }, 5000);
+    setTimeout(()=>{ _ivTicker = setInterval(loadTicker, 240000); }, 12000);
+    setTimeout(()=>{ _ivAlerts = setInterval(checkAlerts, 15000); }, 3000);
+    setTimeout(()=>{ _ivFG     = setInterval(loadFearGreed, 3600000); }, 20000);
+  }
+  function stopIntervals(){
+    [_ivSave,_ivPrices,_ivTicker,_ivAlerts,_ivFG].forEach(id=>clearInterval(id));
+  }
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){ stopIntervals(); }
+    else { stopIntervals(); startIntervals(); loadPrices(); }
+  });
+  startIntervals();
 
   // ── Fear & Greed ────────────────────────────────────────
   loadFearGreed();
-  setInterval(loadFearGreed, 3600000);
 
   if(hadSaved){
     showToast('👋 Welcome back!',
