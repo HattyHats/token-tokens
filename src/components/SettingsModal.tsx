@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { X, Trash2, Database, Shield, RefreshCw, AlertTriangle } from 'lucide-react';
 import { cn, safeStorage } from '../lib/utils';
 

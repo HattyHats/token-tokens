@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, BookOpen, Target, TrendingUp, BarChart2, Zap, Layout } from 'lucide-react';
 import { cn } from '../lib/utils';
 

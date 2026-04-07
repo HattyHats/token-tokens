@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
 
 export const Splash: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+  console.log("Splash component rendering...");
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {

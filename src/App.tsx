@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+console.log("App.tsx module loading...");
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Chart } from './components/Chart';
@@ -15,6 +15,7 @@ import { formatPrice, cn, safeStorage } from './lib/utils';
 import { Clock, AlertCircle } from 'lucide-react';
 
 export default function App() {
+  console.log("App component initializing...");
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -102,6 +103,7 @@ export default function App() {
   }, [drawings]);
 
   useEffect(() => {
+    console.log("App: loadInitialData starting...");
     const loadInitialData = async () => {
       try {
         const [trendingData, fgData] = await Promise.all([
