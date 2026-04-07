@@ -27,35 +27,39 @@ export const Splash: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
     });
 
     const draw = () => {
-      ctx.fillStyle = 'rgba(5, 8, 16, 0.18)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      try {
+        ctx.fillStyle = 'rgba(5, 8, 16, 0.18)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      drops.forEach((y, i) => {
-        const char = CHARS[Math.floor(Math.random() * CHARS.length)];
-        const x = i * COL_W;
-        const py = y * COL_W;
+        drops.forEach((y, i) => {
+          const char = CHARS[Math.floor(Math.random() * CHARS.length)];
+          const x = i * COL_W;
+          const py = y * COL_W;
 
-        ctx.font = `bold ${COL_W - 2}px 'Share Tech Mono', monospace`;
-        ctx.fillStyle = '#ffffff';
-        ctx.globalAlpha = 0.95;
-        ctx.fillText(char, x, py);
+          ctx.font = `bold ${COL_W - 2}px 'Share Tech Mono', monospace`;
+          ctx.fillStyle = '#ffffff';
+          ctx.globalAlpha = 0.95;
+          ctx.fillText(char, x, py);
 
-        ctx.fillStyle = colColors[i];
-        ctx.globalAlpha = 0.55;
-        ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], x, py - COL_W);
+          ctx.fillStyle = colColors[i];
+          ctx.globalAlpha = 0.55;
+          ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], x, py - COL_W);
 
-        ctx.globalAlpha = 1;
+          ctx.globalAlpha = 1;
 
-        if (py > canvas.height && Math.random() > 0.975) drops[i] = 0;
-        else drops[i] += 0.4 + Math.random() * 0.3;
-      });
+          if (py > canvas.height && Math.random() > 0.975) drops[i] = 0;
+          else drops[i] += 0.4 + Math.random() * 0.3;
+        });
+      } catch (e) {
+        console.error("Splash draw error:", e);
+      }
     };
 
     const interval = setInterval(draw, 45);
 
     const timer = setTimeout(() => {
       onComplete();
-    }, 4200);
+    }, 1000);
 
     return () => {
       clearInterval(interval);
