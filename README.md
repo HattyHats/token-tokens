@@ -1,20 +1,30 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Token-Tokens
 
-# Run and deploy your AI Studio app
+Welcome to **Token-Tokens**, a high-performance, real-time cryptocurrency dashboard designed for traders and enthusiasts who need precision and speed.
 
-This contains everything you need to run your app locally.
+## 🚀 About the Project
 
-View your app in AI Studio: https://ai.studio/apps/9a4b1455-629d-4bc2-9ae5-df714673ad18
+**Token-Tokens** is more than just a price tracker. It's a comprehensive suite of tools built to give you a competitive edge in the crypto market. Whether you're monitoring the latest trends, performing technical analysis on interactive charts, or catching up on the latest news, Token-Tokens brings it all together in one polished, futuristic interface.
 
-## Run Locally
+### Key Features:
+- **Real-Time Price Tracking**: Live updates for your favorite tokens via high-performance APIs.
+- **Interactive Charts**: Professional-grade charting with multiple timeframes, indicators (MA, EMA, BB, RSI, MACD), and drawing tools (Lines, Rays, Rectangles, Fibonacci).
+- **News Aggregator**: Stay informed with a curated feed of the latest cryptocurrency news filtered by token.
+- **Fear & Greed Index**: Gauge market sentiment at a glance with our custom-built gauge widget.
+- **Time Machine**: Look up historical prices for any date to see how your favorite tokens have performed over time.
+- **Watchlist Persistence**: Your custom watchlist and chart drawings are saved locally, so your workspace is always ready when you return.
 
-**Prerequisites:**  Node.js
+## 👤 About the Creator
 
+**Token-Tokens** was created by **HattyHats**, a developer passionate about building beautiful, functional tools for the crypto community. With a focus on performance, design, and user experience, HattyHats aims to provide the best possible interface for navigating the complex world of digital assets.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🛠️ Tech Stack
+
+- **Frontend**: React 19, Vite
+- **Styling**: Tailwind CSS
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **Data Sources**: CryptoCompare, CoinGecko, Alternative.me
+
+---
+*Best if used in a desktop browser for the full charting experience.*
