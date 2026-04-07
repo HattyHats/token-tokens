@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, RefreshCw, Flame, ChevronDown, ChevronRight } from 'lucide-react';
-import { Coin } from '@/src/types';
-import { formatPrice, formatLargeNumber, getCoinColor, cn } from '@/src/lib/utils';
-import { fetchCoinPrices, CC_SYM_MAP } from '@/src/services/api';
+import { Coin } from '../types';
+import { formatPrice, formatLargeNumber, getCoinColor, cn } from '../lib/utils';
+import { fetchCoinPrices, CC_SYM_MAP } from '../services/api';
 
 interface SidebarProps {
   watchlist: Coin[];

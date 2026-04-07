@@ -69,11 +69,8 @@ export const Splash: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
   }, [onComplete]);
 
   return (
-    <motion.div
-      initial={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.05 }}
-      transition={{ duration: 0.7 }}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden bg-bg"
+    <div
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden bg-[#050810]"
     >
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-40"
@@ -84,39 +81,19 @@ export const Splash: React.FC<{ onComplete: () => void }> = ({ onComplete }) => 
       <div className="absolute inset-0 z-10 bg-[linear-gradient(rgba(0,212,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,212,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
       
       <div className="relative z-20 text-center flex flex-col items-center gap-2">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 1 }}
-          className="font-orbitron text-lg md:text-2xl text-text2 tracking-[0.5em] uppercase"
-        >
+        <div className="font-orbitron text-lg md:text-2xl text-[#7a9cc0] tracking-[0.5em] uppercase">
           Welcome To:
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 1 }}
-          className="font-orbitron text-5xl md:text-8xl font-black tracking-wider bg-gradient-to-r from-accent via-accent2 to-accent bg-[length:200%] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(0,212,255,0.5)] animate-gradient-shift"
-        >
+        </div>
+        <div className="font-orbitron text-5xl md:text-8xl font-black tracking-wider bg-gradient-to-r from-[#00d4ff] via-[#7b2fff] to-[#00d4ff] bg-[length:200%] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(0,212,255,0.5)] animate-gradient-shift">
           Token-Tokens
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2, duration: 1 }}
-          className="font-mono text-sm md:text-lg text-text2 tracking-widest mt-1"
-        >
-          Created by <span className="text-accent">HattyHats</span>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 3, duration: 1 }}
-          className="mt-8"
-        >
-          <div className="w-9 h-9 border-3 border-accent/20 border-t-accent rounded-full animate-spin shadow-[0_0_18px_rgba(0,212,255,0.4)]" />
-        </motion.div>
+        </div>
+        <div className="font-mono text-sm md:text-lg text-[#7a9cc0] tracking-widest mt-1">
+          Created by <span className="text-[#00d4ff]">HattyHats</span>
+        </div>
+        <div className="mt-8">
+          <div className="w-9 h-9 border-3 border-[#00d4ff]/20 border-t-[#00d4ff] rounded-full animate-spin shadow-[0_0_18px_rgba(0,212,255,0.4)]" />
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

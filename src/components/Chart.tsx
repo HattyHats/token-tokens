@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Candle, Drawing, Indicator, ChartType } from '@/src/types';
-import { formatPrice, formatLargeNumber } from '@/src/lib/utils';
+import { Candle, Drawing, Indicator, ChartType } from '../types';
+import { formatPrice, formatLargeNumber } from '../lib/utils';
 
 interface ChartProps {
   candles: Candle[];

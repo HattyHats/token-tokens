@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Search } from 'lucide-react';
-import { Coin } from '@/src/types';
-import { formatPrice, formatLargeNumber, getCoinColor, cn } from '@/src/lib/utils';
+import { Coin } from '../types';
+import { formatPrice, formatLargeNumber, getCoinColor, cn } from '../lib/utils';
 
 interface TokenBrowserProps {
   isOpen: boolean;

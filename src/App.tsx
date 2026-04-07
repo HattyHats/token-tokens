@@ -15,7 +15,13 @@ import { formatPrice, cn, safeStorage } from './lib/utils';
 import { Clock, AlertCircle } from 'lucide-react';
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('nosplash') !== 'true';
+    }
+    return true;
+  });
   const [activeTab, setActiveTab] = useState('chart');
   const [activeCoin, setActiveCoin] = useState<Coin>({
     id: 'bitcoin',
@@ -67,19 +73,6 @@ export default function App() {
 
   useEffect(() => {
     if (showSplash) return;
-
-    // Re-initialize LiveCoinWatch widget
-    const scriptId = 'lcw-widget-script';
-    const existingScript = document.getElementById(scriptId);
-    if (existingScript) {
-      existingScript.remove();
-    }
-    
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = 'https://www.livecoinwatch.com/static/lcw-widget.js';
-    script.defer = true;
-    document.head.appendChild(script);
 
     // Periodic price refresh for watchlist
     const interval = setInterval(async () => {
@@ -213,9 +206,7 @@ export default function App() {
 
   return (
     <div className={cn("h-screen flex flex-col overflow-hidden", isDarkMode ? "dark" : "")}>
-      <AnimatePresence>
-        {showSplash && <Splash onComplete={() => setShowSplash(false)} />}
-      </AnimatePresence>
+      {showSplash && <Splash onComplete={() => setShowSplash(false)} />}
 
       <div className="md:hidden fixed top-0 left-0 right-0 z-[10000] bg-accent text-bg text-[10px] font-bold py-1 px-4 text-center tracking-widest uppercase shadow-lg">
         Best if used in browser / desktop

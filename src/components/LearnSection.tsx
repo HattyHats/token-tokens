@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, BookOpen, Target, TrendingUp, BarChart2, Zap, Layout } from 'lucide-react';
-import { cn } from '@/src/lib/utils';
+import { cn } from '../lib/utils';
 
 interface Section {
   id: string;
@@ -196,22 +196,13 @@ export const LearnSection: React.FC = () => {
                 />
               </button>
 
-              <AnimatePresence>
-                {expandedId === section.id && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="px-5 pb-6 pt-2 border-t border-border/30">
-                      <div className="text-text2 leading-relaxed">
-                        {section.content}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {expandedId === section.id && (
+                <div className="px-5 pb-6 pt-2 border-t border-border/30">
+                  <div className="text-text2 leading-relaxed">
+                    {section.content}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

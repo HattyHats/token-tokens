@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Trash2, Database, Shield, RefreshCw, AlertTriangle } from 'lucide-react';
-import { cn, safeStorage } from '@/src/lib/utils';
+import { cn, safeStorage } from '../lib/utils';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -26,9 +26,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[600] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
+      <div
         className="bg-bg2 border border-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden relative"
       >
         <div className="p-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-accent/10 to-transparent">
@@ -84,46 +82,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
 
-        <AnimatePresence>
-          {showConfirm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-bg2/95 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center z-50"
-            >
-              <AlertTriangle size={48} className="text-red mb-4 animate-pulse" />
-              <h3 className="text-lg font-orbitron font-bold text-text mb-2">ERASE ALL DATA?</h3>
-              <p className="text-xs text-text2 mb-6 leading-relaxed">
-                This will permanently delete your watchlist and all chart drawings. This action cannot be undone.
-              </p>
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={() => setShowConfirm(false)}
-                  className="flex-1 bg-surface border border-border text-text font-orbitron text-[10px] font-bold py-3 rounded hover:bg-border transition-all"
-                >
-                  CANCEL
-                </button>
-                <button
-                  onClick={() => {
-                    onReset();
-                    onClose();
-                  }}
-                  className="flex-1 bg-red text-white font-orbitron text-[10px] font-bold py-3 rounded hover:bg-red/80 transition-all"
-                >
-                  ERASE DATA
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {showConfirm && (
+          <div
+            className="absolute inset-0 bg-bg2/95 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center z-50"
+          >
+            <AlertTriangle size={48} className="text-red mb-4 animate-pulse" />
+            <h3 className="text-lg font-orbitron font-bold text-text mb-2">ERASE ALL DATA?</h3>
+            <p className="text-xs text-text2 mb-6 leading-relaxed">
+              This will permanently delete your watchlist and all chart drawings. This action cannot be undone.
+            </p>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 bg-surface border border-border text-text font-orbitron text-[10px] font-bold py-3 rounded hover:bg-border transition-all"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={() => {
+                  onReset();
+                  onClose();
+                }}
+                className="flex-1 bg-red text-white font-orbitron text-[10px] font-bold py-3 rounded hover:bg-red/80 transition-all"
+              >
+                ERASE DATA
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="p-4 bg-bg border-t border-border text-center">
           <div className="text-[9px] font-mono text-text3">
             Token-Tokens v1.2.0 • Build: 2026.04.07
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

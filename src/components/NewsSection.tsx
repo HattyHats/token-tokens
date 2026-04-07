@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { fetchNews } from '@/src/services/api';
+import { fetchNews } from '../services/api';
 import { ExternalLink, Clock, Newspaper } from 'lucide-react';
-import { cn } from '@/src/lib/utils';
+import { cn } from '../lib/utils';
 
 export const NewsSection: React.FC = () => {
   const [news, setNews] = useState<any[]>([]);
