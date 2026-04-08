@@ -18,13 +18,4 @@ Welcome to **Token-Tokens**, a high-performance, real-time cryptocurrency dashbo
 
 **Token-Tokens** was created by **HattyHats**, a developer passionate about building beautiful, functional tools for the crypto community. With a focus on performance, design, and user experience, HattyHats aims to provide the best possible interface for navigating the complex world of digital assets.
 
-## 🛠️ Tech Stack
-
-- **Frontend**: React 19, Vite
-- **Styling**: Tailwind CSS
-- **Animations**: Framer Motion
-- **Icons**: Lucide React
-- **Data Sources**: CryptoCompare, CoinGecko, Alternative.me
-
----
 *Best if used in a desktop browser for the full charting experience.*
