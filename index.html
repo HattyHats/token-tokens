@@ -1913,6 +1913,7 @@ const ST={
   ],
   tf:'30',ct:'candle',
   inds:new Set(),candles:[],
+  showPatterns:false,
   zoom:{s:0,r:80},drag:{on:false,x:0,s:0},
   mb:{page:1,per:50,cat:'',sort:'market_cap_desc',q:'',data:[]},
   sbt:null,mbt:null,
@@ -3359,6 +3360,8 @@ function setTFFromMini(el, tf){
 }
 
 /* ══════════════════ PATTERN RECOGNITION ════════════════ */
+const SHOW_DOUBLE_TOP = false;    // hide double top markers on chart
+const SHOW_DOUBLE_BOTTOM = false; // hide double bottom markers on chart
 function detectPatterns(candles){
   const patterns = [];
   if(candles.length < 20) return patterns;
@@ -3386,44 +3389,48 @@ function detectPatterns(candles){
     }
   }
 
-  // ── Double Top ──
-  const localMaxes = [];
-  for(let i=3;i<n-3;i++){
-    if(candles[i].h > candles[i-1].h && candles[i].h > candles[i-2].h &&
-       candles[i].h > candles[i+1].h && candles[i].h > candles[i+2].h){
-      localMaxes.push({i, h:candles[i].h});
+  if(SHOW_DOUBLE_TOP){
+    // ── Double Top ──
+    const localMaxes = [];
+    for(let i=3;i<n-3;i++){
+      if(candles[i].h > candles[i-1].h && candles[i].h > candles[i-2].h &&
+         candles[i].h > candles[i+1].h && candles[i].h > candles[i+2].h){
+        localMaxes.push({i, h:candles[i].h});
+      }
     }
-  }
-  for(let a=0;a<localMaxes.length-1;a++){
-    for(let b=a+1;b<localMaxes.length;b++){
-      const gap = localMaxes[b].i - localMaxes[a].i;
-      if(gap < 5 || gap > 60) continue;
-      const diff = Math.abs(localMaxes[a].h - localMaxes[b].h)/localMaxes[a].h;
-      if(diff < 0.025){ // within 2.5%
-        patterns.push({type:'Double Top',idx:localMaxes[b].i,color:'#ff3366',pos:'above',emoji:'⛰⛰',
-          desc:'Two similar highs — potential reversal signal'});
-        break;
+    for(let a=0;a<localMaxes.length-1;a++){
+      for(let b=a+1;b<localMaxes.length;b++){
+        const gap = localMaxes[b].i - localMaxes[a].i;
+        if(gap < 5 || gap > 60) continue;
+        const diff = Math.abs(localMaxes[a].h - localMaxes[b].h)/localMaxes[a].h;
+        if(diff < 0.025){ // within 2.5%
+          patterns.push({type:'Double Top',idx:localMaxes[b].i,color:'#ff3366',pos:'above',emoji:'⛰⛰',
+            desc:'Two similar highs — potential reversal signal'});
+          break;
+        }
       }
     }
   }
 
-  // ── Double Bottom ──
-  const localMins = [];
-  for(let i=3;i<n-3;i++){
-    if(candles[i].l < candles[i-1].l && candles[i].l < candles[i-2].l &&
-       candles[i].l < candles[i+1].l && candles[i].l < candles[i+2].l){
-      localMins.push({i, l:candles[i].l});
+  if(SHOW_DOUBLE_BOTTOM){
+    // ── Double Bottom ──
+    const localMins = [];
+    for(let i=3;i<n-3;i++){
+      if(candles[i].l < candles[i-1].l && candles[i].l < candles[i-2].l &&
+         candles[i].l < candles[i+1].l && candles[i].l < candles[i+2].l){
+        localMins.push({i, l:candles[i].l});
+      }
     }
-  }
-  for(let a=0;a<localMins.length-1;a++){
-    for(let b=a+1;b<localMins.length;b++){
-      const gap = localMins[b].i - localMins[a].i;
-      if(gap < 5 || gap > 60) continue;
-      const diff = Math.abs(localMins[a].l - localMins[b].l)/localMins[a].l;
-      if(diff < 0.025){
-        patterns.push({type:'Double Bottom',idx:localMins[b].i,color:'#00ff88',pos:'below',emoji:'🏔🏔',
-          desc:'Two similar lows — potential reversal higher'});
-        break;
+    for(let a=0;a<localMins.length-1;a++){
+      for(let b=a+1;b<localMins.length;b++){
+        const gap = localMins[b].i - localMins[a].i;
+        if(gap < 5 || gap > 60) continue;
+        const diff = Math.abs(localMins[a].l - localMins[b].l)/localMins[a].l;
+        if(diff < 0.025){
+          patterns.push({type:'Double Bottom',idx:localMins[b].i,color:'#00ff88',pos:'below',emoji:'🏔🏔',
+            desc:'Two similar lows — potential reversal higher'});
+          break;
+        }
       }
     }
   }
@@ -3433,6 +3440,7 @@ function detectPatterns(candles){
 }
 
 function renderPatterns(ctx, vis, toX, toY, pH, PAD_L, PAD_R, W){
+  if(!ST.showPatterns) return;
   // vis is the visible candle slice; we need global indices mapped to vis positions
   const patterns = detectPatterns(ST.candles);
   const s = ST.zoom.s;
@@ -3600,6 +3608,7 @@ function saveState(){
       tf:   ST.tf,
       ct:   ST.ct,
       inds: [...ST.inds],
+      showPatterns: ST.showPatterns,
       theme: document.documentElement.getAttribute('data-theme')||'dark',
       alerts: ALERTS,
       drawings: DRW.drawings,
@@ -3628,6 +3637,8 @@ function loadState(){
     if(data.ct) ST.ct = data.ct;
     // Restore indicators
     if(data.inds) data.inds.forEach(i=>ST.inds.add(i));
+    // Restore pattern markers toggle
+    if(data.showPatterns !== undefined) ST.showPatterns = !!data.showPatterns;
     // Restore drawings
     if(data.drawings) DRW.drawings = data.drawings;
     if(data.drawColor) DRW.color = data.drawColor;
@@ -3897,6 +3908,8 @@ function openSettings(){
   // Theme toggle state
   const tog = document.getElementById('smThemeToggle');
   if(tog) tog.checked = lm;
+  const pat = document.getElementById('smPatternToggle');
+  if(pat) pat.checked = ST.showPatterns;
   modal.classList.remove('hide');
 }
 function closeSettings(){
@@ -3907,6 +3920,12 @@ function smBgClick(e){
   if(e.target === document.getElementById('settingsModal')) closeSettings();
 }
 function smToggleTheme(cb){ toggleTheme(); }
+function smTogglePatterns(cb){
+  ST.showPatterns = !!cb.checked;
+  saveState();
+  renderChart();
+  showToast('Chart','Pattern markers ' + (ST.showPatterns ? 'enabled' : 'hidden') + '.','info');
+}
 function smExportData(){
   const data = localStorage.getItem(LS_KEY) || '{}';
   const blob = new Blob([data], {type:'application/json'});
@@ -5056,6 +5075,16 @@ function renderNewsGrid(append){
         </div>
         <label class="sm-toggle">
           <input type="checkbox" id="smThemeToggle" onchange="smToggleTheme(this)">
+          <span class="sm-toggle-slider"></span>
+        </label>
+      </div>
+      <div class="sm-row">
+        <div class="sm-row-info">
+          <div class="sm-row-label">Pattern Markers</div>
+          <div class="sm-row-sub">Show pattern labels on the chart</div>
+        </div>
+        <label class="sm-toggle">
+          <input type="checkbox" id="smPatternToggle" onchange="smTogglePatterns(this)">
           <span class="sm-toggle-slider"></span>
         </label>
       </div>
