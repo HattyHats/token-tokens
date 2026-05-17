@@ -932,6 +932,7 @@ button{cursor:pointer;font-family:inherit;}
   </nav>
   <div class="hdr-r">
     <div class="api-dot wait" id="apiDot"><div class="spin" style="width:9px;height:9px;border-width:1.5px;"></div>&nbsp;connecting</div>
+    <button class="settings-btn" id="authBtn" onclick="document.getElementById('fbModal').style.display='flex'">👤 Log In</button>
     <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
     <button class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
   </div>
@@ -1714,6 +1715,53 @@ button{cursor:pointer;font-family:inherit;}
 
 <!-- Indicator info popup -->
 <div class="i-tip" id="iTip"><h4 id="itH"></h4><p id="itP"></p><div class="sig" id="itS"></div></div>
+
+<!-- FIREBASE AUTH UI MODAL -->
+<div id="fbModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(5,8,16,0.85);backdrop-filter:blur(5px);justify-content:center;align-items:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);padding:30px;border-radius:12px;width:90%;max-width:400px;text-align:center;box-shadow:0 0 30px rgba(0,212,255,0.15);">
+    <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);margin-bottom:20px;" id="fbModalTitle">Log In</h2>
+    <input type="email" id="fbEmail" placeholder="Email" style="width:100%;padding:12px;margin-bottom:15px;background:rgba(0,0,0,0.3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:'Share Tech Mono',monospace;">
+    <input type="password" id="fbPass" placeholder="Password" style="width:100%;padding:12px;margin-bottom:15px;background:rgba(0,0,0,0.3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:'Share Tech Mono',monospace;">
+    <div id="fbError" style="color:var(--red);font-size:0.8rem;margin-bottom:15px;min-height:16px;"></div>
+    <button id="fbSubmitBtn" style="width:100%;padding:12px;background:var(--accent);color:#000;border:none;border-radius:6px;font-weight:bold;margin-bottom:15px;" onclick="handleAuthSubmit()">Log In</button>
+    <div style="color:var(--text2);font-size:0.9rem;">
+      <span id="fbToggleText">Need an account?</span> 
+      <a href="#" style="color:var(--accent);" onclick="toggleAuthMode()">Sign Up</a>
+    </div>
+    <button style="position:absolute;top:15px;right:15px;background:none;border:none;color:var(--text2);font-size:1.2rem;" onclick="document.getElementById('fbModal').style.display='none'">✕</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBuEWTm_3OGSEv9MOj8zCeTWEfO4cISnkU",
+    authDomain: "token-tokens.firebaseapp.com",
+    databaseURL: "https://token-tokens-default-rtdb.firebaseio.com",
+    projectId: "token-tokens",
+    storageBucket: "token-tokens.firebasestorage.app",
+    messagingSenderId: "27201167702",
+    appId: "1:27201167702:web:9cacb172e3fa92951236f7",
+    measurementId: "G-Y0TR8YPGLE"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  window.firebaseAuth = auth;
+  window.firebaseDb = db;
+  window.fbSignIn = signInWithEmailAndPassword;
+  window.fbSignUp = createUserWithEmailAndPassword;
+  window.fbSignOut = signOut;
+  window.fbOnAuthStateChanged = onAuthStateChanged;
+  window.fbRef = ref;
+  window.fbSet = set;
+  window.fbGet = get;
+</script>
 
 <script>
 /* ══════════════════ SPLASH — 3D FLYING CHARTS & AUTO ENTER ══════════════════ */
@@ -5135,6 +5183,99 @@ function renderNewsGrid(append){
     </div>
   </div>
 </div>
+
+<script>
+  let isSignUpMode = false;
+  let currentUser = null;
+
+  function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    document.getElementById('fbModalTitle').innerText = isSignUpMode ? 'Sign Up' : 'Log In';
+    document.getElementById('fbSubmitBtn').innerText = isSignUpMode ? 'Create Account' : 'Log In';
+    document.getElementById('fbToggleText').innerText = isSignUpMode ? 'Already have an account?' : 'Need an account?';
+    document.querySelector('#fbModal a').innerText = isSignUpMode ? 'Log In' : 'Sign Up';
+    document.getElementById('fbError').innerText = '';
+  }
+
+  async function handleAuthSubmit() {
+    const email = document.getElementById('fbEmail').value;
+    const pass = document.getElementById('fbPass').value;
+    const errDiv = document.getElementById('fbError');
+    errDiv.innerText = '';
+    
+    if (!email || !pass) {
+      errDiv.innerText = 'Please enter email and password.';
+      return;
+    }
+
+    const btn = document.getElementById('fbSubmitBtn');
+    btn.disabled = true;
+    btn.innerText = 'Please wait...';
+
+    try {
+      if (isSignUpMode) {
+        await window.fbSignUp(window.firebaseAuth, email, pass);
+      } else {
+        await window.fbSignIn(window.firebaseAuth, email, pass);
+      }
+      document.getElementById('fbModal').style.display = 'none';
+      document.getElementById('fbEmail').value = '';
+      document.getElementById('fbPass').value = '';
+    } catch (error) {
+      errDiv.innerText = error.message;
+    } finally {
+      btn.disabled = false;
+      btn.innerText = isSignUpMode ? 'Create Account' : 'Log In';
+    }
+  }
+
+  function handleSignOut() {
+    window.fbSignOut(window.firebaseAuth);
+  }
+
+  // Hook into Firebase Auth State
+  setTimeout(() => {
+    if (window.fbOnAuthStateChanged) {
+      window.fbOnAuthStateChanged(window.firebaseAuth, async (user) => {
+        currentUser = user;
+        const authBtn = document.getElementById('authBtn');
+        
+        if (user) {
+          authBtn.innerHTML = '👤 Sign Out';
+          authBtn.onclick = handleSignOut;
+          
+          // Load Watchlist from Firebase
+          try {
+            const dbRef = window.fbRef(window.firebaseDb, `users/${user.uid}/watchlist`);
+            const snapshot = await window.fbGet(dbRef);
+            if (snapshot.exists()) {
+              ST.wl = snapshot.val();
+              renderWL();
+            }
+          } catch (e) {
+            console.error("Error fetching watchlist from Firebase:", e);
+          }
+        } else {
+          authBtn.innerHTML = '👤 Log In';
+          authBtn.onclick = () => document.getElementById('fbModal').style.display = 'flex';
+          ST.wl = []; // Clear on logout or load defaults
+          renderWL();
+        }
+      });
+    }
+  }, 1000);
+
+  // Hook into local watchlist updates to sync to Firebase
+  const originalToggleWL = toggleWL;
+  toggleWL = function(coin) {
+    originalToggleWL(coin); // Runs the existing logic
+    // Now sync to Firebase
+    if (currentUser) {
+      const dbRef = window.fbRef(window.firebaseDb, `users/${currentUser.uid}/watchlist`);
+      window.fbSet(dbRef, ST.wl).catch(e => console.error("Error saving watchlist to Firebase:", e));
+    }
+  };
+</script>
 
 </body>
 </html>
