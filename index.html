@@ -25,9 +25,8 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── SPLASH ─────────────────────────────────────────── */
 #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
-#splash-bg{position:absolute;inset:0;background:linear-gradient(135deg,#050810 0%,#0a1535 40%,#050d20 70%,#060b18 100%),url('chart.png');background-size:cover;background-position:center;filter:brightness(.18) saturate(1.5);}
-#splash-matrix{position:absolute;inset:0;opacity:.55;z-index:1;}
-#splash-canvas{position:absolute;inset:0;opacity:.25;z-index:2;}
+#splash-bg{position:absolute;inset:0;background:radial-gradient(ellipse at bottom, #0a1535 0%, #050810 100%);}
+#splash-canvas{position:absolute;inset:0;z-index:2;}
 .spl-ol{position:absolute;inset:0;z-index:3;background:radial-gradient(ellipse at center,transparent 20%,rgba(5,8,16,.85) 80%);}
 .spl-grid{position:absolute;inset:0;z-index:3;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;}
 .spl-wrap{position:relative;z-index:10;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;}
@@ -850,7 +849,6 @@ button{cursor:pointer;font-family:inherit;}
 <!-- ═════ SPLASH ═════ -->
 <div id="splash">
   <div id="splash-bg"></div>
-  <canvas id="splash-matrix"></canvas>
   <canvas id="splash-canvas"></canvas>
   <div class="spl-grid"></div>
   <div class="spl-ol"></div>
@@ -1718,84 +1716,123 @@ button{cursor:pointer;font-family:inherit;}
 <div class="i-tip" id="iTip"><h4 id="itH"></h4><p id="itP"></p><div class="sig" id="itS"></div></div>
 
 <script>
-/* ══════════════════ SPLASH — MATRIX RAIN + AUTO ENTER ══════════════════ */
+/* ══════════════════ SPLASH — 3D FLYING CHARTS & AUTO ENTER ══════════════════ */
 (()=>{
-  /* ── Matrix rain on #splash-matrix canvas ── */
-  const mc = document.getElementById('splash-matrix');
-  const mx = mc.getContext('2d');
-  const resize = () => { mc.width = innerWidth; mc.height = innerHeight; };
+  const c = document.getElementById('splash-canvas');
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  const resize = () => { c.width = innerWidth; c.height = innerHeight; };
   resize(); addEventListener('resize', resize);
 
-  const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホ0123456789ABCDEF$₿Ξ◈▲▼';
-  const COL_W = 18;
-  let cols = Math.floor(mc.width / COL_W);
-  let drops = Array.from({length: cols}, () => Math.random() * -80);
+  const charts = [];
+  const NUM_CHARTS = 45;
+  const FOV = 350;
+  const COLORS = ['#00d4ff', '#00ff88', '#ff3366', '#9664ff', '#ffc800'];
 
-  // Each column gets a random cyan/green/purple tint
-  const colColors = Array.from({length: cols}, () => {
-    const r = Math.random();
-    return r < 0.6 ? '#00d4ff' : r < 0.85 ? '#00ff88' : '#9664ff';
-  });
+  class ChartObject {
+    constructor() {
+      this.reset(true);
+    }
+    reset(randomZ = false) {
+      this.x = (Math.random() - 0.5) * 3000;
+      this.y = (Math.random() - 0.5) * 2000;
+      this.z = randomZ ? Math.random() * 2500 + 100 : 2500;
+      this.vz = 2.5 + Math.random() * 5; // speed
+      this.type = Math.random() > 0.5 ? 'candle' : 'line';
+      this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      this.points = [];
+      
+      const numPoints = 12 + Math.floor(Math.random() * 20);
+      let p = 0;
+      for (let i = 0; i < numPoints; i++) {
+        const o = p;
+        const ch = (Math.random() - 0.48) * 60;
+        const cl = o + ch;
+        this.points.push({
+          o, c: cl,
+          h: Math.max(o, cl) + Math.random() * 30,
+          l: Math.min(o, cl) - Math.random() * 30
+        });
+        p = cl;
+      }
+    }
+    update() {
+      this.z -= this.vz;
+      if (this.z <= 0) {
+        this.reset();
+      }
+    }
+    draw() {
+      const scale = FOV / (FOV + this.z);
+      const px = this.x * scale + c.width / 2;
+      const py = this.y * scale + c.height / 2;
+      
+      // Don't draw if completely off screen
+      if (px < -300 || px > c.width + 300 || py < -300 || py > c.height + 300) return;
 
-  function drawMatrix() {
-    cols = Math.floor(mc.width / COL_W);
-    while (drops.length < cols) { drops.push(Math.random() * -80); colColors.push('#00d4ff'); }
-
-    mx.fillStyle = 'rgba(5,8,16,0.18)';
-    mx.fillRect(0, 0, mc.width, mc.height);
-
-    drops.forEach((y, i) => {
-      const char = CHARS[Math.floor(Math.random() * CHARS.length)];
-      const x = i * COL_W;
-      const py = y * COL_W;
-
-      // Bright head char
-      mx.font = `bold ${COL_W - 2}px 'Share Tech Mono', monospace`;
-      mx.fillStyle = '#ffffff';
-      mx.globalAlpha = 0.95;
-      mx.fillText(char, x, py);
-
-      // Trail chars (drawn by fade overlay — just draw the head)
-      mx.fillStyle = colColors[i];
-      mx.globalAlpha = 0.55;
-      mx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], x, py - COL_W);
-
-      mx.globalAlpha = 1;
-
-      // Reset column randomly after it passes screen
-      if (py > mc.height && Math.random() > 0.975) drops[i] = 0;
-      else drops[i] += 0.4 + Math.random() * 0.3;
-    });
+      const cw = 18 * scale; // candle/point width
+      
+      ctx.save();
+      ctx.translate(px, py);
+      
+      ctx.globalAlpha = Math.min(1, Math.max(0, 1 - (this.z / 2500)));
+      ctx.shadowBlur = 12 * scale;
+      ctx.shadowColor = this.color;
+      ctx.strokeStyle = this.color;
+      ctx.fillStyle = this.color;
+      
+      if (this.type === 'line') {
+        ctx.beginPath();
+        ctx.lineWidth = Math.max(1, 3 * scale);
+        ctx.lineJoin = 'round';
+        this.points.forEach((pt, i) => {
+          if (i === 0) ctx.moveTo(i * cw, -pt.c * scale);
+          else ctx.lineTo(i * cw, -pt.c * scale);
+        });
+        ctx.stroke();
+      } else {
+        ctx.lineWidth = Math.max(1, 2 * scale);
+        this.points.forEach((pt, i) => {
+          const up = pt.c >= pt.o;
+          const cc = up ? '#00ff88' : '#ff3366';
+          ctx.strokeStyle = cc;
+          ctx.fillStyle = cc;
+          ctx.shadowColor = cc;
+          
+          const cx = i * cw;
+          ctx.beginPath();
+          ctx.moveTo(cx, -pt.h * scale);
+          ctx.lineTo(cx, -pt.l * scale);
+          ctx.stroke();
+          
+          const bodyH = Math.max(1, Math.abs(pt.c - pt.o) * scale);
+          const bodyY = -Math.max(pt.o, pt.c) * scale;
+          ctx.fillRect(cx - cw * 0.35, bodyY, cw * 0.7, bodyH);
+        });
+      }
+      ctx.restore();
+    }
   }
-  const matrixLoop = setInterval(drawMatrix, 45);
 
-  /* ── Candlestick background canvas (existing) ── */
-  const c = document.getElementById('splash-canvas'), ctx2 = c.getContext('2d');
-  const r = () => { c.width = innerWidth; c.height = innerHeight; };
-  r(); addEventListener('resize', r);
-  let p = 45000; const cs = [];
-  for (let i = 0; i < 80; i++) {
-    const o = p, ch = (Math.random() - .48) * 800, cl = o + ch;
-    cs.push({o, h: Math.max(o,cl)+Math.random()*400, l: Math.min(o,cl)-Math.random()*400, c: cl});
-    p = cl;
+  for (let i = 0; i < NUM_CHARTS; i++) {
+    charts.push(new ChartObject());
   }
-  (function draw(){
-    ctx2.clearRect(0, 0, c.width, c.height);
-    const W = c.width, H = c.height, cw = W / cs.length;
-    const ps = cs.flatMap(v=>[v.h,v.l]), mn = Math.min(...ps), mxv = Math.max(...ps), rn = mxv-mn, pd = H*.1;
-    const ty = v => H-pd-((v-mn)/rn)*(H-pd*2);
-    cs.forEach((ca,i)=>{
-      const x2=i*cw+cw/2, g=ca.c>=ca.o;
-      ctx2.globalAlpha=.15+.3*(i/cs.length);
-      ctx2.beginPath(); ctx2.strokeStyle=g?'#00ff88':'#ff3366'; ctx2.lineWidth=1;
-      ctx2.moveTo(x2,ty(ca.h)); ctx2.lineTo(x2,ty(ca.l)); ctx2.stroke();
-      ctx2.fillStyle=g?'#00ff88':'#ff3366';
-      const bT=ty(Math.max(ca.o,ca.c)), bH=Math.max(1,Math.abs(ty(ca.o)-ty(ca.c)));
-      ctx2.fillRect(x2-cw*.35,bT,cw*.7,bH);
+
+  let animationId;
+  function animate() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    
+    // Sort by z index descending to draw furthest first
+    charts.sort((a, b) => b.z - a.z);
+    
+    charts.forEach(chart => {
+      chart.update();
+      chart.draw();
     });
-    ctx2.globalAlpha=1;
-    requestAnimationFrame(draw);
-  })();
+    
+    animationId = requestAnimationFrame(animate);
+  }
+  animate();
 
   /* ── Auto-enter sequence ──
      Timeline:
@@ -1806,7 +1843,7 @@ button{cursor:pointer;font-family:inherit;}
        4.2s  — splash fades out → app loads
   ── */
   setTimeout(() => {
-    clearInterval(matrixLoop); // stop matrix once transitioning
+    cancelAnimationFrame(animationId);
     document.getElementById('splash').style.animation = 'splOut .7s ease forwards';
     setTimeout(() => {
       document.getElementById('splash').style.display = 'none';
