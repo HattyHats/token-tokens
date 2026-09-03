@@ -11,8 +11,8 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/index-B_erxhOw.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-D-QIhw24.css">
+  <link rel="stylesheet" href="./src/style.css">
+  <script defer src="./src/main.js"></script>
 </head>
 <body>
 
@@ -23,10 +23,23 @@
   <div class="spl-grid"></div>
   <div class="spl-ol"></div>
   <div class="spl-wrap">
-    <div class="spl-welcome">Welcome To:</div>
-    <div class="spl-title">Token-Tokens</div>
-    <div class="spl-by">Created by <span class="brand">HattyHats</span></div>
-    <div class="spl-enter"><div id="splSpinner"></div></div>
+    <div class="spl-emblem">
+      <div class="spl-emblem-ring"></div>
+      <div class="spl-emblem-ring-inner"></div>
+      <div class="spl-emblem-core">₿</div>
+    </div>
+    <div class="spl-welcome">WELCOME TO</div>
+    <div class="spl-title">TOKEN-TOKENS</div>
+    <div class="spl-tagline">Real-Time Crypto Intelligence &amp; Pro Terminal</div>
+    <div class="spl-by">Crafted with precision by <span class="brand">HattyHats</span></div>
+    
+    <div class="spl-progress-wrap">
+      <div class="spl-bar-bg"><div class="spl-bar-fill" id="splFill"></div></div>
+      <div class="spl-status-row">
+        <div class="spl-status-text"><span class="spl-status-dot"></span><span id="splStatus">Initializing terminal feeds…</span></div>
+        <span class="spl-status-pct" id="splPct">0%</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -121,34 +134,6 @@
     </div>
     <div class="wl-hdr">◈ My Watchlist <button class="wl-ref" onclick="refreshWL()" title="Refresh prices">↻</button></div>
     <div class="wl-list" id="wlList"><div style="padding:20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;font-size:.75rem;"><div class="spin" style="margin:0 auto 10px;"></div>Loading…</div></div>
-    <!-- CARDANO ECOSYSTEM PANEL -->
-    <div class="tr-sec" id="cntPanel">
-      <div class="wl-hdr" style="color:var(--accent);letter-spacing:.1em;cursor:pointer;" onclick="toggleCNTPanel()">
-        🔵 CARDANO ECOSYSTEM
-        <button class="wl-ref" id="cntToggle" title="Collapse" style="pointer-events:none;">▼</button>
-      </div>
-      <div id="cntList" style="padding:4px 8px 6px;">
-        <div style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--text3);padding:3px 4px 6px;letter-spacing:.08em;">QUICK ADD — POPULAR CNTs</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;padding:0 2px;">
-          <button class="cnt-chip" onclick="quickAddCNT('cardano','Cardano','ADA','')">ADA</button>
-          <button class="cnt-chip" onclick="quickAddCNT('minswap','Minswap','MIN','')">MIN</button>
-          <button class="cnt-chip" onclick="quickAddCNT('sundaeswap','SundaeSwap','SUNDAE','')">SUNDAE</button>
-          <button class="cnt-chip" onclick="quickAddCNT('wingriders','WingRiders','WRT','')">WRT</button>
-          <button class="cnt-chip" onclick="quickAddCNT('liqwid-finance','Liqwid','LQ','')">LQ</button>
-          <button class="cnt-chip" onclick="quickAddCNT('indigo-dao','Indigo','INDY','')">INDY</button>
-          <button class="cnt-chip" onclick="quickAddCNT('world-mobile-token','World Mobile','WMT','')">WMT</button>
-          <button class="cnt-chip" onclick="quickAddCNT('iagon','Iagon','IAG','')">IAG</button>
-          <button class="cnt-chip" onclick="quickAddCNT('snek','Snek','SNEK','')">SNEK</button>
-          <button class="cnt-chip" onclick="quickAddCNT('nmkr','NMKR','NMKR','')">NMKR</button>
-          <button class="cnt-chip" onclick="quickAddCNT('genius-yield','Genius Yield','GENS','')">GENS</button>
-          <button class="cnt-chip" onclick="quickAddCNT('empowa','Empowa','EMP','')">EMP</button>
-          <button class="cnt-chip" onclick="quickAddCNT('lenfi','Lenfi','LENFI','')">LENFI</button>
-          <button class="cnt-chip" onclick="quickAddCNT('hosky-token','Hosky','HOSKY','')">HOSKY</button>
-          <button class="cnt-chip" onclick="quickAddCNT('optim-finance','Optim','OPTIM','')">OPTIM</button>
-          <button class="cnt-chip" onclick="openCardanoModal()" style="background:rgba(123,47,255,.15);border-color:rgba(123,47,255,.5);color:var(--accent2);">+ More ↗</button>
-        </div>
-      </div>
-    </div>
 
     <div class="tr-sec" id="trendingPanel">
       <div class="wl-hdr" style="cursor:pointer;" onclick="toggleTrendingPanel()" title="Click to collapse">
@@ -859,6 +844,7 @@
       <button class="mc on" onclick="setMCat(this,'')">🌐 All</button>
       <button class="mc" onclick="setMCat(this,'layer-1')">⛓ Layer 1</button>
       <button class="mc" onclick="setMCat(this,'layer-2')">🔗 Layer 2</button>
+      <button class="mc" onclick="setMCat(this,'cardano-ecosystem')">🔵 Cardano</button>
       <button class="mc" onclick="setMCat(this,'decentralized-finance-defi')">🏦 DeFi</button>
       <button class="mc" onclick="setMCat(this,'meme-token')">🐸 Meme</button>
       <button class="mc" onclick="setMCat(this,'gaming')">🎮 Gaming</button>
@@ -887,7 +873,7 @@
 
 <!-- FIREBASE AUTH UI MODAL -->
 <div id="fbModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(5,8,16,0.85);backdrop-filter:blur(5px);justify-content:center;align-items:center;">
-  <div style="background:var(--surface);border:1px solid var(--border);padding:30px;border-radius:12px;width:90%;max-width:400px;text-align:center;box-shadow:0 0 30px rgba(0,212,255,0.15);">
+  <div style="background:var(--surface);border:1px solid var(--border);padding:30px;border-radius:12px;width:90%;max-width:400px;text-align:center;box-shadow:0 0 30px rgba(0,212,255,0.15);position:relative;">
     <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);margin-bottom:20px;" id="fbModalTitle">Log In</h2>
     <input type="email" id="fbEmail" placeholder="Email" style="width:100%;padding:12px;margin-bottom:15px;background:rgba(0,0,0,0.3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:'Share Tech Mono',monospace;">
     <input type="password" id="fbPass" placeholder="Password" style="width:100%;padding:12px;margin-bottom:15px;background:rgba(0,0,0,0.3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:'Share Tech Mono',monospace;">
@@ -895,7 +881,7 @@
     <button id="fbSubmitBtn" style="width:100%;padding:12px;background:var(--accent);color:#000;border:none;border-radius:6px;font-weight:bold;margin-bottom:15px;" onclick="handleAuthSubmit()">Log In</button>
     <div style="color:var(--text2);font-size:0.9rem;">
       <span id="fbToggleText">Need an account?</span> 
-      <a href="#" style="color:var(--accent);" onclick="toggleAuthMode()">Sign Up</a>
+      <a href="#" style="color:var(--accent);" onclick="toggleAuthMode(event)">Sign Up</a>
     </div>
     <button style="position:absolute;top:15px;right:15px;background:none;border:none;color:var(--text2);font-size:1.2rem;" onclick="document.getElementById('fbModal').style.display='none'">✕</button>
   </div>
