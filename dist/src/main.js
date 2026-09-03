@@ -305,9 +305,17 @@ const DRW = {
 function pxToCandleIdx(mx, canvasW) {
   const vis = ST.candles.slice(Math.max(0,ST.zoom.s), Math.min(ST.candles.length,ST.zoom.s+ST.zoom.r));
   if(!vis.length) return null;
-  const cw = (canvasW - 8 - 82) / vis.length;
-  const i  = Math.max(0, Math.min(vis.length-1, Math.floor((mx-4)/cw)));
-  return { visIdx:i, globalIdx:ST.zoom.s+i, candle:vis[i] };
+  const PAD_L = 8, PAD_R = 82;
+  const cW = canvasW - PAD_L - PAD_R;
+  const cw = cW / vis.length;
+  // Fractional position relative to candles so drawings land with 100% precision exactly where clicked
+  const fracVis = (mx - PAD_L) / cw - 0.5;
+  const intIdx = Math.max(0, Math.min(vis.length - 1, Math.round(fracVis)));
+  return {
+    visIdx: intIdx,
+    globalIdx: ST.zoom.s + fracVis,
+    candle: vis[intIdx]
+  };
 }
 
 // Convert canvas pixel Y → price
@@ -339,8 +347,10 @@ function priceToY(price, canvasH) {
 function candleToX(globalIdx, canvasW) {
   const visIdx = globalIdx - ST.zoom.s;
   const r      = ST.zoom.r;
-  const cw     = (canvasW - 8 - 82) / r;
-  return 4 + (visIdx+0.5)*cw;
+  const PAD_L  = 8, PAD_R = 82;
+  const cW     = canvasW - PAD_L - PAD_R;
+  const cw     = cW / r;
+  return PAD_L + (visIdx + 0.5) * cw;
 }
 
 function setDrawTool(tool) {
@@ -348,17 +358,26 @@ function setDrawTool(tool) {
   DRW.pending = null;
   // Update cursor
   const zone = document.getElementById('chartZone');
-  zone.className = 'chart-zone' + (tool ? ' drawing-'+tool : '');
+  if(zone){
+    zone.className = 'chart-zone' + (tool ? ' drawing-'+tool : '');
+  }
   // Clear all draw tool buttons (right panel + mobile draw panel)
   ['dtLine','dtHLine','dtRay','dtRect','dtFib','dtNote','dtPointer'].forEach(id=>{
     document.getElementById(id)?.classList.remove('on');
-    // also sync right panel rp-dtool buttons that share the same id
   });
   document.querySelectorAll('.rp-dtool').forEach(b=>b.classList.remove('on'));
   document.querySelectorAll('.dtool').forEach(b=>b.classList.remove('on'));
   if(tool){
-    const capTool = 'dt'+tool.charAt(0).toUpperCase()+tool.slice(1);
-    document.getElementById(capTool)?.classList.add('on');
+    const toolMap = {
+      'line': 'dtLine',
+      'hline': 'dtHLine',
+      'ray': 'dtRay',
+      'rect': 'dtRect',
+      'fib': 'dtFib',
+      'note': 'dtNote'
+    };
+    const targetId = toolMap[tool] || ('dt' + tool.charAt(0).toUpperCase() + tool.slice(1));
+    document.getElementById(targetId)?.classList.add('on');
   } else {
     document.getElementById('dtPointer')?.classList.add('on');
   }
@@ -2767,7 +2786,7 @@ document.getElementById('priceCanvas').addEventListener('wheel',e=>{
     if(e.touches.length===1){
       // Pan
       const dx=e.touches[0].clientX-lastTouchX;
-      const cw=(pc.width-4-82)/ST.zoom.r;
+      const cw=(pc.clientWidth-8-82)/ST.zoom.r;
       const shift=Math.round(-dx/cw);
       ST.zoom.s=Math.max(0,Math.min(ST.candles.length-ST.zoom.r,touchPanStart+shift));
       renderChart();
@@ -2804,8 +2823,8 @@ document.getElementById('priceCanvas').addEventListener('mousedown',e=>{
     return;
   }
 
-  const ci    = pxToCandleIdx(mx, pc.width);
-  const price = pxToPrice(my, pc.height);
+  const ci    = pxToCandleIdx(mx, rect.width);
+  const price = pxToPrice(my, rect.height);
   if(!ci || price == null) return;
 
   if(DRW.tool === 'hline'){
@@ -2838,9 +2857,11 @@ document.addEventListener('mousemove',e=>{
 
   if(!DRW.tool && ST.drag.on){
     // Pan mode
-    const cw=(pc.width-4-82)/ST.zoom.r;
-    const sh=Math.round(-(e.clientX-ST.drag.x)/cw);
-    ST.zoom.s=Math.max(0,Math.min(ST.candles.length-ST.zoom.r,ST.drag.s+sh));
+    const rect = pc.getBoundingClientRect();
+    const PAD_L = 8, PAD_R = 82;
+    const cw = (rect.width - PAD_L - PAD_R) / ST.zoom.r;
+    const sh = Math.round(-(e.clientX - ST.drag.x) / cw);
+    ST.zoom.s = Math.max(0, Math.min(ST.candles.length - ST.zoom.r, ST.drag.s + sh));
     renderChart(); return;
   }
 
@@ -2849,8 +2870,8 @@ document.addEventListener('mousemove',e=>{
     const rect = pc.getBoundingClientRect();
     const mx   = e.clientX - rect.left;
     const my   = e.clientY - rect.top;
-    const ci   = pxToCandleIdx(mx, pc.width);
-    const price= pxToPrice(my, pc.height);
+    const ci   = pxToCandleIdx(mx, rect.width);
+    const price= pxToPrice(my, rect.height);
     if(ci && price != null){
       DRW.pending.p2 = {gi:ci.globalIdx, price};
       renderChart();
@@ -3081,7 +3102,7 @@ function drawTMMarker(candleIdx){
   const{s,r}=ST.zoom;
   const visIdx=candleIdx-s;
   if(visIdx<0||visIdx>=r)return;
-  const pL=4,pR=78,W=pc.width,pH=pc.height;
+  const pL=8,pR=82,W=pc.clientWidth||pc.width,pH=pc.clientHeight||pc.height;
   const cW=W-pL-pR,cw=cW/r,x=pL+(visIdx+.5)*cw;
   ctx.save();
   // Glowing vertical line
