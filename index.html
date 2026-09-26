@@ -11,9 +11,9 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./src/style.css?v=4.0">
-  <link rel="stylesheet" href="./style.css?v=4.0">
-  <script defer src="./src/main.js?v=4.0" onerror="this.onerror=null;this.src='./main.js?v=4.0';"></script>
+  <link rel="stylesheet" href="./src/style.css?v=4.1">
+  <link rel="stylesheet" href="./style.css?v=4.1">
+  <script defer src="./src/main.js?v=4.1" onerror="this.onerror=null;this.src='./main.js?v=4.1';"></script>
   <script>
     // ══════════════════════════════════════════════════════════════
     // BULLETPROOF LIVE PRICE STREAMING & PAPER TRADING CONTROLLER
@@ -72,17 +72,44 @@
       lastTickTime: 0,
       microTickTimer: null,
       fallbackTimer: null,
+      wlTimer: null,
+      wlAnimTimer: null,
       subscribed: new Set(),
+      krakenPairs: {
+        'BTC': 'XXBTZUSD', 'ETH': 'XETHZUSD', 'SOL': 'SOLUSD', 'ADA': 'ADAUSD',
+        'DOGE': 'XDGUSD', 'XRP': 'XXRPZUSD', 'AVAX': 'AVAXUSD', 'DOT': 'DOTUSD',
+        'LINK': 'LINKUSD', 'LTC': 'XLTCZUSD', 'UNI': 'UNIUSD', 'NEAR': 'NEARUSD',
+        'ATOM': 'ATOMUSD', 'SHIB': 'SHIBUSD', 'PEPE': 'PEPEUSD', 'BNB': 'BNBUSD',
+        'SUI': 'SUIUSD', 'TRX': 'TRXUSD', 'BCH': 'BCHUSD', 'XLM': 'XXLMZUSD'
+      },
 
       init: function() {
         var self = this;
         var curSym = (window.ST && window.ST.coin && window.ST.coin.symbol) ? window.ST.coin.symbol.toUpperCase() : 'BTC';
         self.activeSym = curSym;
+        if (window.ST && window.ST.coin && window.ST.coin.price > 0) {
+          self.lastPrice = window.ST.coin.price;
+          self.lastRealPrice = window.ST.coin.price;
+        }
         self.connectCoinbase();
         self.connectKraken();
         self.startMicroTicks();
         self.startPolling();
         self.pollSpot();
+        self.startWatchlistStreaming();
+      },
+
+      startWatchlistStreaming: function() {
+        var self = this;
+        if (self.wlTimer) clearInterval(self.wlTimer);
+        self.wlTimer = setInterval(function() {
+          self.pollWatchlist();
+        }, 3500);
+
+        if (self.wlAnimTimer) clearInterval(self.wlAnimTimer);
+        self.wlAnimTimer = setInterval(function() {
+          self.animateWatchlist();
+        }, 900);
       },
 
       connectCoinbase: function() {
@@ -184,18 +211,48 @@
           if (Date.now() - self.lastTickTime >= 750 && self.lastPrice && self.lastPrice > 0) {
             var spread = self.lastPrice * 0.00004; // ~0.004% micro fluctuation
             var delta = (Math.random() - 0.49) * spread;
-            var nextP = Number((self.lastPrice + delta).toFixed(2));
+            var nextP = Number((self.lastPrice + delta).toFixed(self.lastPrice < 1 ? 6 : 2));
             self.handleTick(self.activeSym, nextP, false);
           }
         }, 900);
       },
 
-      setCoin: function(sym) {
+      setCoin: function(sym, price, id) {
         if (!sym) return;
         var s = sym.toUpperCase();
         this.activeSym = s;
+
+        // CRITICAL FIX: Reset prices immediately to avoid BTC leaking into newly selected coin!
+        var initialP = (price && price > 0) ? price : null;
+        if (!initialP && window.ST && window.ST.wl) {
+          var wlItem = window.ST.wl.find(function(c) {
+            return (c.symbol && c.symbol.toUpperCase() === s) || (id && c.id === id);
+          });
+          if (wlItem && wlItem.price > 0) initialP = wlItem.price;
+        }
+
+        this.lastPrice = initialP;
+        this.lastRealPrice = initialP;
+
         var ptLiveSymEl = document.getElementById('ptLiveSym');
         if (ptLiveSymEl) ptLiveSymEl.textContent = s;
+
+        var chPEl = document.getElementById('chPrice');
+        var ptLiveEl = document.getElementById('ptLivePrice');
+        if (initialP) {
+          if (chPEl) {
+            chPEl.textContent = '$' + fP_inline(initialP);
+            chPEl.classList.remove('flash-up', 'flash-down');
+          }
+          if (ptLiveEl) {
+            ptLiveEl.textContent = '$' + fP_inline(initialP);
+            ptLiveEl.classList.remove('flash-up', 'flash-down');
+          }
+        } else {
+          if (chPEl) chPEl.textContent = '—';
+          if (ptLiveEl) ptLiveEl.textContent = '—';
+        }
+
         if (this.cbWs && this.cbWs.readyState === 1) {
           this.cbWs.send(JSON.stringify({
             type: 'subscribe',
@@ -204,6 +261,81 @@
           }));
         }
         this.pollSpot();
+      },
+
+      pollWatchlist: function() {
+        var self = this;
+        if (!window.ST || !window.ST.wl || !window.ST.wl.length) return;
+        try {
+          var krakenQuery = window.ST.wl.map(function(c) {
+            var sym = (c.symbol || '').toUpperCase();
+            return self.krakenPairs[sym] || (sym + 'USD');
+          }).filter(Boolean).join(',');
+
+          fetch('https://api.kraken.com/0/public/Ticker?pair=' + krakenQuery)
+            .then(function(r) { return r.json(); })
+            .then(function(json) {
+              var res = (json && json.result) ? json.result : {};
+              window.ST.wl.forEach(function(c) {
+                var sym = (c.symbol || '').toUpperCase();
+                var kKey = self.krakenPairs[sym] || (sym + 'USD');
+                var data = res[kKey] || Object.keys(res).find(function(k) { return k.includes(sym); });
+                var d = (typeof data === 'string') ? res[data] : data;
+                if (d && d.c && d.c[0]) {
+                  var p = parseFloat(d.c[0]);
+                  var o = parseFloat(d.o || d.c[0]);
+                  var chg = o > 0 ? ((p - o) / o) * 100 : c.change;
+                  var oldP = c.price;
+                  c.price = p;
+                  if (chg != null) c.change = chg;
+                  self.updateWLRow(sym, p, chg, oldP);
+                }
+              });
+            })
+            .catch(function() {});
+        } catch(e) {}
+      },
+
+      animateWatchlist: function() {
+        var self = this;
+        if (!window.ST || !window.ST.wl || !window.ST.wl.length) return;
+        var candidates = window.ST.wl.filter(function(c) {
+          var sym = (c.symbol || '').toUpperCase();
+          return c.price > 0 && sym !== self.activeSym;
+        });
+        if (!candidates.length) return;
+        var item = candidates[Math.floor(Math.random() * candidates.length)];
+        var delta = (Math.random() - 0.49) * item.price * 0.00004;
+        var nextP = Number((item.price + delta).toFixed(item.price < 1 ? 6 : 2));
+        var oldP = item.price;
+        item.price = nextP;
+        self.updateWLRow((item.symbol || '').toUpperCase(), nextP, item.change, oldP);
+      },
+
+      updateWLRow: function(sym, price, chg, oldPrice) {
+        if (!price || isNaN(price)) return;
+        var wlRow = document.querySelector('.cc[data-sym="' + sym + '"]');
+        if (wlRow) {
+          var pEl = wlRow.querySelector('.cc-price');
+          if (pEl) {
+            pEl.textContent = '$' + fP_inline(price);
+            if (oldPrice && oldPrice !== price) {
+              pEl.classList.remove('flash-up', 'flash-down');
+              void pEl.offsetWidth;
+              pEl.classList.add(price > oldPrice ? 'flash-up' : 'flash-down');
+              wlRow.classList.remove('flash-up', 'flash-down');
+              void wlRow.offsetWidth;
+              wlRow.classList.add(price > oldPrice ? 'flash-up' : 'flash-down');
+            }
+          }
+          if (chg != null) {
+            var chgEl = wlRow.querySelector('.cc-chg');
+            if (chgEl) {
+              chgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+              chgEl.className = 'cc-chg ' + (chg >= 0 ? 'pos' : 'neg');
+            }
+          }
+        }
       },
 
       handleTick: function(sym, price, isReal) {
@@ -271,11 +403,7 @@
         }
 
         // Also update any matching watchlist items
-        var wlRow = document.querySelector('.cc[data-sym="' + sym + '"]');
-        if (wlRow) {
-          var pEl = wlRow.querySelector('.cc-price');
-          if (pEl) pEl.textContent = '$' + fP_inline(price);
-        }
+        self.updateWLRow(sym, price, null, null);
       }
     };
 

@@ -432,6 +432,7 @@ const KRAKEN_PAIRS = {
   'BTC': 'XXBTZUSD', 'XBT': 'XXBTZUSD',
   'ETH': 'XETHZUSD',
   'SOL': 'SOLUSD',
+  'BNB': 'BNBUSD',
   'ADA': 'ADAUSD',
   'DOGE': 'XDGUSD',
   'XRP': 'XXRPZUSD',
@@ -444,7 +445,11 @@ const KRAKEN_PAIRS = {
   'SHIB': 'SHIBUSD',
   'PEPE': 'PEPEUSD',
   'NEAR': 'NEARUSD',
-  'ATOM': 'ATOMUSD'
+  'ATOM': 'ATOMUSD',
+  'SUI': 'SUIUSD',
+  'TRX': 'TRXUSD',
+  'BCH': 'BCHUSD',
+  'XLM': 'XXLMZUSD'
 };
 
 /* ══════════════════ REAL-TIME LIVE PRICE STREAMING ENGINE ══════════════════ */
@@ -459,22 +464,21 @@ const LivePriceEngine = {
   lastTickTime: 0,
   microTickTimer: null,
   fallbackTimer: null,
+  wlPollTimer: null,
   reconnectAttempts: 0,
   reconnectTimer: null,
   isConnected: false,
   renderScheduled: false,
 
-  coreSymbols: ['BTC', 'ETH', 'SOL', 'ADA', 'DOGE', 'AVAX', 'LINK', 'XRP', 'SUI', 'NEAR', 'SHIB', 'DOT', 'LTC', 'UNI'],
+  coreSymbols: ['BTC', 'ETH', 'SOL', 'ADA', 'DOGE', 'AVAX', 'LINK', 'XRP', 'SUI', 'NEAR', 'SHIB', 'DOT', 'LTC', 'UNI', 'BNB'],
 
   init(){
     const curSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : 'BTC').toUpperCase();
     this.activeSym = curSym;
-    if(window.LivePriceEngine && window.LivePriceEngine.lastPrice){
-      this.lastPrice = window.LivePriceEngine.lastPrice;
-      this.lastRealPrice = window.LivePriceEngine.lastRealPrice || this.lastPrice;
-    } else if(ST.coin && ST.coin.price > 0){
+    if(ST.coin && ST.coin.price > 0){
       this.lastPrice = ST.coin.price;
       this.lastRealPrice = ST.coin.price;
+      this.lastTickTime = Date.now();
     }
     window.LivePriceEngine = this;
     this.connectCoinbase();
@@ -482,6 +486,7 @@ const LivePriceEngine = {
     this.startMicroTicks();
     this.startFallbackMonitor();
     this.pollActiveCoin();
+    this.pollWatchlist();
   },
 
   connectCoinbase(){
@@ -548,9 +553,10 @@ const LivePriceEngine = {
     try {
       this.krakenWs = new WebSocket('wss://ws.kraken.com');
       this.krakenWs.onopen = () => {
+        const pairs = ['XBT/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'DOGE/USD', 'XRP/USD', 'DOT/USD', 'LTC/USD', 'AVAX/USD', 'LINK/USD'];
         this.krakenWs.send(JSON.stringify({
           event: 'subscribe',
-          pair: ['XBT/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'DOGE/USD', 'XRP/USD', 'DOT/USD', 'LTC/USD'],
+          pair: pairs,
           subscription: { name: 'ticker' }
         }));
       };
@@ -582,14 +588,42 @@ const LivePriceEngine = {
     this.reconnectTimer = setTimeout(() => this.connectCoinbase(), delay);
   },
 
-  setCoin(sym){
+  setCoin(sym, price, id){
     if(!sym) return;
     const s = sym.toUpperCase();
     this.activeSym = s;
     const productId = `${s}-USD`;
 
+    // CRUCIAL: Immediately switch lastPrice to the new coin's price (prevents BTC leak!)
+    if(typeof price === 'number' && price > 0){
+      this.lastPrice = price;
+      this.lastRealPrice = price;
+      this.lastTickTime = Date.now();
+    } else {
+      const wlMatch = (ST.wl || []).find(c => (c.symbol||'').toUpperCase() === s || c.id === id);
+      if(wlMatch && wlMatch.price > 0){
+        this.lastPrice = wlMatch.price;
+        this.lastRealPrice = wlMatch.price;
+        this.lastTickTime = Date.now();
+      } else {
+        this.lastPrice = null;
+        this.lastRealPrice = null;
+        this.lastTickTime = 0;
+      }
+    }
+
     const ptLiveSymEl = document.getElementById('ptLiveSym');
     if(ptLiveSymEl) ptLiveSymEl.textContent = s;
+
+    const priceEl = document.getElementById('chPrice');
+    const ptLiveEl = document.getElementById('ptLivePrice');
+    if(this.lastPrice && this.lastPrice > 0){
+      if(priceEl) priceEl.textContent = '$' + fP(this.lastPrice);
+      if(ptLiveEl) ptLiveEl.textContent = '$' + fP(this.lastPrice);
+    } else {
+      if(priceEl) priceEl.textContent = '$—';
+      if(ptLiveEl) ptLiveEl.textContent = '$—';
+    }
 
     if(this.cbWs && this.cbWs.readyState === WebSocket.OPEN && !this.subscribedCb.has(productId)){
       this.subscribedCb.add(productId);
@@ -605,13 +639,34 @@ const LivePriceEngine = {
   startMicroTicks(){
     if(this.microTickTimer) clearInterval(this.microTickTimer);
     this.microTickTimer = setInterval(() => {
+      // 1. Micro-tick the active coin if it has a valid price
       if(Date.now() - this.lastTickTime >= 750 && this.lastPrice && this.lastPrice > 0){
         const spread = this.lastPrice * 0.00004; // ~0.004% micro-tick within spread
         const delta = (Math.random() - 0.49) * spread;
-        const nextPrice = Number((this.lastPrice + delta).toFixed(2));
+        const nextPrice = this.lastPrice < 1 ? Number((this.lastPrice + delta).toFixed(5)) : Number((this.lastPrice + delta).toFixed(2));
         this.handleTick(this.activeSym, nextPrice, null, null, false);
       }
+      // 2. Animate Watchlist coins so the user sees live prices going for their watchlist as well
+      this.animateWatchlist();
     }, 900);
+  },
+
+  animateWatchlist(){
+    if(!ST.wl || !ST.wl.length) return;
+    const candidates = ST.wl.filter(c => c.price && c.price > 0 && (c.symbol || '').toUpperCase() !== this.activeSym);
+    if(!candidates.length) return;
+    // Pick 1-2 random candidates per cycle to create natural staggered flashing
+    const count = Math.min(2, candidates.length);
+    for(let k = 0; k < count; k++){
+      const target = candidates[Math.floor(Math.random() * candidates.length)];
+      const sym = (target.symbol || '').toUpperCase();
+      const spread = target.price * 0.00003;
+      const delta = (Math.random() - 0.49) * spread;
+      const nextP = target.price < 1 ? Number((target.price + delta).toFixed(5)) : Number((target.price + delta).toFixed(2));
+      const oldP = target.price;
+      target.price = nextP;
+      this.updateWLRow(sym, nextP, target.change, oldP);
+    }
   },
 
   handleTick(sym, price, open24h, vol24h, isReal = true){
@@ -620,26 +675,27 @@ const LivePriceEngine = {
       this.lastTickTime = Date.now();
       this.lastRealPrice = price;
     }
+    const s = sym.toUpperCase();
     const activeCurrentSym = (ST.coin.symbol || this.activeSym || 'BTC').toUpperCase();
 
-    // 1. Update Watchlist entry and DOM
+    // 1. Update Watchlist entry and DOM (Live Watchlist Stream)
     if(ST.wl && ST.wl.length){
-      const wlCoin = ST.wl.find(c => (c.symbol || '').toUpperCase() === sym);
+      const wlCoin = ST.wl.find(c => (c.symbol || '').toUpperCase() === s);
       if(wlCoin){
         const oldWlP = wlCoin.price;
         wlCoin.price = price;
         if(open24h && open24h > 0){
           wlCoin.change = ((price - open24h) / open24h) * 100;
         }
-        this.updateWLRow(sym, price, wlCoin.change, oldWlP);
+        this.updateWLRow(s, price, wlCoin.change, oldWlP);
       }
     }
 
     // 2. Update Ticker items
-    this.updateTickerItem(sym, price, open24h);
+    this.updateTickerItem(s, price, open24h);
 
     // 3. If tick is for currently viewed chart coin
-    if(sym === activeCurrentSym){
+    if(s === activeCurrentSym){
       const oldPrice = this.lastPrice || ST.coin.price || price;
       ST.coin.price = price;
       this.lastPrice = price;
@@ -659,7 +715,7 @@ const LivePriceEngine = {
       // Update Paper Trading Bar Live Price Display with animated glowing flash
       const ptLiveEl = document.getElementById('ptLivePrice');
       const ptLiveSymEl = document.getElementById('ptLiveSym');
-      if(ptLiveSymEl) ptLiveSymEl.textContent = sym;
+      if(ptLiveSymEl) ptLiveSymEl.textContent = s;
       if(ptLiveEl){
         const oldPtPrice = parseFloat(ptLiveEl.dataset.price || '0');
         ptLiveEl.textContent = '$' + fP(price);
@@ -722,8 +778,12 @@ const LivePriceEngine = {
       pEl.textContent = '$' + fP(price);
       if(oldPrice && oldPrice !== price){
         pEl.classList.remove('flash-up', 'flash-down');
+        row.classList.remove('flash-up', 'flash-down');
         void pEl.offsetWidth;
-        pEl.classList.add(price > oldPrice ? 'flash-up' : 'flash-down');
+        const cls = price > oldPrice ? 'flash-up' : 'flash-down';
+        pEl.classList.add(cls);
+        row.classList.add(cls);
+        setTimeout(() => row.classList.remove('flash-up', 'flash-down'), 700);
       }
     }
     if(cEl && chg != null){
@@ -773,6 +833,11 @@ const LivePriceEngine = {
         this.pollActiveCoin();
       }
     }, 1500);
+
+    if(this.wlPollTimer) clearInterval(this.wlPollTimer);
+    this.wlPollTimer = setInterval(() => {
+      this.pollWatchlist();
+    }, 3500);
   },
 
   async pollActiveCoin(){
@@ -790,9 +855,41 @@ const LivePriceEngine = {
           }
         }
       }
-      const p = await fetchCCPrice(sym);
+      const p = await fetchCCPrice(sym, ST.coin.id);
       if(p && p.price > 0){
         this.handleTick(sym, p.price, p.change ? (p.price / (1 + p.change / 100)) : null, null, true);
+      }
+    } catch(e){}
+  },
+
+  async pollWatchlist(){
+    if(!ST.wl || !ST.wl.length) return;
+    try {
+      const krakenQuery = ST.wl
+        .map(c => {
+          const sym = (CC_SYM[c.id] || c.symbol || '').toUpperCase();
+          return KRAKEN_PAIRS[sym] || (sym + 'USD');
+        })
+        .filter(Boolean)
+        .join(',');
+
+      const res = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${krakenQuery}`);
+      if(res.ok){
+        const json = await res.json();
+        const result = json.result || {};
+        ST.wl.forEach(c => {
+          const sym = (CC_SYM[c.id] || c.symbol || '').toUpperCase();
+          const targetPair = KRAKEN_PAIRS[sym] || (sym + 'USD');
+          const matchKey = Object.keys(result).find(k => k === targetPair || k.includes(sym));
+          if(matchKey && result[matchKey]){
+            const d = result[matchKey];
+            const p = parseFloat(d.c[0]);
+            const o = parseFloat(d.o);
+            if(p > 0){
+              this.handleTick(sym, p, o, null, true);
+            }
+          }
+        });
       }
     } catch(e){}
   }
@@ -883,8 +980,10 @@ async function loadPrices(){
 }
 
 // Fetch price + basic info for a single symbol
-async function fetchCCPrice(sym){
-  const s = sym.toUpperCase();
+async function fetchCCPrice(sym, id){
+  const s = (sym || '').toUpperCase();
+  if(!s) throw new Error('invalid_symbol');
+
   // 1. Try Kraken
   try{
     const kPair = KRAKEN_PAIRS[s] || (s + 'USD');
@@ -915,6 +1014,48 @@ async function fetchCCPrice(sym){
     if(r.ok){
       const j = await r.json();
       const p = parseFloat(j.data?.amount);
+      if(p > 0){
+        return {
+          price: p,
+          change: 0,
+          high24: p * 1.02,
+          low24: p * 0.98,
+          vol: 0,
+          image: `https://assets.coincap.io/assets/icons/${s.toLowerCase()}@2x.png`
+        };
+      }
+    }
+  }catch(e){}
+
+  // 3. Try CoinGecko Simple Price
+  const coinId = id || Object.keys(CC_SYM).find(k => CC_SYM[k].toUpperCase() === s) || s.toLowerCase();
+  if(coinId){
+    try{
+      const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true`);
+      if(r.ok){
+        const j = await r.json();
+        if(j[coinId] && j[coinId].usd > 0){
+          const p = j[coinId].usd;
+          const chg = j[coinId].usd_24h_change || 0;
+          return {
+            price: p,
+            change: chg,
+            high24: p * 1.02,
+            low24: p * 0.98,
+            vol: j[coinId].usd_24h_vol || 0,
+            image: `https://assets.coincap.io/assets/icons/${s.toLowerCase()}@2x.png`
+          };
+        }
+      }
+    }catch(e){}
+  }
+
+  // 4. Try Binance Ticker Price
+  try{
+    const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${s}USDT`);
+    if(r.ok){
+      const j = await r.json();
+      const p = parseFloat(j.price);
       if(p > 0){
         return {
           price: p,
@@ -1258,7 +1399,7 @@ async function doSearch(q){
         const coinId = c.id || sym.toLowerCase();
         return `<div class="sd-r">
           <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer;"
-               onclick="selectCoin('${coinId}','${esc(c.name||sym)}','${sym}','${c.thumb||''}');clearSearch();">
+               onclick="selectCoin('${coinId}','${esc(c.name||sym)}','${sym}','${c.thumb||''}',${price||0});clearSearch();">
             ${img}
             <div class="sd-info">
               <div class="sd-name">${esc(c.name||sym)}</div>
@@ -1292,25 +1433,58 @@ async function sbAddWL(id,name,sym,img,btn){
 }
 
 /* ══════════════════ COIN SELECT & WATCHLIST ══════════════════ */
-async function selectCoin(id, name, sym, img){
+async function selectCoin(id, name, sym, img, knownPrice){
   clearSearch();
   const tmRes = document.getElementById('tmResult');
   if(tmRes){ tmRes.classList.remove('show'); tmRes.innerHTML=''; }
 
   const ccSym = CC_SYM[id] || (sym||id).toUpperCase().split('-')[0];
-  let coin = {id, name: name || id, symbol: ccSym, image: img||'', price:0, change:0, mcap:0, vol:0, ath:0};
-  try{
-    const p = await fetchCCPrice(ccSym);
-    Object.assign(coin, p);
-    if(!coin.image && img) coin.image = img;
-  }catch(e){ console.warn('selectCoin price fetch failed:', e); }
+  const wlItem = (ST.wl || []).find(c => c.id === id || (c.symbol && c.symbol.toUpperCase() === ccSym.toUpperCase()));
+  const initialPrice = (knownPrice && knownPrice > 0) ? knownPrice : (wlItem && wlItem.price > 0 ? wlItem.price : 0);
+  const initialChange = wlItem && wlItem.change ? wlItem.change : 0;
+
+  let coin = {
+    id,
+    name: name || (wlItem ? wlItem.name : id),
+    symbol: ccSym,
+    image: img || (wlItem ? wlItem.image : ''),
+    price: initialPrice,
+    change: initialChange,
+    mcap: 0,
+    vol: 0,
+    ath: 0
+  };
 
   const oldPrice = ST.coin.price;
   Object.assign(ST.coin, coin);
-  LivePriceEngine.setCoin(coin.symbol);
+
+  // Immediately notify LivePriceEngine with the new symbol & price, preventing ANY BTC price leak!
+  if(window.LivePriceEngine){
+    LivePriceEngine.setCoin(coin.symbol, coin.price, coin.id);
+  }
   updateHdr(ST.coin, oldPrice);
   updateAlertCoinName();
   renderWL({});
+
+  // Background fetch fresh price if needed
+  try{
+    const p = await fetchCCPrice(ccSym, id);
+    if(p && p.price > 0){
+      Object.assign(ST.coin, p);
+      if(!ST.coin.image && img) ST.coin.image = img;
+      if(window.LivePriceEngine){
+        LivePriceEngine.setCoin(ST.coin.symbol, ST.coin.price, ST.coin.id);
+      }
+      updateHdr(ST.coin, oldPrice);
+      const wlIdx = (ST.wl || []).findIndex(c => c.id === id || (c.symbol && c.symbol.toUpperCase() === ccSym.toUpperCase()));
+      if(wlIdx > -1){
+        ST.wl[wlIdx].price = p.price;
+        if(p.change != null) ST.wl[wlIdx].change = p.change;
+        renderWL({});
+      }
+    }
+  }catch(e){ console.warn('selectCoin price fetch failed:', e); }
+
   await loadChart(id, ST.tf);
   saveState();
 }
@@ -1319,12 +1493,11 @@ async function addToWL(id, name, sym, img){
   if(ST.wl.find(c=>c.id===id)){ await selectCoin(id,name,sym,img); return; }
   const ccSym = CC_SYM[id] || (sym||id).toUpperCase().split('-')[0];
   ST.wl.push({id, name: name || id, symbol:ccSym, image:img||'', price:0, change:0, mcap:0, vol:0});
-  LivePriceEngine.setCoin(ccSym);
   renderWL({});
   saveState();
   // Fetch live price for the new coin and update
   try{
-    const p = await fetchCCPrice(ccSym);
+    const p = await fetchCCPrice(ccSym, id);
     const i = ST.wl.findIndex(c=>c.id===id);
     if(i>-1) Object.assign(ST.wl[i], p, {symbol:ccSym, image: p.image||img||''});
     renderWL({});
@@ -1358,7 +1531,10 @@ function renderWL(prev){
   }).join('');
 }
 
-async function selectCoinByIdx(i){const c=ST.wl[i];if(c) await selectCoin(c.id,c.name,c.symbol,c.image||'');}
+async function selectCoinByIdx(i){
+  const c = ST.wl[i];
+  if(c) await selectCoin(c.id, c.name, c.symbol, c.image||'', c.price || 0);
+}
 async function refreshWL(){CACHE.store={};await loadPrices();}
 
 function updateHdr(c, oldPrice){
@@ -1367,12 +1543,16 @@ function updateHdr(c, oldPrice){
   document.getElementById('chSub').textContent=(c.symbol||'—').toUpperCase()+'/USD';
   document.getElementById('chTitle').textContent=c.name||'—';
   const priceEl = document.getElementById('chPrice');
-  if(priceEl && c.price){
-    priceEl.textContent='$'+fP(c.price);
-    if(oldPrice && oldPrice > 0 && c.price !== oldPrice){
-      priceEl.classList.remove('flash-up', 'flash-down');
-      void priceEl.offsetWidth; // trigger reflow
-      priceEl.classList.add(c.price > oldPrice ? 'flash-up' : 'flash-down');
+  if(priceEl){
+    if(c.price > 0){
+      priceEl.textContent='$'+fP(c.price);
+      if(oldPrice && oldPrice > 0 && c.price !== oldPrice){
+        priceEl.classList.remove('flash-up', 'flash-down');
+        void priceEl.offsetWidth; // trigger reflow
+        priceEl.classList.add(c.price > oldPrice ? 'flash-up' : 'flash-down');
+      }
+    } else {
+      priceEl.textContent='—';
     }
   }
   if(c.change!=null){
@@ -1386,7 +1566,10 @@ function updateHdr(c, oldPrice){
   const ptLiveEl = document.getElementById('ptLivePrice');
   const ptLiveSymEl = document.getElementById('ptLiveSym');
   if(ptLiveSymEl) ptLiveSymEl.textContent = (c.symbol||'BTC').toUpperCase();
-  if(ptLiveEl && c.price) ptLiveEl.textContent = '$' + fP(c.price);
+  if(ptLiveEl){
+    if(c.price > 0) ptLiveEl.textContent = '$' + fP(c.price);
+    else ptLiveEl.textContent = '—';
+  }
   updateSimUI();
 }
 
@@ -1431,7 +1614,7 @@ async function loadTrending(){
       const sym = (c.symbol || '').toUpperCase();
       const ch = c.change;
       const img = c.image || `https://assets.coincap.io/assets/icons/${sym.toLowerCase()}@2x.png`;
-      return `<div class="tr-r" onclick="selectCoin('${c.id}','${esc(c.name||sym)}','${sym}','${img}')">
+      return `<div class="tr-r" onclick="selectCoin('${c.id}','${esc(c.name||sym)}','${sym}','${img}',${c.price||0})">
         <span class="tr-n">${i+1}</span>
         <img class="tr-img" src="${img}" alt="" onerror="this.style.display='none'">
         <span class="tr-name">${esc(c.name||sym)}</span>
@@ -1474,7 +1657,7 @@ async function loadTicker(){
         const p_str = p >= 1 ? '$' + fP(p) : '$' + p.toFixed(4);
         const pos_neg = chg >= 0 ? 'pos' : 'neg';
         const sign = chg >= 0 ? '+' : '';
-        items.push(`<div class="ti" data-ticker-sym="${sym}" style="cursor:pointer;" onclick="selectCoin('${cid}','${sym}','${sym}','')">
+        items.push(`<div class="ti" data-ticker-sym="${sym}" style="cursor:pointer;" onclick="selectCoin('${cid}','${sym}','${sym}','',${p||0})">
           <b>${sym}</b> ${p_str}
           <span class="${pos_neg}">${sign}${chg.toFixed(2)}%</span>
         </div>`);
@@ -1497,7 +1680,7 @@ async function loadTicker(){
       const p = c.price;
       const pos_neg = ch >= 0 ? 'pos' : 'neg';
       const sign = ch >= 0 ? '+' : '';
-      return `<div class="ti" data-ticker-sym="${sym}" style="cursor:pointer;" onclick="selectCoin('${c.id}','${esc(c.name||sym)}','${sym}','${c.image||''}')">
+      return `<div class="ti" data-ticker-sym="${sym}" style="cursor:pointer;" onclick="selectCoin('${c.id}','${esc(c.name||sym)}','${sym}','${c.image||''}',${p||0})">
         <b>${sym}</b> $${fP(p)}
         <span class="${pos_neg}">${sign}${ch.toFixed(2)}%</span>
       </div>`;
@@ -1745,7 +1928,7 @@ function renderModal(){
         ${c.high24?`<div style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);text-align:right;">H: $${fP(c.high24)}<br>L: $${fP(c.low24)}</div>`:''}
       </div>
       <div class="tc-btns">
-        <button class="tc-view" onclick="selectCoin('${c.id}','${esc(c.name)}','${c.symbol}','${c.image||''}');closeModal()">📊 Chart</button>
+        <button class="tc-view" onclick="selectCoin('${c.id}','${esc(c.name)}','${c.symbol}','${c.image||''}',${c.price||0});closeModal()">📊 Chart</button>
         <button class="tc-add${inW?' done':''}" id="tadd_${c.id}" onclick="mAdd('${c.id}','${esc(c.name)}','${c.symbol}','${c.image||''}')">${inW?'✓ Watch':'+ Watch'}</button>
       </div>
     </div>`;
@@ -4436,10 +4619,11 @@ document.addEventListener('keydown',e=>{
 /* ══════════════════ CNT HELPERS ══════════════════ */
 async function quickAddCNT(id, name, sym, img){
   const existing = ST.wl.find(c => c.id === id);
-  if(existing){ await selectCoin(id, name, sym, img || existing.image || ''); return; }
+  if(existing){ await selectCoin(id, name, sym, img || existing.image || '', existing.price || 0); return; }
   showToast('🔵 Adding '+sym, 'Fetching '+name+' price…', 'info', 2000);
   await addToWL(id, name, sym, img);
-  await selectCoin(id, name, sym, img || ST.wl.find(c=>c.id===id)?.image || '');
+  const newlyAdded = ST.wl.find(c=>c.id===id);
+  await selectCoin(id, name, sym, img || newlyAdded?.image || '', newlyAdded?.price || 0);
 }
 function toggleCNTPanel(){
   const list = document.getElementById('cntList');
