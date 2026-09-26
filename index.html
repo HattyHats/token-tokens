@@ -11,8 +11,8 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=4.4">
-  <script defer src="./main.js?v=4.4"></script>
+  <link rel="stylesheet" href="./style.css?v=4.6">
+  <script defer src="./main.js?v=4.6"></script>
   <script>
     // ══════════════════════════════════════════════════════════════
     // BULLETPROOF LIVE PRICE STREAMING & PAPER TRADING CONTROLLER
@@ -20,6 +20,7 @@
     window.SIM = window.SIM || {
       active: true,
       balance: 10000.0,
+      positions: [],
       position: null,
       history: []
     };
@@ -30,7 +31,16 @@
         if (saved) {
           var d = JSON.parse(saved);
           if (typeof d.balance === 'number' && !isNaN(d.balance) && d.balance >= 10) window.SIM.balance = d.balance;
-          if (d.position) window.SIM.position = d.position;
+          if (Array.isArray(d.positions)) {
+            window.SIM.positions = d.positions;
+            window.SIM.position = d.positions[0] || null;
+          } else if (d.position) {
+            window.SIM.positions = [d.position];
+            window.SIM.position = d.position;
+          } else {
+            window.SIM.positions = [];
+            window.SIM.position = null;
+          }
           if (Array.isArray(d.history)) window.SIM.history = d.history;
         }
         var act = localStorage.getItem('tt_paper_active');
@@ -65,8 +75,11 @@
 
     window.savePaperTrading = window.savePaperTrading || function() {
       try {
+        if (!Array.isArray(window.SIM.positions)) window.SIM.positions = window.SIM.position ? [window.SIM.position] : [];
+        window.SIM.position = window.SIM.positions[0] || null;
         localStorage.setItem('tt_paper_wallet', JSON.stringify({
           balance: window.SIM.balance,
+          positions: window.SIM.positions,
           position: window.SIM.position,
           history: (window.SIM.history || []).slice(-50)
         }));
@@ -85,33 +98,74 @@
       var curMarketP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : (window.ST && window.ST.coin ? window.ST.coin.price : null);
       if (ptLiveEl && curMarketP > 0) ptLiveEl.textContent = '$' + fP_inline(curMarketP);
 
-      var card = document.getElementById('ptPosCard');
-      if (!card) return;
-      if (!window.SIM.position) {
-        card.style.display = 'none';
+      var wrap = document.getElementById('ptPositionsWrap');
+      var legacyCard = document.getElementById('ptPosCard');
+      var positions = (window.SIM.positions && Array.isArray(window.SIM.positions)) ? window.SIM.positions : (window.SIM.position ? [window.SIM.position] : []);
+
+      if (wrap) {
+        if (!positions.length) {
+          wrap.innerHTML = '';
+          return;
+        }
+
+        wrap.innerHTML = positions.map(function(pos) {
+          var isCurrent = !pos.symbol || (pos.symbol.toUpperCase() === activeSym);
+          var curP = null;
+          if (isCurrent && curMarketP) {
+            curP = curMarketP;
+          } else if (window.LivePriceEngine && typeof window.LivePriceEngine.getLivePrice === 'function') {
+            curP = window.LivePriceEngine.getLivePrice(pos.symbol);
+          }
+          if (!curP || curP <= 0) curP = pos.entryPrice || 84000;
+
+          var pnlPct = pos.side === 'long'
+            ? ((curP - pos.entryPrice) / pos.entryPrice) * 100
+            : ((pos.entryPrice - curP) / pos.entryPrice) * 100;
+          var pnlUSD = (pnlPct / 100) * pos.amountUSD;
+          var isProfit = pnlUSD >= 0;
+
+          return '<div class="pt-pos-card" id="ptCard_' + pos.id + '" data-id="' + pos.id + '">' +
+            '<span class="pt-pos-side ' + pos.side + '">' + (pos.side || 'long').toUpperCase() + '</span>' +
+            '<div style="display:flex;flex-direction:column;gap:1px;">' +
+              '<div style="display:flex;align-items:center;gap:6px;">' +
+                '<span style="font-size:.65rem;color:var(--text3);">' + (pos.symbol || 'BTC') + ' @ $' + fP_inline(pos.entryPrice) + '</span>' +
+                '<span style="font-size:.65rem;color:#00d4ff;font-weight:700;">NOW: $' + fP_inline(curP) + '</span>' +
+              '</div>' +
+              '<span class="pt-pnl ' + (isProfit ? 'pos' : 'neg') + '">' + fPnL_inline(pnlUSD, pnlPct) + '</span>' +
+            '</div>' +
+            '<button type="button" class="pt-btn-close" onclick="closeSimPosition(\'' + pos.id + '\')" title="Close position">✕ Close</button>' +
+            '<button type="button" class="pt-btn-share" onclick="openPnLModalById(\'' + pos.id + '\')" title="Share card">📸</button>' +
+          '</div>';
+        }).join('');
         return;
       }
-      card.style.display = 'flex';
-      var pos = window.SIM.position;
+
+      if (!legacyCard) return;
+      if (!positions.length) {
+        legacyCard.style.display = 'none';
+        return;
+      }
+      legacyCard.style.display = 'flex';
+      var pos0 = positions[0];
       var sideEl = document.getElementById('ptPosSide');
       var infoEl = document.getElementById('ptPosInfo');
       var nowEl = document.getElementById('ptPosNow');
       var pnlEl = document.getElementById('ptPosPnL');
       if (sideEl) {
-        sideEl.className = 'pt-pos-side ' + pos.side;
-        sideEl.textContent = (pos.side || 'long').toUpperCase();
+        sideEl.className = 'pt-pos-side ' + pos0.side;
+        sideEl.textContent = (pos0.side || 'long').toUpperCase();
       }
-      var isCurrent = !pos.symbol || (pos.symbol.toUpperCase() === activeSym);
-      var curPrice = (isCurrent && curMarketP) ? curMarketP : (pos.entryPrice || 84000);
-      var pnlPct = pos.side === 'long'
-        ? ((curPrice - pos.entryPrice) / pos.entryPrice) * 100
-        : ((pos.entryPrice - curPrice) / pos.entryPrice) * 100;
-      var pnlUSD = (pnlPct / 100) * pos.amountUSD;
-      if (infoEl) infoEl.textContent = (pos.symbol || 'BTC') + ' @ $' + fP_inline(pos.entryPrice);
-      if (nowEl) nowEl.textContent = 'NOW: $' + fP_inline(curPrice);
+      var isCurrent0 = !pos0.symbol || (pos0.symbol.toUpperCase() === activeSym);
+      var curPrice0 = (isCurrent0 && curMarketP) ? curMarketP : (pos0.entryPrice || 84000);
+      var pnlPct0 = pos0.side === 'long'
+        ? ((curPrice0 - pos0.entryPrice) / pos0.entryPrice) * 100
+        : ((pos0.entryPrice - curPrice0) / pos0.entryPrice) * 100;
+      var pnlUSD0 = (pnlPct0 / 100) * pos0.amountUSD;
+      if (infoEl) infoEl.textContent = (pos0.symbol || 'BTC') + ' @ $' + fP_inline(pos0.entryPrice);
+      if (nowEl) nowEl.textContent = 'NOW: $' + fP_inline(curPrice0);
       if (pnlEl) {
-        pnlEl.className = 'pt-pnl ' + (pnlUSD >= 0 ? 'pos' : 'neg');
-        pnlEl.textContent = fPnL_inline(pnlUSD, pnlPct);
+        pnlEl.className = 'pt-pnl ' + (pnlUSD0 >= 0 ? 'pos' : 'neg');
+        pnlEl.textContent = fPnL_inline(pnlUSD0, pnlPct0);
       }
     };
 
@@ -154,8 +208,14 @@
     };
 
     window.openSimPosition = function(side) {
-      if (window.SIM.position) {
-        window.closeSimPosition(true);
+      if (!Array.isArray(window.SIM.positions)) {
+        window.SIM.positions = window.SIM.position ? [window.SIM.position] : [];
+      }
+      if (window.SIM.positions.length >= 3) {
+        if (typeof window.showToast === 'function') {
+          window.showToast('Position Limit Reached', 'You can hold up to 3 active trades simultaneously. Close an existing position first.', 'warn', 3500);
+        }
+        return;
       }
       var inp = document.getElementById('ptAmountIn');
       var amount = parseFloat(inp ? inp.value : '1000');
@@ -166,6 +226,12 @@
       if (amount > window.SIM.balance) {
         amount = window.SIM.balance;
         if (inp) inp.value = amount;
+      }
+      if (amount < 10) {
+        if (typeof window.showToast === 'function') {
+          window.showToast('Insufficient Funds', 'Simulated balance is too low to open a trade.', 'warn', 3000);
+        }
+        return;
       }
       var liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : null;
       var domPEl = document.getElementById('chPrice');
@@ -180,8 +246,8 @@
       var name = (window.ST && window.ST.coin && window.ST.coin.name) ? window.ST.coin.name : 'Bitcoin';
       var coinId = (window.ST && window.ST.coin && window.ST.coin.id) ? window.ST.coin.id : 'bitcoin';
 
-      window.SIM.position = {
-        id: 'pos_' + Date.now(),
+      var newPos = {
+        id: 'pos_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
         coinId: coinId,
         symbol: sym,
         name: name,
@@ -192,22 +258,50 @@
         timestamp: Date.now()
       };
 
+      window.SIM.positions.unshift(newPos);
+      window.SIM.position = window.SIM.positions[0];
+
+      if (window.LivePriceEngine && typeof window.LivePriceEngine.subscribe === 'function') {
+        window.LivePriceEngine.subscribe(sym);
+        if (!window.LivePriceEngine.prices) window.LivePriceEngine.prices = {};
+        window.LivePriceEngine.prices[sym] = price;
+      }
+
       window.savePaperTrading();
       window.updateSimUI();
       if (typeof window.renderChart === 'function') window.renderChart();
       if (typeof window.showToast === 'function') {
-        window.showToast((side === 'long' ? '🟢 LONG OPENED' : '🔴 SHORT OPENED'), side.toUpperCase() + ' ' + qty.toFixed(4) + ' ' + sym + ' @ $' + fP_inline(price), 'success', 3500);
+        window.showToast((side === 'long' ? '🟢 LONG OPENED' : '🔴 SHORT OPENED'), side.toUpperCase() + ' ' + qty.toFixed(4) + ' ' + sym + ' @ $' + fP_inline(price) + ' (' + window.SIM.positions.length + '/3 active)', 'success', 3500);
       }
     };
 
-    window.closeSimPosition = function(silent) {
-      if (!window.SIM.position) return;
-      var pos = window.SIM.position;
-      var liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && (!pos.symbol || (window.LivePriceEngine.activeSym && pos.symbol.toUpperCase() === window.LivePriceEngine.activeSym))) ? window.LivePriceEngine.lastPrice : null;
-      var domPEl = document.getElementById('chPrice');
+    window.closeSimPosition = function(posId, silent) {
+      if (typeof posId === 'boolean') {
+        silent = posId;
+        posId = null;
+      }
+      if (!window.SIM.positions || !window.SIM.positions.length) {
+        if (window.SIM.position) window.SIM.positions = [window.SIM.position];
+        else return;
+      }
+      var idx = 0;
+      if (posId) {
+        idx = window.SIM.positions.findIndex(function(p) { return p.id === posId || p.symbol === posId; });
+        if (idx === -1) idx = 0;
+      }
+      var pos = window.SIM.positions[idx];
+      if (!pos) return;
+
+      var isCurrent = !pos.symbol || (window.LivePriceEngine && window.LivePriceEngine.activeSym && pos.symbol.toUpperCase() === window.LivePriceEngine.activeSym);
+      var curP = null;
+      if (isCurrent && window.LivePriceEngine && window.LivePriceEngine.lastPrice) {
+        curP = window.LivePriceEngine.lastPrice;
+      } else if (window.LivePriceEngine && typeof window.LivePriceEngine.getLivePrice === 'function') {
+        curP = window.LivePriceEngine.getLivePrice(pos.symbol);
+      }
+      var domPEl = isCurrent ? document.getElementById('chPrice') : null;
       var domP = domPEl ? parseFloat(domPEl.textContent.replace(/[^0-9.]/g, '')) : null;
-      var candleP = (window.ST && window.ST.candles && window.ST.candles.length) ? window.ST.candles[window.ST.candles.length - 1].c : null;
-      var exitPrice = liveP || domP || candleP || pos.entryPrice;
+      var exitPrice = curP || domP || pos.entryPrice;
 
       var pnlPct = pos.side === 'long'
         ? ((exitPrice - pos.entryPrice) / pos.entryPrice) * 100
@@ -233,7 +327,9 @@
       if (!Array.isArray(window.SIM.history)) window.SIM.history = [];
       window.SIM.history.push(tradeRecord);
       window._lastPnLTrade = tradeRecord;
-      window.SIM.position = null;
+
+      window.SIM.positions.splice(idx, 1);
+      window.SIM.position = window.SIM.positions[0] || null;
 
       window.savePaperTrading();
       window.updateSimUI();
@@ -247,8 +343,36 @@
       }
     };
 
+    window.openPnLModalById = function(posId) {
+      var positions = (window.SIM.positions && Array.isArray(window.SIM.positions)) ? window.SIM.positions : (window.SIM.position ? [window.SIM.position] : []);
+      var pos = positions.find(function(p) { return p.id === posId; }) || positions[0];
+      if (pos && typeof window.openPnLModal === 'function') {
+        var curP = (window.LivePriceEngine && typeof window.LivePriceEngine.getLivePrice === 'function') ? window.LivePriceEngine.getLivePrice(pos.symbol) : pos.entryPrice;
+        if (!curP) curP = pos.entryPrice;
+        var pnlPct = pos.side === 'long'
+          ? ((curP - pos.entryPrice) / pos.entryPrice) * 100
+          : ((pos.entryPrice - curP) / pos.entryPrice) * 100;
+        var pnlUSD = (pnlPct / 100) * pos.amountUSD;
+        window.openPnLModal({
+          id: pos.id,
+          coinId: pos.coinId,
+          symbol: pos.symbol,
+          name: pos.name,
+          side: pos.side,
+          amountUSD: pos.amountUSD,
+          entryPrice: pos.entryPrice,
+          exitPrice: curP,
+          pnlPct: pnlPct,
+          pnlUSD: pnlUSD
+        });
+      } else if (typeof window.openPnLModal === 'function') {
+        window.openPnLModal();
+      }
+    };
+
     window.resetSimWallet = function() {
       window.SIM.balance = 10000.0;
+      window.SIM.positions = [];
       window.SIM.position = null;
       window.savePaperTrading();
       window.updateSimUI();
@@ -258,7 +382,7 @@
       }
     };
 
-    window.openPnLModal = window.openPnLModal || function() {
+    window.openPnLModal = window.openPnLModal || function(trade) {
       var modal = document.getElementById('pnlModal');
       if (modal) modal.classList.remove('hide');
     };
@@ -352,6 +476,11 @@
 <!-- ═════ SPLASH ═════ -->
 <div id="splash">
   <div id="splash-bg"></div>
+  <div id="splash-hat-wrapper">
+    <div id="splash-hat-inner">
+      <img class="splash-hat-img" src="./grey-hat-nb.png" alt="HattyHats Cybernetic Cap" fetchpriority="high">
+    </div>
+  </div>
   <canvas id="splash-canvas"></canvas>
   <div class="spl-grid"></div>
   <div class="spl-ol"></div>
@@ -568,18 +697,8 @@
         <button type="button" class="pt-btn-buy" onclick="openSimPosition('long')" title="Open simulated Long position">▲ BUY / LONG</button>
         <button type="button" class="pt-btn-sell" onclick="openSimPosition('short')" title="Open simulated Short position">▼ SELL / SHORT</button>
       </div>
-      <div class="pt-pos-card" id="ptPosCard" style="display:none;">
-        <span class="pt-pos-side long" id="ptPosSide">LONG</span>
-        <div style="display:flex;flex-direction:column;gap:1px;">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:.65rem;color:var(--text3);" id="ptPosInfo">BTC @ $—</span>
-            <span style="font-size:.65rem;color:#00d4ff;font-weight:700;" id="ptPosNow">NOW: $—</span>
-          </div>
-          <span class="pt-pnl pos" id="ptPosPnL">+$0.00 (+0.00%)</span>
-        </div>
-        <button type="button" class="pt-btn-close" onclick="closeSimPosition()" title="Close current simulated position at market price">✕ Close</button>
-        <button type="button" class="pt-btn-share" onclick="openPnLModal()" title="View and share cyberpunk trade card">📸 Share</button>
-      </div>
+      <div class="pt-positions-wrap" id="ptPositionsWrap"></div>
+      <div class="pt-pos-card" id="ptPosCard" style="display:none;"></div>
       <div class="pt-controls" style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;">
         <button type="button" class="pt-btn-share" id="ptLastShareBtn" onclick="openPnLModal()" style="display:none;padding:5px 10px;font-size:.7rem;" title="View Last Closed Trade PnL Card">📸 Last Card</button>
         <button type="button" class="pt-btn-reset" onclick="resetSimWallet()" title="Reset virtual wallet to $10,000">↺ Reset</button>

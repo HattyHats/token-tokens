@@ -54,86 +54,209 @@ window.enterApp = enterApp;
   if (!c) return;
   const ctx = c.getContext('2d');
   let w = 0, h = 0;
+  let cx = 0, cy = 0;
+
   const resize = () => {
     w = c.width = window.innerWidth;
     h = c.height = window.innerHeight;
+    cx = w / 2;
+    cy = h / 2;
   };
   resize();
   window.addEventListener('resize', resize);
 
-  // 60FPS high-performance constellation particles
-  const NUM_PARTICLES = Math.min(55, Math.max(30, Math.floor((window.innerWidth * window.innerHeight) / 22000)));
-  const particles = [];
-  const colors = ['#00e5ff', '#803fe8', '#00ff88', '#ff7033', '#9d5aff'];
+  // Digital Crypto Coin archetypes with authentic palettes & glowing symbols
+  const COIN_TYPES = [
+    { sym: '₿', name: 'BTC', color: '#ffb300', glow: 'rgba(255,179,0,0.85)', rim: '#ffe082', bgGrad: ['#3e2000', '#150800'] },
+    { sym: 'Ξ', name: 'ETH', color: '#00e5ff', glow: 'rgba(0,229,255,0.85)', rim: '#80d8ff', bgGrad: ['#002b4d', '#001021'] },
+    { sym: '◎', name: 'SOL', color: '#14f195', glow: 'rgba(153,69,255,0.85)', rim: '#a7ffeb', bgGrad: ['#2b084e', '#0f021c'] },
+    { sym: '₳', name: 'ADA', color: '#0091ea', glow: 'rgba(0,145,234,0.85)', rim: '#40c4ff', bgGrad: ['#002447', '#000f21'] },
+    { sym: 'Ð', name: 'DOGE', color: '#ffd600', glow: 'rgba(255,214,0,0.85)', rim: '#fff59d', bgGrad: ['#382d00', '#171200'] },
+    { sym: '✕', name: 'XRP', color: '#00f0ff', glow: 'rgba(0,240,255,0.85)', rim: '#ffffff', bgGrad: ['#0d2238', '#050f1a'] },
+    { sym: '◈', name: 'TT',  color: '#b388ff', glow: 'rgba(179,136,255,0.85)', rim: '#e1bee7', bgGrad: ['#300057', '#120021'] }
+  ];
 
-  for (let i = 0; i < NUM_PARTICLES; i++) {
-    particles.push({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 1.1,
-      vy: (Math.random() - 0.5) * 1.1,
-      radius: Math.random() * 2.2 + 1.2,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      pulse: Math.random() * Math.PI * 2,
-    });
+  // Number of 3D coins in flight
+  const NUM_COINS = Math.min(65, Math.max(38, Math.floor((window.innerWidth * window.innerHeight) / 20000)));
+  const coins = [];
+
+  function resetCoin(coin, initial = false) {
+    const angle = Math.random() * Math.PI * 2;
+    // Radial distribution across full viewport
+    const dist = 30 + Math.random() * 650;
+    coin.x = Math.cos(angle) * dist;
+    coin.y = Math.sin(angle) * (dist * 0.68);
+    coin.vx = Math.cos(angle) * (2.0 + Math.random() * 4.0);
+    coin.vy = Math.sin(angle) * (1.4 + Math.random() * 2.8);
+    coin.z = initial ? 60 + Math.random() * 1150 : 1100 + Math.random() * 350;
+    coin.speed = 9.5 + Math.random() * 10.5;
+    coin.baseRadius = 19 + Math.random() * 7;
+    coin.type = COIN_TYPES[Math.floor(Math.random() * COIN_TYPES.length)];
+    coin.rotX = Math.random() * Math.PI * 2;
+    coin.rotY = Math.random() * Math.PI * 2;
+    coin.rotZ = Math.random() * Math.PI * 2;
+    coin.rotSpeedX = (Math.random() - 0.5) * 0.04;
+    coin.rotSpeedY = 0.04 + Math.random() * 0.08;
+    coin.rotSpeedZ = (Math.random() - 0.5) * 0.025;
+    coin.trail = [];
   }
 
-  let mouse = { x: -1000, y: -1000 };
+  for (let i = 0; i < NUM_COINS; i++) {
+    const coin = {};
+    resetCoin(coin, true);
+    coins.push(coin);
+  }
+
+  // Interactive mouse parallax tracking
+  let mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
   window.addEventListener('mousemove', e => {
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
+    mouse.targetX = (e.clientX - cx) * 0.1;
+    mouse.targetY = (e.clientY - cy) * 0.1;
   });
+
+  const hatInner = document.getElementById('splash-hat-inner');
 
   let animId;
   function animate() {
     if (_splashDone) return;
+
+    // Smooth mouse lerp
+    mouse.x += (mouse.targetX - mouse.x) * 0.06;
+    mouse.y += (mouse.targetY - mouse.y) * 0.06;
+
+    // Subtle 3D hat tilt tracking mouse
+    if (hatInner) {
+      hatInner.style.transform = `translate(${mouse.x * 0.5}px, ${mouse.y * 0.5}px) rotateY(${mouse.x * 0.07}deg) rotateX(${-mouse.y * 0.07}deg)`;
+    }
+
     ctx.clearRect(0, 0, w, h);
 
-    // Update & draw particles
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.pulse += 0.035;
+    const fov = 380;
+    const originX = cx + mouse.x * 0.6;
+    const originY = cy + mouse.y * 0.6;
 
-      if (p.x < 0 || p.x > w) p.vx *= -1;
-      if (p.y < 0 || p.y > h) p.vy *= -1;
+    // Sort coins by depth (farthest first) for true painter's algorithm
+    coins.sort((a, b) => b.z - a.z);
 
-      // Mouse repulsion
-      const mdx = p.x - mouse.x;
-      const mdy = p.y - mouse.y;
-      const mDist = Math.sqrt(mdx * mdx + mdy * mdy);
-      if (mDist < 130 && mDist > 0) {
-        p.x += (mdx / mDist) * 1.6;
-        p.y += (mdy / mDist) * 1.6;
+    for (let i = 0; i < coins.length; i++) {
+      const coin = coins[i];
+
+      // Move coin forward with acceleration toward screen & outward expansion
+      const accel = Math.max(1, (1200 - coin.z) / 400);
+      coin.z -= coin.speed * accel;
+      coin.x += coin.vx * (accel * 0.6);
+      coin.y += coin.vy * (accel * 0.6);
+      coin.rotX += coin.rotSpeedX;
+      coin.rotY += coin.rotSpeedY;
+      coin.rotZ += coin.rotSpeedZ;
+
+      if (coin.z <= 15) {
+        resetCoin(coin, false);
+        continue;
       }
 
-      // Draw particle
-      ctx.beginPath();
-      const currentR = p.radius + Math.sin(p.pulse) * 0.7;
-      ctx.arc(p.x, p.y, Math.max(0.6, currentR), 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.globalAlpha = 0.85;
-      ctx.fill();
+      // 3D perspective projection
+      const scale = fov / (fov + coin.z);
+      const sx = originX + coin.x * scale;
+      const sy = originY + coin.y * scale;
 
-      // Connect nearby particles
-      for (let j = i + 1; j < particles.length; j++) {
-        const p2 = particles[j];
-        const dx = p.x - p2.x;
-        const dy = p.y - p2.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 135) {
-          const alpha = (1 - dist / 135) * 0.25;
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(p2.x, p2.y);
-          ctx.strokeStyle = '#00e5ff';
-          ctx.globalAlpha = alpha;
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
+      // Offscreen culling & respawn
+      if (sx < -120 || sx > w + 120 || sy < -120 || sy > h + 120) {
+        if (coin.z < 650) {
+          resetCoin(coin, false);
+          continue;
         }
       }
+
+      // Record light trails
+      coin.trail.unshift({ x: sx, y: sy, scale });
+      if (coin.trail.length > 5) coin.trail.pop();
+
+      // Depth fade
+      let alpha = 1;
+      if (coin.z > 950) alpha = Math.max(0, (1200 - coin.z) / 250);
+      else if (coin.z < 80) alpha = Math.max(0, coin.z / 80);
+
+      const r = coin.baseRadius * scale;
+      if (r < 1.5) continue;
+
+      // Render high-speed light streaks zooming toward screen
+      if (coin.trail.length >= 2 && scale > 0.4) {
+        ctx.beginPath();
+        ctx.moveTo(coin.trail[0].x, coin.trail[0].y);
+        for (let t = 1; t < coin.trail.length; t++) {
+          ctx.lineTo(coin.trail[t].x, coin.trail[t].y);
+        }
+        ctx.strokeStyle = coin.type.color;
+        ctx.globalAlpha = alpha * 0.35 * Math.min(1, scale);
+        ctx.lineWidth = Math.max(1, r * 0.4);
+        ctx.stroke();
+      }
+
+      // Draw 3D flipping coin
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(coin.rotZ);
+
+      // Simulating 3D coin rotation on Y-axis
+      const flipScale = Math.cos(coin.rotY);
+      const absFlip = Math.abs(flipScale);
+
+      ctx.scale(flipScale, 1);
+      ctx.globalAlpha = alpha;
+
+      // Glow halo for approaching coins
+      if (scale > 0.55) {
+        ctx.shadowColor = coin.type.glow;
+        ctx.shadowBlur = Math.min(22, 34 * scale);
+      }
+
+      // Draw Coin Outer Rim (3D thickness when angled)
+      if (absFlip < 0.85) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, Math.max(2, r * 1.08), r, 0, 0, Math.PI * 2);
+        ctx.fillStyle = coin.type.rim;
+        ctx.fill();
+      }
+
+      // Draw Coin Metallic Face
+      const grad = ctx.createRadialGradient(0, 0, r * 0.15, 0, 0, r);
+      grad.addColorStop(0, coin.type.bgGrad[0]);
+      grad.addColorStop(1, coin.type.bgGrad[1]);
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, Math.max(1.5, r), r, 0, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Outer cybernetic rim stroke
+      ctx.lineWidth = Math.max(1.2, r * 0.12);
+      ctx.strokeStyle = coin.type.color;
+      ctx.stroke();
+
+      // Inner circuit ring
+      if (absFlip > 0.35 && r > 9) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r * 0.72, r * 0.72, 0, 0, Math.PI * 2);
+        ctx.lineWidth = Math.max(0.8, r * 0.04);
+        ctx.strokeStyle = coin.type.rim;
+        ctx.globalAlpha = alpha * 0.7;
+        ctx.stroke();
+      }
+
+      // Draw Embossed Crypto Symbol on face
+      if (absFlip > 0.28 && r > 7) {
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = coin.type.color;
+        ctx.font = `bold ${Math.round(r * 1.05)}px 'Orbitron', 'Share Tech Mono', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(coin.type.sym, 0, r * 0.04);
+      }
+
+      ctx.restore();
     }
+
     ctx.globalAlpha = 1;
     animId = requestAnimationFrame(animate);
   }
@@ -459,6 +582,7 @@ const LivePriceEngine = {
   activeSym: 'BTC',
   subscribedCb: new Set(),
   subscribedKraken: new Set(),
+  prices: {},
   lastPrice: null,
   lastRealPrice: null,
   lastTickTime: 0,
@@ -567,6 +691,9 @@ const LivePriceEngine = {
         this.updateStatus('live');
 
         const syms = new Set([...this.coreSymbols, this.activeSym]);
+        if(window.SIM && Array.isArray(window.SIM.positions)){
+          window.SIM.positions.forEach(p => { if(p.symbol) syms.add(p.symbol.toUpperCase()); });
+        }
         if(ST.wl && ST.wl.length){
           ST.wl.forEach(c => {
             if(c.symbol) syms.add(c.symbol.toUpperCase());
@@ -699,18 +826,77 @@ const LivePriceEngine = {
     this.pollActiveCoin();
   },
 
+  getLivePrice(sym){
+    if(!sym) return null;
+    const s = sym.toUpperCase();
+    const activeCurrentSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : this.activeSym || 'BTC').toUpperCase();
+    if(s === activeCurrentSym && this.lastPrice && this.lastPrice > 0){
+      return this.lastPrice;
+    }
+    if(this.prices && typeof this.prices[s] === 'number' && this.prices[s] > 0){
+      return this.prices[s];
+    }
+    if(ST.wl && ST.wl.length){
+      const wlMatch = ST.wl.find(c => (c.symbol||'').toUpperCase() === s);
+      if(wlMatch && wlMatch.price > 0){
+        this.prices[s] = wlMatch.price;
+        return wlMatch.price;
+      }
+    }
+    return null;
+  },
+
+  subscribe(sym){
+    if(!sym) return;
+    const s = sym.toUpperCase();
+    const productId = `${s}-USD`;
+    if(this.cbWs && this.cbWs.readyState === WebSocket.OPEN && !this.subscribedCb.has(productId)){
+      this.subscribedCb.add(productId);
+      try{
+        this.cbWs.send(JSON.stringify({
+          type: 'subscribe',
+          product_ids: [productId],
+          channels: ['ticker']
+        }));
+      }catch(e){}
+    }
+  },
+
   startMicroTicks(){
     if(this.microTickTimer) clearInterval(this.microTickTimer);
     this.microTickTimer = setInterval(() => {
-      // 1. Micro-tick the active coin if it has a valid price and matches currently selected coin
       const activeCurrentSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : this.activeSym || 'BTC').toUpperCase();
+
+      // 1. Micro-tick the active coin if it has a valid price and matches currently selected coin
       if(this.activeSym === activeCurrentSym && Date.now() - this.lastTickTime >= 750 && this.lastPrice && this.lastPrice > 0){
         const spread = this.lastPrice * 0.00004; // ~0.004% micro-tick within spread
         const delta = (Math.random() - 0.49) * spread;
         const nextPrice = this.lastPrice < 1 ? Number((this.lastPrice + delta).toFixed(5)) : Number((this.lastPrice + delta).toFixed(2));
         this.handleTick(this.activeSym, nextPrice, null, null, false);
       }
-      // 2. Animate Watchlist coins so the user sees live prices going for their watchlist as well
+
+      // 2. Micro-tick all active paper trading positions so PnL stays dynamically alive even across coin changes!
+      if(window.SIM && Array.isArray(window.SIM.positions) && window.SIM.positions.length > 0){
+        let posTicked = false;
+        window.SIM.positions.forEach(pos => {
+          const pSym = (pos.symbol || '').toUpperCase();
+          if(pSym && pSym !== activeCurrentSym){
+            const curP = this.getLivePrice(pSym) || pos.entryPrice;
+            if(curP > 0){
+              const spread = curP * 0.00004;
+              const delta = (Math.random() - 0.49) * spread;
+              const nextP = curP < 1 ? Number((curP + delta).toFixed(5)) : Number((curP + delta).toFixed(2));
+              this.prices[pSym] = nextP;
+              posTicked = true;
+            }
+          }
+        });
+        if(posTicked && typeof updateSimUI === 'function'){
+          updateSimUI();
+        }
+      }
+
+      // 3. Animate Watchlist coins so the user sees live prices going for their watchlist as well
       this.animateWatchlist();
     }, 900);
   },
@@ -737,6 +923,7 @@ const LivePriceEngine = {
   handleTick(sym, price, open24h, vol24h, isReal = true){
     if(!price || isNaN(price) || price <= 0) return;
     const s = sym.toUpperCase();
+    this.prices[s] = price;
 
     // 1. Update Watchlist entry and DOM (Live Watchlist Stream)
     if(ST.wl && ST.wl.length){
@@ -754,10 +941,15 @@ const LivePriceEngine = {
     // 2. Update Ticker items
     this.updateTickerItem(s, price, open24h);
 
-    // 3. Strict current coin guard:
+    // 3. Update active paper trading positions holding this coin
+    if(window.SIM && Array.isArray(window.SIM.positions) && window.SIM.positions.some(p => (p.symbol||'').toUpperCase() === s)){
+      if(typeof updateSimUI === 'function') updateSimUI();
+    }
+
+    // 4. Strict current coin guard:
     const activeCurrentSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : this.activeSym || 'BTC').toUpperCase();
     if(s !== activeCurrentSym){
-      return; // TICK IS FOR ANOTHER COIN — NEVER TOUCH HEADER OR PAPER TRADING PRICE!
+      return; // TICK IS FOR ANOTHER COIN — NEVER TOUCH HEADER OR ACTIVE CHART CANDLES!
     }
 
     if(isReal){
@@ -871,6 +1063,9 @@ const LivePriceEngine = {
         const sign = chg >= 0 ? '+' : '';
         const cls = chg >= 0 ? 'pos' : 'neg';
         chgStr = `<span class="${cls}">${sign}${chg.toFixed(2)}%</span>`;
+      } else {
+        const existingSpan = el.querySelector('span');
+        if(existingSpan) chgStr = existingSpan.outerHTML;
       }
       el.innerHTML = `<b>${sym}</b> ${pStr} ${chgStr}`;
     });
@@ -1802,6 +1997,23 @@ async function loadTicker(){
         "DOGE": "dogecoin", "XRP": "ripple", "AVAX": "avalanche-2", "DOT": "polkadot",
         "LINK": "chainlink", "LTC": "litecoin", "UNI": "uniswap", "NEAR": "near", "ATOM": "cosmos"
       };
+
+      // If the ticker is already populated and scrolling, DO NOT wipe innerHTML!
+      // Wiping innerHTML resets the CSS translate3d animation back to 0%, causing the bar to glitch and restart!
+      if(track.children.length > 0){
+        for(const [k, v] of Object.entries(result)){
+          const sym = symbols[k] || k.replace('USD', '');
+          const p = parseFloat(v.c[0]);
+          const o = parseFloat(v.o);
+          if(p > 0 && window.LivePriceEngine && typeof window.LivePriceEngine.updateTickerItem === 'function'){
+            window.LivePriceEngine.updateTickerItem(sym, p, o);
+            if(!window.LivePriceEngine.prices) window.LivePriceEngine.prices = {};
+            window.LivePriceEngine.prices[sym] = p;
+          }
+        }
+        return;
+      }
+
       const items = [];
       for(const [k, v] of Object.entries(result)){
         const sym = symbols[k] || k.replace('USD', '');
@@ -1829,6 +2041,14 @@ async function loadTicker(){
 
   // Fallback: build ticker from current watchlist
   if(ST.wl && ST.wl.length){
+    if(track.children.length > 0){
+      ST.wl.forEach(c => {
+        if(c.price > 0 && window.LivePriceEngine && typeof window.LivePriceEngine.updateTickerItem === 'function'){
+          window.LivePriceEngine.updateTickerItem((c.symbol||'').toUpperCase(), c.price, null);
+        }
+      });
+      return;
+    }
     const items = ST.wl.filter(c => c.price > 0).map(c => {
       const sym = (c.symbol || '').toUpperCase();
       const ch = c.change || 0;
@@ -3162,6 +3382,7 @@ function renderPatterns(ctx, vis, toX, toY, pH, PAD_L, PAD_R, W){
 const SIM = window.SIM = window.SIM || {
   active: true,
   balance: 10000.0,
+  positions: [],
   position: null,
   history: []
 };
@@ -3172,7 +3393,16 @@ function initPaperTrading(){
     if(saved){
       const d = JSON.parse(saved);
       if(typeof d.balance === 'number' && !isNaN(d.balance) && d.balance >= 10) SIM.balance = d.balance;
-      if(d.position) SIM.position = d.position;
+      if(Array.isArray(d.positions)){
+        SIM.positions = d.positions;
+        SIM.position = d.positions[0] || null;
+      } else if(d.position){
+        SIM.positions = [d.position];
+        SIM.position = d.position;
+      } else {
+        SIM.positions = [];
+        SIM.position = null;
+      }
       if(Array.isArray(d.history)) SIM.history = d.history;
     }
     const act = localStorage.getItem('tt_paper_active');
@@ -3196,10 +3426,13 @@ function initPaperTrading(){
 
 function savePaperTrading(){
   try{
+    if(!Array.isArray(SIM.positions)) SIM.positions = SIM.position ? [SIM.position] : [];
+    SIM.position = SIM.positions[0] || null;
     localStorage.setItem('tt_paper_wallet', JSON.stringify({
       balance: SIM.balance,
+      positions: SIM.positions,
       position: SIM.position,
-      history: SIM.history.slice(-50)
+      history: (SIM.history || []).slice(-50)
     }));
     localStorage.setItem('tt_paper_active', SIM.active ? '1' : '0');
   }catch(e){}
@@ -3238,9 +3471,14 @@ function setPTAmount(val){
 }
 
 function openSimPosition(side){
-  // If a position already exists, smoothly close it and realize PnL without blocking
-  if(SIM.position){
-    closeSimPosition(true);
+  if(!Array.isArray(SIM.positions)){
+    SIM.positions = SIM.position ? [SIM.position] : [];
+  }
+
+  // Enforce max 3 concurrent paper trade positions
+  if(SIM.positions.length >= 3){
+    showToast('Position Limit Reached', 'You can hold up to 3 active trades simultaneously. Close an existing position first.', 'warn', 3500);
+    return;
   }
 
   const inp = document.getElementById('ptAmountIn');
@@ -3254,12 +3492,16 @@ function openSimPosition(side){
     amount = SIM.balance;
     if(inp) inp.value = amount;
   }
+  if(amount < 10){
+    showToast('Insufficient Funds', 'Simulated balance is too low to open a trade. Reset wallet to continue.', 'warn', 3000);
+    return;
+  }
 
-  // Get current execution price: prefer live WebSocket price, then DOM price, then latest candle, then coin price, fallback 100
+  // Get current execution price: prefer live WebSocket price, then DOM price, then latest candle, then coin price, fallback 84100
   const liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : null;
   const domP = parseFloat((document.getElementById('chPrice')?.textContent || '').replace(/[^0-9.]/g, '')) || null;
   const lastCandle = ST.candles && ST.candles.length ? ST.candles[ST.candles.length - 1] : null;
-  const price = liveP || domP || (lastCandle ? lastCandle.c : (ST.coin.price || 100));
+  const price = liveP || domP || (lastCandle ? lastCandle.c : (ST.coin.price || 84100));
   if(!price || price <= 0){
     showToast('Price Error', 'Unable to fetch current market price for trade execution.', 'warn', 2000);
     return;
@@ -3267,10 +3509,11 @@ function openSimPosition(side){
 
   const qty = amount / price;
   SIM.balance -= amount;
-  SIM.position = {
-    id: 'pos_' + Date.now(),
+  const sym = (ST.coin.symbol || 'BTC').toUpperCase();
+  const newPos = {
+    id: 'pos_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
     coinId: ST.coin.id,
-    symbol: (ST.coin.symbol || 'BTC').toUpperCase(),
+    symbol: sym,
     name: ST.coin.name || 'Bitcoin',
     side,
     amountUSD: amount,
@@ -3279,25 +3522,55 @@ function openSimPosition(side){
     timestamp: Date.now()
   };
 
+  SIM.positions.unshift(newPos);
+  SIM.position = SIM.positions[0];
+
+  // Subscribe symbol to WebSocket feed and cache execution price
+  if(window.LivePriceEngine && typeof window.LivePriceEngine.subscribe === 'function'){
+    window.LivePriceEngine.subscribe(sym);
+    if(!window.LivePriceEngine.prices) window.LivePriceEngine.prices = {};
+    window.LivePriceEngine.prices[sym] = price;
+  }
+
   savePaperTrading();
   updateSimUI();
   renderChart();
   showToast(
     (side === 'long' ? '🟢 LONG OPENED' : '🔴 SHORT OPENED'),
-    `${side.toUpperCase()} ${qty.toFixed(4)} ${SIM.position.symbol} @ $${fP(price)} ($${fP(amount)})`,
+    `${side.toUpperCase()} ${qty.toFixed(4)} ${newPos.symbol} @ $${fP(price)} ($${fP(amount)}) · (${SIM.positions.length}/3 active)`,
     'success',
     3500
   );
 }
 
-function closeSimPosition(silent = false){
-  if(!SIM.position) return;
-  const pos = SIM.position;
-  const liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && ST.coin.id === pos.coinId) ? window.LivePriceEngine.lastPrice : null;
-  const domP = (ST.coin.id === pos.coinId) ? (parseFloat((document.getElementById('chPrice')?.textContent || '').replace(/[^0-9.]/g, '')) || null) : null;
-  const lastCandle = ST.candles && ST.candles.length ? ST.candles[ST.candles.length - 1] : null;
-  const exitPrice = liveP || domP || ((ST.coin.id === pos.coinId && lastCandle) ? lastCandle.c : (ST.coin.id === pos.coinId && ST.coin.price ? ST.coin.price : pos.entryPrice));
-  
+function closeSimPosition(posId, silent = false){
+  if(typeof posId === 'boolean'){
+    silent = posId;
+    posId = null;
+  }
+
+  if(!SIM.positions || !SIM.positions.length){
+    if(SIM.position) SIM.positions = [SIM.position];
+    else return;
+  }
+
+  let idx = 0;
+  if(posId){
+    idx = SIM.positions.findIndex(p => p.id === posId || p.symbol === posId);
+    if(idx === -1) idx = 0;
+  }
+  const pos = SIM.positions[idx];
+  if(!pos) return;
+
+  const isCurrentCoin = (ST.coin && ((ST.coin.id === pos.coinId) || ((ST.coin.symbol || '').toUpperCase() === (pos.symbol || '').toUpperCase())));
+  let exitPrice = (isCurrentCoin && window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : null;
+  if(!exitPrice && window.LivePriceEngine && typeof window.LivePriceEngine.getLivePrice === 'function'){
+    exitPrice = window.LivePriceEngine.getLivePrice(pos.symbol);
+  }
+  if(!exitPrice || exitPrice <= 0){
+    exitPrice = (isCurrentCoin && ST.coin && ST.coin.price) ? ST.coin.price : pos.entryPrice;
+  }
+
   const pnlPct = pos.side === 'long'
     ? ((exitPrice - pos.entryPrice) / pos.entryPrice) * 100
     : ((pos.entryPrice - exitPrice) / pos.entryPrice) * 100;
@@ -3312,9 +3585,14 @@ function closeSimPosition(silent = false){
     pnlPct,
     pnlUSD
   };
+  if(!Array.isArray(SIM.history)) SIM.history = [];
   SIM.history.push(tradeRecord);
   _lastPnLTrade = tradeRecord;
-  SIM.position = null;
+  window._lastPnLTrade = tradeRecord;
+
+  // Remove closed position from active positions
+  SIM.positions.splice(idx, 1);
+  SIM.position = SIM.positions[0] || null;
 
   savePaperTrading();
   updateSimUI();
@@ -3326,7 +3604,7 @@ function closeSimPosition(silent = false){
   if(!silent){
     showToast(
       pnlUSD >= 0 ? '🎉 TRADE CLOSED IN PROFIT' : '🛑 TRADE CLOSED',
-      `Realized PnL: ${pnlUSD >= 0 ? '+' : ''}$${fP(pnlUSD)} (${pnlPct.toFixed(2)}%) · Click [📸 Last Card] to view card`,
+      `${pos.symbol} PnL: ${pnlUSD >= 0 ? '+' : ''}$${fP(pnlUSD)} (${pnlPct.toFixed(2)}%) · Balance: $${fP(SIM.balance)}`,
       pnlUSD >= 0 ? 'success' : 'warn',
       4000
     );
@@ -3335,6 +3613,7 @@ function closeSimPosition(silent = false){
 
 function resetSimWallet(){
   SIM.balance = 10000.0;
+  SIM.positions = [];
   SIM.position = null;
   savePaperTrading();
   updateSimUI();
@@ -3353,16 +3632,58 @@ function updateSimUI(){
   const currentMarketP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : (ST.coin ? ST.coin.price : 84000);
   if(ptLiveEl && currentMarketP > 0) ptLiveEl.textContent = '$' + fP(currentMarketP);
 
-  const card = document.getElementById('ptPosCard');
-  if(!card) return;
+  const wrap = document.getElementById('ptPositionsWrap');
+  const legacyCard = document.getElementById('ptPosCard');
+  const positions = (SIM.positions && Array.isArray(SIM.positions)) ? SIM.positions : (SIM.position ? [SIM.position] : []);
 
-  if(!SIM.position){
-    card.style.display = 'none';
+  if(wrap){
+    if(!positions.length){
+      wrap.innerHTML = '';
+      return;
+    }
+
+    wrap.innerHTML = positions.map(pos => {
+      const isCurrentCoin = (ST.coin && ((ST.coin.id === pos.coinId) || ((ST.coin.symbol || '').toUpperCase() === (pos.symbol || '').toUpperCase())));
+      let curPrice = null;
+      if(isCurrentCoin && window.LivePriceEngine && window.LivePriceEngine.lastPrice){
+        curPrice = window.LivePriceEngine.lastPrice;
+      } else if(window.LivePriceEngine && typeof window.LivePriceEngine.getLivePrice === 'function'){
+        curPrice = window.LivePriceEngine.getLivePrice(pos.symbol);
+      }
+      if(!curPrice || curPrice <= 0){
+        curPrice = (isCurrentCoin && ST.coin && ST.coin.price > 0) ? ST.coin.price : (pos.entryPrice || 84000);
+      }
+
+      const pnlPct = pos.side === 'long'
+        ? ((curPrice - pos.entryPrice) / pos.entryPrice) * 100
+        : ((pos.entryPrice - curPrice) / pos.entryPrice) * 100;
+      const pnlUSD = (pnlPct / 100) * pos.amountUSD;
+      const isProfit = pnlUSD >= 0;
+
+      return `<div class="pt-pos-card" id="ptCard_${pos.id}" data-id="${pos.id}">
+        <span class="pt-pos-side ${pos.side}">${pos.side.toUpperCase()}</span>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:.65rem;color:var(--text3);">${pos.symbol} @ $${fP(pos.entryPrice)}</span>
+            <span style="font-size:.65rem;color:#00d4ff;font-weight:700;">NOW: $${fP(curPrice)}</span>
+          </div>
+          <span class="pt-pnl ${isProfit ? 'pos' : 'neg'}">${fPnL(pnlUSD, pnlPct)}</span>
+        </div>
+        <button type="button" class="pt-btn-close" onclick="closeSimPosition('${pos.id}')" title="Close this position at market price">✕ Close</button>
+        <button type="button" class="pt-btn-share" onclick="openPnLModalById('${pos.id}')" title="Share PnL card">📸</button>
+      </div>`;
+    }).join('');
     return;
   }
 
-  card.style.display = 'flex';
-  const pos = SIM.position;
+  // Fallback for legacy static card
+  if(!legacyCard) return;
+  if(!positions.length){
+    legacyCard.style.display = 'none';
+    return;
+  }
+  legacyCard.style.display = 'flex';
+  const pos = positions[0];
   const sideEl = document.getElementById('ptPosSide');
   const infoEl = document.getElementById('ptPosInfo');
   const nowEl  = document.getElementById('ptPosNow');
@@ -3373,74 +3694,112 @@ function updateSimUI(){
     sideEl.textContent = pos.side.toUpperCase();
   }
 
-  const isCurrentCoin = (ST.coin.id === pos.coinId) || ((ST.coin.symbol || '').toUpperCase() === (pos.symbol || '').toUpperCase());
-  const liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && isCurrentCoin) ? window.LivePriceEngine.lastPrice : null;
-  const lastCandle = ST.candles && ST.candles.length ? ST.candles[ST.candles.length - 1] : null;
-  const curPrice = liveP || (isCurrentCoin && lastCandle ? lastCandle.c : (isCurrentCoin && ST.coin.price ? ST.coin.price : pos.entryPrice));
+  const isCurrentCoin = (ST.coin && ((ST.coin.id === pos.coinId) || ((ST.coin.symbol || '').toUpperCase() === (pos.symbol || '').toUpperCase())));
+  let curPrice = null;
+  if(isCurrentCoin && window.LivePriceEngine && window.LivePriceEngine.lastPrice){
+    curPrice = window.LivePriceEngine.lastPrice;
+  } else if(window.LivePriceEngine && typeof window.LivePriceEngine.getLivePrice === 'function'){
+    curPrice = window.LivePriceEngine.getLivePrice(pos.symbol);
+  }
+  if(!curPrice || curPrice <= 0){
+    curPrice = (isCurrentCoin && ST.coin && ST.coin.price > 0) ? ST.coin.price : (pos.entryPrice || 84000);
+  }
+
   const pnlPct = pos.side === 'long'
     ? ((curPrice - pos.entryPrice) / pos.entryPrice) * 100
     : ((pos.entryPrice - curPrice) / pos.entryPrice) * 100;
   const pnlUSD = (pnlPct / 100) * pos.amountUSD;
 
-  if(infoEl) {
-    infoEl.textContent = `${pos.symbol} @ $${fP(pos.entryPrice)}`;
-  }
-  if(nowEl) {
-    nowEl.textContent = `NOW: $${fP(curPrice)}`;
-  }
+  if(infoEl) infoEl.textContent = `${pos.symbol} @ $${fP(pos.entryPrice)}`;
+  if(nowEl) nowEl.textContent = `NOW: $${fP(curPrice)}`;
   if(pnlEl){
     pnlEl.className = 'pt-pnl ' + (pnlUSD >= 0 ? 'pos' : 'neg');
     pnlEl.textContent = fPnL(pnlUSD, pnlPct);
   }
 }
 
-function renderSimOverlay(ctx, vis, toX, toY, pH, PAD_L, PAD_R, W){
-  if(!SIM.position || !vis.length) return;
-  const pos = SIM.position;
-  if(pos.coinId !== ST.coin.id) return;
+function openPnLModalById(posId){
+  const positions = (SIM.positions && Array.isArray(SIM.positions)) ? SIM.positions : (SIM.position ? [SIM.position] : []);
+  const pos = positions.find(p => p.id === posId) || positions[0];
+  if(pos){
+    let curPrice = null;
+    const isCurrentCoin = (ST.coin && ((ST.coin.id === pos.coinId) || ((ST.coin.symbol || '').toUpperCase() === (pos.symbol || '').toUpperCase())));
+    if(isCurrentCoin && window.LivePriceEngine && window.LivePriceEngine.lastPrice){
+      curPrice = window.LivePriceEngine.lastPrice;
+    } else if(window.LivePriceEngine && typeof window.LivePriceEngine.getLivePrice === 'function'){
+      curPrice = window.LivePriceEngine.getLivePrice(pos.symbol);
+    }
+    if(!curPrice || curPrice <= 0) curPrice = pos.entryPrice;
 
-  const y = toY(pos.entryPrice);
-  if(y < 0 || y > pH) return;
+    const pnlPct = pos.side === 'long'
+      ? ((curPrice - pos.entryPrice) / pos.entryPrice) * 100
+      : ((pos.entryPrice - curPrice) / pos.entryPrice) * 100;
+    const pnlUSD = (pnlPct / 100) * pos.amountUSD;
+    openPnLModal({
+      ...pos,
+      exitPrice: curPrice,
+      pnlPct,
+      pnlUSD
+    });
+  } else {
+    openPnLModal();
+  }
+}
+
+function renderSimOverlay(ctx, vis, toX, toY, pH, PAD_L, PAD_R, W){
+  const positions = (SIM.positions && Array.isArray(SIM.positions) && SIM.positions.length) ? SIM.positions : (SIM.position ? [SIM.position] : []);
+  if(!positions.length || !vis.length) return;
+
+  const curCoinId = ST.coin ? ST.coin.id : null;
+  const curSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : '').toUpperCase();
+  const matching = positions.filter(p => (p.coinId && p.coinId === curCoinId) || (p.symbol && p.symbol.toUpperCase() === curSym));
+  if(!matching.length) return;
 
   const lastC = vis[vis.length - 1];
-  const pnlPct = pos.side === 'long'
-    ? ((lastC.c - pos.entryPrice) / pos.entryPrice) * 100
-    : ((pos.entryPrice - lastC.c) / pos.entryPrice) * 100;
-  const pnlUSD = (pnlPct / 100) * pos.amountUSD;
-  const isPos = pnlUSD >= 0;
-  const col = pos.side === 'long' ? '#00ff88' : '#ff3366';
 
-  ctx.save();
-  ctx.strokeStyle = col;
-  ctx.lineWidth = 1.6;
-  ctx.setLineDash([6, 4]);
-  ctx.beginPath();
-  ctx.moveTo(PAD_L, y);
-  ctx.lineTo(W - PAD_R, y);
-  ctx.stroke();
-  ctx.setLineDash([]);
+  matching.forEach((pos, idx) => {
+    const y = toY(pos.entryPrice);
+    if(y < 0 || y > pH) return;
 
-  const tag = `${pos.side === 'long' ? '🟢 LONG' : '🔴 SHORT'} $${fP(pos.entryPrice)} | ${isPos ? '+' : ''}${pnlPct.toFixed(1)}%`;
-  ctx.font = 'bold 9px Share Tech Mono';
-  const tw = ctx.measureText(tag).width;
-  const bw = tw + 14, bh = 18;
-  const bx = W - PAD_R - bw - 4;
+    const pnlPct = pos.side === 'long'
+      ? ((lastC.c - pos.entryPrice) / pos.entryPrice) * 100
+      : ((pos.entryPrice - lastC.c) / pos.entryPrice) * 100;
+    const pnlUSD = (pnlPct / 100) * pos.amountUSD;
+    const isPos = pnlUSD >= 0;
+    const col = pos.side === 'long' ? '#00ff88' : '#ff3366';
 
-  ctx.fillStyle = pos.side === 'long' ? 'rgba(0,255,136,.22)' : 'rgba(255,51,102,.22)';
-  if(ctx.roundRect) ctx.roundRect(bx, y - bh/2, bw, bh, 3);
-  else ctx.fillRect(bx, y - bh/2, bw, bh);
-  ctx.fill();
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(PAD_L, y);
+    ctx.lineTo(W - PAD_R, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-  ctx.strokeStyle = col;
-  ctx.lineWidth = 1;
-  if(ctx.roundRect) ctx.roundRect(bx, y - bh/2, bw, bh, 3);
-  else ctx.strokeRect(bx, y - bh/2, bw, bh);
-  ctx.stroke();
+    const tag = `${pos.side === 'long' ? '🟢 LONG' : '🔴 SHORT'} $${fP(pos.entryPrice)} | ${isPos ? '+' : ''}${pnlPct.toFixed(1)}%`;
+    ctx.font = 'bold 9px Share Tech Mono';
+    const tw = ctx.measureText(tag).width;
+    const bw = tw + 14, bh = 18;
+    const bx = W - PAD_R - bw - 4 - (idx * 14);
 
-  ctx.fillStyle = '#fff';
-  ctx.textAlign = 'center';
-  ctx.fillText(tag, bx + bw/2, y + 3.5);
-  ctx.restore();
+    ctx.fillStyle = pos.side === 'long' ? 'rgba(0,255,136,.22)' : 'rgba(255,51,102,.22)';
+    if(ctx.roundRect) ctx.roundRect(bx, y - bh/2, bw, bh, 3);
+    else ctx.fillRect(bx, y - bh/2, bw, bh);
+    ctx.fill();
+
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1;
+    if(ctx.roundRect) ctx.roundRect(bx, y - bh/2, bw, bh, 3);
+    else ctx.strokeRect(bx, y - bh/2, bw, bh);
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText(tag, bx + bw/2, y + 3.5);
+    ctx.restore();
+  });
 }
 
 /* ══════════════════ CYBERPUNK PNL SHARE CARD GENERATOR ══════════════════ */
@@ -5136,6 +5495,7 @@ window.openSimPosition = openSimPosition;
 window.closeSimPosition = closeSimPosition;
 window.resetSimWallet = resetSimWallet;
 window.openPnLModal = openPnLModal;
+window.openPnLModalById = openPnLModalById;
 window.closePnLModal = closePnLModal;
 window.downloadPnLCard = downloadPnLCard;
 window.copyPnLCard = copyPnLCard;
