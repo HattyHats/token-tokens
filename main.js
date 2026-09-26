@@ -2485,7 +2485,10 @@ function togglePatternScanner(){
   const banner = document.getElementById('patternBanner');
   const smToggle = document.getElementById('smPatternToggle');
   if(btn) btn.classList.toggle('on', ST.showPatterns);
-  if(banner) banner.classList.toggle('show', ST.showPatterns);
+  if(banner){
+    banner.classList.toggle('show', ST.showPatterns);
+    banner.style.display = ST.showPatterns ? 'flex' : 'none';
+  }
   if(smToggle) smToggle.checked = ST.showPatterns;
   renderChart();
   saveState();
@@ -2741,6 +2744,8 @@ function initPaperTrading(){
       if(Array.isArray(d.history)) SIM.history = d.history;
     }
   }catch(e){}
+  const bar = document.getElementById('paperTradeBar');
+  if(bar) bar.style.display = SIM.active ? 'flex' : 'none';
   updateSimUI();
 }
 
@@ -2758,7 +2763,10 @@ function togglePaperTrading(){
   SIM.active = !SIM.active;
   const bar = document.getElementById('paperTradeBar');
   const btn = document.getElementById('tradeBtn');
-  if(bar) bar.classList.toggle('show', SIM.active);
+  if(bar){
+    bar.classList.toggle('show', SIM.active);
+    bar.style.display = SIM.active ? 'flex' : 'none';
+  }
   if(btn) btn.classList.toggle('on', SIM.active);
   updateSimUI();
   renderChart();

@@ -11,8 +11,33 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./src/style.css">
-  <script defer src="./src/main.js"></script>
+  <link rel="stylesheet" href="./src/style.css?v=3.1">
+  <link rel="stylesheet" href="./style.css?v=3.1">
+  <script defer src="./src/main.js?v=3.1"></script>
+  <style>
+    /* Critical UI Fallback: Guarantees dark theme integrity under all caching/upload states */
+    .paper-trade-bar{display:none;background:linear-gradient(90deg,#0a1020 0%,#0d1628 50%,#0a1020 100%) !important;border-bottom:1px solid rgba(0,212,255,.3) !important;padding:6px 16px !important;align-items:center;justify-content:space-between;gap:12px;font-family:'Share Tech Mono',monospace;font-size:.78rem;flex-wrap:nowrap;overflow-x:auto;box-shadow:0 4px 20px rgba(0,0,0,.5);position:relative;z-index:15;}
+    .paper-trade-bar.show{display:flex !important;}
+    .pt-wallet{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+    .pt-bal-lbl{color:#3a5a80 !important;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;}
+    .pt-bal-val{font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:700;color:#00d4ff !important;text-shadow:0 0 10px rgba(0,212,255,.4);}
+    .pt-inputs{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+    .pt-in{background:#050810 !important;border:1px solid rgba(0,212,255,.35) !important;color:#00d4ff !important;font-family:'Share Tech Mono',monospace !important;font-size:.82rem !important;padding:4px 8px;border-radius:4px;width:85px;outline:none;}
+    .pt-quick-btn{background:rgba(0,212,255,.08) !important;border:1px solid rgba(0,212,255,.25) !important;color:#7a9cc0 !important;font-family:'Share Tech Mono',monospace !important;font-size:.65rem !important;padding:4px 7px;border-radius:4px;cursor:pointer;}
+    .pt-actions{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+    .pt-btn-buy{background:linear-gradient(135deg,rgba(0,255,136,.25),rgba(0,255,136,.1)) !important;border:1px solid #00ff88 !important;color:#00ff88 !important;font-family:'Orbitron',sans-serif !important;font-size:.72rem !important;font-weight:700 !important;padding:6px 13px;border-radius:4px;cursor:pointer;}
+    .pt-btn-sell{background:linear-gradient(135deg,rgba(255,51,102,.25),rgba(255,51,102,.1)) !important;border:1px solid #ff3366 !important;color:#ff3366 !important;font-family:'Orbitron',sans-serif !important;font-size:.72rem !important;font-weight:700 !important;padding:6px 13px;border-radius:4px;cursor:pointer;}
+    .pt-btn-reset{background:rgba(255,255,255,.04) !important;border:1px solid rgba(122,156,192,.3) !important;color:#7a9cc0 !important;font-family:'Share Tech Mono',monospace !important;font-size:.68rem !important;padding:5px 10px;border-radius:4px;cursor:pointer;flex-shrink:0;}
+    .pt-btn-dismiss{background:transparent !important;border:none !important;color:#3a5a80 !important;font-size:.85rem !important;cursor:pointer;padding:2px 6px;margin-left:auto;flex-shrink:0;}
+    .pt-btn-dismiss:hover{color:#ff3366 !important;}
+    .pattern-banner{display:none;background:linear-gradient(90deg,rgba(123,47,255,.2),rgba(0,212,255,.14),rgba(10,16,32,.98)) !important;border-bottom:1px solid rgba(0,212,255,.35) !important;padding:6px 16px !important;align-items:center;justify-content:space-between;gap:12px;font-family:'Share Tech Mono',monospace;font-size:.75rem;flex-wrap:nowrap;overflow-x:auto;position:relative;z-index:10;}
+    .pattern-banner.show{display:flex !important;}
+    .pat-pill{background:rgba(0,212,255,.1) !important;border:1px solid rgba(0,212,255,.3) !important;padding:3px 8px;border-radius:4px;color:#e0eeff !important;font-size:.7rem;}
+    .pat-signal{font-family:'Orbitron',sans-serif;font-weight:700;font-size:.72rem;padding:3px 10px;border-radius:20px;letter-spacing:.06em;}
+    .pat-signal.neutral{background:rgba(255,200,0,.2) !important;color:#ffc800 !important;border:1px solid #ffc800 !important;}
+    .ch-live-badge{display:inline-flex !important;align-items:center;gap:5px;padding:2px 7px;border-radius:10px;font-family:'Share Tech Mono',monospace;font-size:.62rem;font-weight:700;letter-spacing:.08em;background:rgba(0,255,136,.12) !important;border:1px solid rgba(0,255,136,.35) !important;color:#00ff88 !important;box-shadow:0 0 10px rgba(0,255,136,.2);}
+    .ch-live-dot{width:6px;height:6px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;animation:liveDotPulse 1.5s infinite ease-in-out;}
+  </style>
 </head>
 <body>
 
@@ -196,8 +221,8 @@
     </div>
 
     <!-- AI PATTERN SCANNER & CONFLUENCE BANNER -->
-    <div class="pattern-banner" id="patternBanner">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <div class="pattern-banner" id="patternBanner" style="display:none;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:nowrap;">
         <span class="pat-tag bullish" id="patName">🎯 SCANNING PATTERNS…</span>
         <span class="pat-pill" id="patConfidence">Confidence: —</span>
         <span class="pat-pill" id="patTarget">Target: —</span>
@@ -209,7 +234,7 @@
     </div>
 
     <!-- PAPER TRADING TERMINAL BAR -->
-    <div class="paper-trade-bar" id="paperTradeBar">
+    <div class="paper-trade-bar" id="paperTradeBar" style="display:none;">
       <div class="pt-wallet">
         <span style="font-size:1.1rem;">💼</span>
         <div>
@@ -241,6 +266,7 @@
       </div>
       <button class="pt-btn-share" id="ptLastShareBtn" onclick="openPnLModal()" style="display:none;padding:5px 10px;font-size:.7rem;" title="View Last Closed Trade PnL Card">📸 Last Card</button>
       <button class="pt-btn-reset" onclick="resetSimWallet()" title="Reset virtual wallet to $10,000">↺ Reset</button>
+      <button class="pt-btn-dismiss" onclick="togglePaperTrading()" title="Close paper trading bar">✕</button>
     </div>
 
     <!-- MINI TIMEFRAME CHARTS -->
