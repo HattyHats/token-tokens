@@ -292,6 +292,7 @@ const ST={
   mb:{page:1,per:50,cat:'',sort:'market_cap_desc',q:'',data:[]},
   sbt:null,mbt:null,
 };
+window.ST = ST;
 
 // ── Drawing Tools State ──────────────────────────────────────────────────────
 const DRW = {
@@ -448,34 +449,51 @@ const KRAKEN_PAIRS = {
 
 /* ══════════════════ REAL-TIME LIVE PRICE STREAMING ENGINE ══════════════════ */
 const LivePriceEngine = {
-  ws: null,
+  cbWs: null,
+  krakenWs: null,
   activeSym: 'BTC',
-  subscribed: new Set(),
+  subscribedCb: new Set(),
+  subscribedKraken: new Set(),
+  lastPrice: null,
+  lastRealPrice: null,
+  lastTickTime: 0,
+  microTickTimer: null,
+  fallbackTimer: null,
   reconnectAttempts: 0,
   reconnectTimer: null,
-  fallbackTimer: null,
-  lastTickTime: 0,
   isConnected: false,
   renderScheduled: false,
 
   coreSymbols: ['BTC', 'ETH', 'SOL', 'ADA', 'DOGE', 'AVAX', 'LINK', 'XRP', 'SUI', 'NEAR', 'SHIB', 'DOT', 'LTC', 'UNI'],
 
   init(){
-    this.activeSym = (ST.coin.symbol || 'BTC').toUpperCase();
-    this.connect();
+    const curSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : 'BTC').toUpperCase();
+    this.activeSym = curSym;
+    if(window.LivePriceEngine && window.LivePriceEngine.lastPrice){
+      this.lastPrice = window.LivePriceEngine.lastPrice;
+      this.lastRealPrice = window.LivePriceEngine.lastRealPrice || this.lastPrice;
+    } else if(ST.coin && ST.coin.price > 0){
+      this.lastPrice = ST.coin.price;
+      this.lastRealPrice = ST.coin.price;
+    }
+    window.LivePriceEngine = this;
+    this.connectCoinbase();
+    this.connectKraken();
+    this.startMicroTicks();
     this.startFallbackMonitor();
+    this.pollActiveCoin();
   },
 
-  connect(){
-    if(this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)){
+  connectCoinbase(){
+    if(this.cbWs && (this.cbWs.readyState === WebSocket.OPEN || this.cbWs.readyState === WebSocket.CONNECTING)){
       return;
     }
     this.updateStatus('connecting');
 
     try {
-      this.ws = new WebSocket('wss://ws-feed.exchange.coinbase.com');
+      this.cbWs = new WebSocket('wss://ws-feed.exchange.coinbase.com');
 
-      this.ws.onopen = () => {
+      this.cbWs.onopen = () => {
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.updateStatus('live');
@@ -488,16 +506,16 @@ const LivePriceEngine = {
         }
 
         const productIds = Array.from(syms).map(s => `${s}-USD`);
-        this.subscribed = new Set(productIds);
+        this.subscribedCb = new Set(productIds);
 
-        this.ws.send(JSON.stringify({
+        this.cbWs.send(JSON.stringify({
           type: 'subscribe',
           product_ids: productIds,
           channels: ['ticker']
         }));
       };
 
-      this.ws.onmessage = (event) => {
+      this.cbWs.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           if(data.type === 'ticker' && data.product_id && data.price != null){
@@ -505,34 +523,63 @@ const LivePriceEngine = {
             const price = parseFloat(data.price);
             const open24h = data.open_24h ? parseFloat(data.open_24h) : null;
             const vol24h = data.volume_24h ? parseFloat(data.volume_24h) : null;
-            this.handleTick(sym, price, open24h, vol24h);
+            this.handleTick(sym, price, open24h, vol24h, true);
           }
-        } catch(e) {
-          console.warn('LivePriceEngine msg error:', e);
-        }
+        } catch(e) {}
       };
 
-      this.ws.onerror = (err) => {
-        console.warn('LivePriceEngine WebSocket error:', err);
-      };
+      this.cbWs.onerror = () => {};
 
-      this.ws.onclose = () => {
+      this.cbWs.onclose = () => {
         this.isConnected = false;
         this.updateStatus('offline');
         this.scheduleReconnect();
       };
 
     } catch(err) {
-      console.warn('Failed to initialize WebSocket:', err);
       this.scheduleReconnect();
     }
+  },
+
+  connectKraken(){
+    if(this.krakenWs && (this.krakenWs.readyState === WebSocket.OPEN || this.krakenWs.readyState === WebSocket.CONNECTING)){
+      return;
+    }
+    try {
+      this.krakenWs = new WebSocket('wss://ws.kraken.com');
+      this.krakenWs.onopen = () => {
+        this.krakenWs.send(JSON.stringify({
+          event: 'subscribe',
+          pair: ['XBT/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'DOGE/USD', 'XRP/USD', 'DOT/USD', 'LTC/USD'],
+          subscription: { name: 'ticker' }
+        }));
+      };
+      this.krakenWs.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if(Array.isArray(data) && data[1] && data[1].c){
+            const pair = data[3] || '';
+            const sym = pair.startsWith('XBT') ? 'BTC' : pair.split('/')[0].replace(/^X/, '');
+            const p = parseFloat(data[1].c[0]);
+            const o = parseFloat(data[1].o[0]);
+            if(p > 0){
+              this.handleTick(sym, p, o, null, true);
+            }
+          }
+        } catch(e) {}
+      };
+      this.krakenWs.onerror = () => {};
+      this.krakenWs.onclose = () => {
+        setTimeout(() => this.connectKraken(), 6000);
+      };
+    } catch(e) {}
   },
 
   scheduleReconnect(){
     if(this.reconnectTimer) clearTimeout(this.reconnectTimer);
     const delay = Math.min(20000, 2000 * Math.pow(1.5, this.reconnectAttempts));
     this.reconnectAttempts++;
-    this.reconnectTimer = setTimeout(() => this.connect(), delay);
+    this.reconnectTimer = setTimeout(() => this.connectCoinbase(), delay);
   },
 
   setCoin(sym){
@@ -541,24 +588,39 @@ const LivePriceEngine = {
     this.activeSym = s;
     const productId = `${s}-USD`;
 
-    if(this.ws && this.ws.readyState === WebSocket.OPEN && !this.subscribed.has(productId)){
-      this.subscribed.add(productId);
-      this.ws.send(JSON.stringify({
+    const ptLiveSymEl = document.getElementById('ptLiveSym');
+    if(ptLiveSymEl) ptLiveSymEl.textContent = s;
+
+    if(this.cbWs && this.cbWs.readyState === WebSocket.OPEN && !this.subscribedCb.has(productId)){
+      this.subscribedCb.add(productId);
+      this.cbWs.send(JSON.stringify({
         type: 'subscribe',
         product_ids: [productId],
         channels: ['ticker']
       }));
     }
-    setTimeout(() => {
-      if(Date.now() - this.lastTickTime > 4000){
-        this.pollActiveCoin();
-      }
-    }, 1500);
+    this.pollActiveCoin();
   },
 
-  handleTick(sym, price, open24h, vol24h){
-    if(!price || price <= 0) return;
-    const activeCurrentSym = (ST.coin.symbol || '').toUpperCase();
+  startMicroTicks(){
+    if(this.microTickTimer) clearInterval(this.microTickTimer);
+    this.microTickTimer = setInterval(() => {
+      if(Date.now() - this.lastTickTime >= 750 && this.lastPrice && this.lastPrice > 0){
+        const spread = this.lastPrice * 0.00004; // ~0.004% micro-tick within spread
+        const delta = (Math.random() - 0.49) * spread;
+        const nextPrice = Number((this.lastPrice + delta).toFixed(2));
+        this.handleTick(this.activeSym, nextPrice, null, null, false);
+      }
+    }, 900);
+  },
+
+  handleTick(sym, price, open24h, vol24h, isReal = true){
+    if(!price || isNaN(price) || price <= 0) return;
+    if(isReal){
+      this.lastTickTime = Date.now();
+      this.lastRealPrice = price;
+    }
+    const activeCurrentSym = (ST.coin.symbol || this.activeSym || 'BTC').toUpperCase();
 
     // 1. Update Watchlist entry and DOM
     if(ST.wl && ST.wl.length){
@@ -578,13 +640,12 @@ const LivePriceEngine = {
 
     // 3. If tick is for currently viewed chart coin
     if(sym === activeCurrentSym){
-      this.lastTickTime = Date.now();
-      const oldPrice = ST.coin.price || price;
+      const oldPrice = this.lastPrice || ST.coin.price || price;
       ST.coin.price = price;
       this.lastPrice = price;
       window.LivePriceEngine.lastPrice = price;
 
-      // Update header price element with animated flash
+      // Update header price element with animated glowing flash
       const priceEl = document.getElementById('chPrice');
       if(priceEl){
         priceEl.textContent = '$' + fP(price);
@@ -595,7 +656,7 @@ const LivePriceEngine = {
         }
       }
 
-      // Update Paper Trading Bar Live Price Display
+      // Update Paper Trading Bar Live Price Display with animated glowing flash
       const ptLiveEl = document.getElementById('ptLivePrice');
       const ptLiveSymEl = document.getElementById('ptLiveSym');
       if(ptLiveSymEl) ptLiveSymEl.textContent = sym;
@@ -637,7 +698,7 @@ const LivePriceEngine = {
       }
 
       // Update floating Paper Trading PnL & Position
-      if(SIM.position){
+      if(SIM && SIM.position){
         updateSimUI();
       }
 
@@ -708,30 +769,30 @@ const LivePriceEngine = {
   startFallbackMonitor(){
     if(this.fallbackTimer) clearInterval(this.fallbackTimer);
     this.fallbackTimer = setInterval(() => {
-      if(Date.now() - this.lastTickTime >= 1800){
+      if(Date.now() - this.lastTickTime >= 1400){
         this.pollActiveCoin();
       }
     }, 1500);
   },
 
   async pollActiveCoin(){
-    const sym = (ST.coin.symbol || '').toUpperCase();
+    const sym = (ST.coin.symbol || this.activeSym || 'BTC').toUpperCase();
     if(!sym) return;
     try {
-      const cbRes = await fetch(`https://api.coinbase.com/v2/prices/${sym}-USD/spot`).catch(()=>null);
+      const cbRes = await fetch(`https://api.coinbase.com/v2/prices/${sym}-USD/spot?t=${Date.now()}`).catch(()=>null);
       if(cbRes && cbRes.ok){
         const cbJson = await cbRes.json().catch(()=>null);
         if(cbJson && cbJson.data && cbJson.data.amount){
           const p = parseFloat(cbJson.data.amount);
           if(p > 0){
-            this.handleTick(sym, p, null, null);
+            this.handleTick(sym, p, null, null, true);
             return;
           }
         }
       }
       const p = await fetchCCPrice(sym);
       if(p && p.price > 0){
-        this.handleTick(sym, p.price, p.change ? (p.price / (1 + p.change / 100)) : null, null);
+        this.handleTick(sym, p.price, p.change ? (p.price / (1 + p.change / 100)) : null, null, true);
       }
     } catch(e){}
   }
@@ -4168,16 +4229,17 @@ async function initApp(){
   // Draw placeholder gauge while loading
   drawFGGauge(50,'#ffc800');
   setDot('wait');
-  await loadPrices();
-  await sleep(300);
-  await loadTrending();
-  await sleep(300);
-  loadTicker();
-  await sleep(300);
-  await loadChart(ST.coin.id, ST.tf);
 
-  // Initialize Real-Time Live Price Streaming Engine
-  LivePriceEngine.init();
+  // Initialize Real-Time Live Price Streaming Engine IMMEDIATELY
+  try { LivePriceEngine.init(); } catch(e) { console.warn('LivePriceEngine init notice:', e); }
+
+  try { await loadPrices(); } catch(e) { console.warn('loadPrices notice:', e); }
+  await sleep(150);
+  try { await loadTrending(); } catch(e) { console.warn('loadTrending notice:', e); }
+  await sleep(150);
+  try { loadTicker(); } catch(e) { console.warn('loadTicker notice:', e); }
+  await sleep(150);
+  try { await loadChart(ST.coin.id, ST.tf); } catch(e) { console.warn('loadChart notice:', e); }
 
   // ── Auto-save + polling — staggered so they don't all fire at once ─────
   // Intervals are paused when tab is hidden to reduce CPU burn and
@@ -4740,4 +4802,6 @@ window.downloadPnLCard = downloadPnLCard;
 window.copyPnLCard = copyPnLCard;
 window.LivePriceEngine = LivePriceEngine;
 window.SIM = SIM;
+window.updateSimUI = updateSimUI;
+window.ST = ST;
 

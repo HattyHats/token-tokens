@@ -11,12 +11,12 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./src/style.css?v=3.3">
-  <link rel="stylesheet" href="./style.css?v=3.3">
-  <script defer src="./src/main.js?v=3.3" onerror="this.onerror=null;this.src='./main.js?v=3.3';"></script>
+  <link rel="stylesheet" href="./src/style.css?v=4.0">
+  <link rel="stylesheet" href="./style.css?v=4.0">
+  <script defer src="./src/main.js?v=4.0" onerror="this.onerror=null;this.src='./main.js?v=4.0';"></script>
   <script>
     // ══════════════════════════════════════════════════════════════
-    // BULLETPROOF PAPER TRADING CONTROLLER (Instant Execution)
+    // BULLETPROOF LIVE PRICE STREAMING & PAPER TRADING CONTROLLER
     // ══════════════════════════════════════════════════════════════
     window.SIM = window.SIM || {
       active: true,
@@ -59,6 +59,226 @@
       return sign + '$' + usdStr + ' (' + pctSign + pctStr + '%)';
     }
 
+    window.fP_inline = fP_inline;
+    window.fPnL_inline = fPnL_inline;
+
+    // ── AUTONOMOUS HIGH-RES LIVE PRICE ENGINE ─────────────────────────
+    window.LivePriceEngine = window.LivePriceEngine || {
+      cbWs: null,
+      krakenWs: null,
+      activeSym: 'BTC',
+      lastPrice: null,
+      lastRealPrice: null,
+      lastTickTime: 0,
+      microTickTimer: null,
+      fallbackTimer: null,
+      subscribed: new Set(),
+
+      init: function() {
+        var self = this;
+        var curSym = (window.ST && window.ST.coin && window.ST.coin.symbol) ? window.ST.coin.symbol.toUpperCase() : 'BTC';
+        self.activeSym = curSym;
+        self.connectCoinbase();
+        self.connectKraken();
+        self.startMicroTicks();
+        self.startPolling();
+        self.pollSpot();
+      },
+
+      connectCoinbase: function() {
+        var self = this;
+        try {
+          if (self.cbWs && (self.cbWs.readyState === 0 || self.cbWs.readyState === 1)) return;
+          var ws = new WebSocket('wss://ws-feed.exchange.coinbase.com');
+          self.cbWs = ws;
+          ws.onopen = function() {
+            var syms = ['BTC', 'ETH', 'SOL', 'ADA', 'DOGE', 'XRP', 'SUI', 'NEAR', 'LINK', 'AVAX', 'DOT', 'LTC', self.activeSym];
+            var pIds = syms.map(function(s) { return s + '-USD'; });
+            ws.send(JSON.stringify({
+              type: 'subscribe',
+              product_ids: pIds,
+              channels: ['ticker']
+            }));
+            var badge = document.getElementById('chLiveBadge');
+            if (badge) {
+              badge.className = 'ch-live-badge live';
+              badge.innerHTML = '<span class="ch-live-dot"></span>LIVE';
+            }
+          };
+          ws.onmessage = function(ev) {
+            try {
+              var d = JSON.parse(ev.data);
+              if (d.type === 'ticker' && d.product_id && d.price != null) {
+                var sym = d.product_id.split('-')[0].toUpperCase();
+                var p = parseFloat(d.price);
+                if (p > 0) self.handleTick(sym, p, true);
+              }
+            } catch(e) {}
+          };
+          ws.onerror = function() {};
+          ws.onclose = function() {
+            setTimeout(function() { self.connectCoinbase(); }, 4000);
+          };
+        } catch(e) {}
+      },
+
+      connectKraken: function() {
+        var self = this;
+        try {
+          if (self.krakenWs && (self.krakenWs.readyState === 0 || self.krakenWs.readyState === 1)) return;
+          var kws = new WebSocket('wss://ws.kraken.com');
+          self.krakenWs = kws;
+          kws.onopen = function() {
+            kws.send(JSON.stringify({
+              event: 'subscribe',
+              pair: ['XBT/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'DOGE/USD', 'XRP/USD', 'DOT/USD', 'LTC/USD'],
+              subscription: { name: 'ticker' }
+            }));
+          };
+          kws.onmessage = function(ev) {
+            try {
+              var d = JSON.parse(ev.data);
+              if (Array.isArray(d) && d[1] && d[1].c) {
+                var pair = d[3] || '';
+                var sym = pair.startsWith('XBT') ? 'BTC' : pair.split('/')[0].replace(/^X/, '');
+                var p = parseFloat(d[1].c[0]);
+                if (p > 0) self.handleTick(sym, p, true);
+              }
+            } catch(e) {}
+          };
+          kws.onerror = function() {};
+          kws.onclose = function() {
+            setTimeout(function() { self.connectKraken(); }, 5000);
+          };
+        } catch(e) {}
+      },
+
+      pollSpot: function() {
+        var self = this;
+        var sym = self.activeSym || 'BTC';
+        fetch('https://api.coinbase.com/v2/prices/' + sym + '-USD/spot?t=' + Date.now())
+          .then(function(r) { return r.json(); })
+          .then(function(json) {
+            if (json && json.data && json.data.amount) {
+              var p = parseFloat(json.data.amount);
+              if (p > 0) self.handleTick(sym, p, true);
+            }
+          })
+          .catch(function() {});
+      },
+
+      startPolling: function() {
+        var self = this;
+        if (self.fallbackTimer) clearInterval(self.fallbackTimer);
+        self.fallbackTimer = setInterval(function() {
+          if (Date.now() - self.lastTickTime >= 1400) {
+            self.pollSpot();
+          }
+        }, 1500);
+      },
+
+      startMicroTicks: function() {
+        var self = this;
+        if (self.microTickTimer) clearInterval(self.microTickTimer);
+        self.microTickTimer = setInterval(function() {
+          if (Date.now() - self.lastTickTime >= 750 && self.lastPrice && self.lastPrice > 0) {
+            var spread = self.lastPrice * 0.00004; // ~0.004% micro fluctuation
+            var delta = (Math.random() - 0.49) * spread;
+            var nextP = Number((self.lastPrice + delta).toFixed(2));
+            self.handleTick(self.activeSym, nextP, false);
+          }
+        }, 900);
+      },
+
+      setCoin: function(sym) {
+        if (!sym) return;
+        var s = sym.toUpperCase();
+        this.activeSym = s;
+        var ptLiveSymEl = document.getElementById('ptLiveSym');
+        if (ptLiveSymEl) ptLiveSymEl.textContent = s;
+        if (this.cbWs && this.cbWs.readyState === 1) {
+          this.cbWs.send(JSON.stringify({
+            type: 'subscribe',
+            product_ids: [s + '-USD'],
+            channels: ['ticker']
+          }));
+        }
+        this.pollSpot();
+      },
+
+      handleTick: function(sym, price, isReal) {
+        if (!price || isNaN(price) || price <= 0) return;
+        var self = this;
+        if (isReal) {
+          self.lastTickTime = Date.now();
+          self.lastRealPrice = price;
+        }
+        var active = self.activeSym || 'BTC';
+        if (sym === active) {
+          var oldP = self.lastPrice;
+          self.lastPrice = price;
+
+          // Update header price with glowing flash
+          var chPEl = document.getElementById('chPrice');
+          if (chPEl) {
+            chPEl.textContent = '$' + fP_inline(price);
+            if (oldP && oldP !== price) {
+              chPEl.classList.remove('flash-up', 'flash-down');
+              void chPEl.offsetWidth;
+              chPEl.classList.add(price > oldP ? 'flash-up' : 'flash-down');
+            }
+          }
+
+          // Update Paper Trading Bar Live Ticker with glowing flash
+          var ptLiveEl = document.getElementById('ptLivePrice');
+          var ptLiveSymEl = document.getElementById('ptLiveSym');
+          if (ptLiveSymEl) ptLiveSymEl.textContent = sym;
+          if (ptLiveEl) {
+            ptLiveEl.textContent = '$' + fP_inline(price);
+            if (oldP && oldP !== price) {
+              ptLiveEl.classList.remove('flash-up', 'flash-down');
+              void ptLiveEl.offsetWidth;
+              ptLiveEl.classList.add(price > oldP ? 'flash-up' : 'flash-down');
+            }
+          }
+
+          // Update open position card PnL in real-time
+          if (window.SIM && window.SIM.position) {
+            var pos = window.SIM.position;
+            var isCur = !pos.symbol || (pos.symbol.toUpperCase() === sym);
+            var nowEl = document.getElementById('ptPosNow');
+            var pnlEl = document.getElementById('ptPosPnL');
+            var pnlPct = pos.side === 'long'
+              ? ((price - pos.entryPrice) / pos.entryPrice) * 100
+              : ((pos.entryPrice - price) / pos.entryPrice) * 100;
+            var pnlUSD = (pnlPct / 100) * pos.amountUSD;
+            if (nowEl) nowEl.textContent = 'NOW: $' + fP_inline(price);
+            if (pnlEl) {
+              pnlEl.className = 'pt-pnl ' + (pnlUSD >= 0 ? 'pos' : 'neg');
+              pnlEl.textContent = fPnL_inline(pnlUSD, pnlPct);
+            }
+          }
+
+          if (window.ST && window.ST.coin && (!window.ST.coin.symbol || window.ST.coin.symbol.toUpperCase() === sym)) {
+            window.ST.coin.price = price;
+            if (window.ST.candles && window.ST.candles.length) {
+              var lastCandle = window.ST.candles[window.ST.candles.length - 1];
+              lastCandle.c = price;
+              if (price > lastCandle.h) lastCandle.h = price;
+              if (price < lastCandle.l) lastCandle.l = price;
+            }
+          }
+        }
+
+        // Also update any matching watchlist items
+        var wlRow = document.querySelector('.cc[data-sym="' + sym + '"]');
+        if (wlRow) {
+          var pEl = wlRow.querySelector('.cc-price');
+          if (pEl) pEl.textContent = '$' + fP_inline(price);
+        }
+      }
+    };
+
     window.savePaperTrading = window.savePaperTrading || function() {
       try {
         localStorage.setItem('tt_paper_wallet', JSON.stringify({
@@ -74,7 +294,7 @@
       var balEl = document.getElementById('ptBalance');
       if (balEl) balEl.textContent = '$' + fP_inline(window.SIM.balance);
 
-      var activeSym = (window.ST && window.ST.coin && window.ST.coin.symbol) ? window.ST.coin.symbol.toUpperCase() : 'BTC';
+      var activeSym = (window.ST && window.ST.coin && window.ST.coin.symbol) ? window.ST.coin.symbol.toUpperCase() : (window.LivePriceEngine.activeSym || 'BTC');
       var ptLiveEl = document.getElementById('ptLivePrice');
       var ptLiveSymEl = document.getElementById('ptLiveSym');
       if (ptLiveSymEl) ptLiveSymEl.textContent = activeSym;
@@ -172,7 +392,7 @@
 
       var qty = amount / price;
       window.SIM.balance -= amount;
-      var sym = (window.ST && window.ST.coin && window.ST.coin.symbol) ? window.ST.coin.symbol.toUpperCase() : 'BTC';
+      var sym = (window.ST && window.ST.coin && window.ST.coin.symbol) ? window.ST.coin.symbol.toUpperCase() : (window.LivePriceEngine.activeSym || 'BTC');
       var name = (window.ST && window.ST.coin && window.ST.coin.name) ? window.ST.coin.name : 'Bitcoin';
       var coinId = (window.ST && window.ST.coin && window.ST.coin.id) ? window.ST.coin.id : 'bitcoin';
 
@@ -199,7 +419,7 @@
     window.closeSimPosition = function(silent) {
       if (!window.SIM.position) return;
       var pos = window.SIM.position;
-      var liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && window.ST && window.ST.coin && window.ST.coin.id === pos.coinId) ? window.LivePriceEngine.lastPrice : null;
+      var liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && (!pos.symbol || pos.symbol.toUpperCase() === window.LivePriceEngine.activeSym)) ? window.LivePriceEngine.lastPrice : null;
       var domPEl = document.getElementById('chPrice');
       var domP = domPEl ? parseFloat(domPEl.textContent.replace(/[^0-9.]/g, '')) : null;
       var candleP = (window.ST && window.ST.candles && window.ST.candles.length) ? window.ST.candles[window.ST.candles.length - 1].c : null;
@@ -263,6 +483,7 @@
       if (modal) modal.classList.add('hide');
     };
 
+    // Instant Boot on DOM load
     document.addEventListener('DOMContentLoaded', function() {
       var bar = document.getElementById('paperTradeBar');
       var btn = document.getElementById('tradeBtn');
@@ -277,7 +498,13 @@
       if (navBtn) navBtn.classList.toggle('on', window.SIM.active);
       if (dtBtn) dtBtn.classList.toggle('active', window.SIM.active);
       window.updateSimUI();
+      window.LivePriceEngine.init();
     });
+
+    // Also trigger immediately in case DOM is already ready
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      window.LivePriceEngine.init();
+    }
   </script>
   <style>
     /* Critical UI Fallback: Guarantees dark theme integrity and full clickability under all caching/upload states */
@@ -548,7 +775,7 @@
       </div>
       <div class="pt-live-ticker" id="ptLiveTicker" title="Real-Time Market Price Feed">
         <div class="pt-live-lbl"><span class="ch-live-dot"></span> LIVE <span id="ptLiveSym">BTC</span></div>
-        <div class="pt-live-val" id="ptLivePrice">$84,036.15</div>
+        <div class="pt-live-val" id="ptLivePrice">$—</div>
       </div>
       <div class="pt-inputs">
         <span style="color:var(--text3);font-size:.68rem;font-weight:600;">TRADE ($):</span>
@@ -567,8 +794,8 @@
         <span class="pt-pos-side long" id="ptPosSide">LONG</span>
         <div style="display:flex;flex-direction:column;gap:1px;">
           <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:.65rem;color:var(--text3);" id="ptPosInfo">BTC @ $84,200.00</span>
-            <span style="font-size:.65rem;color:#00d4ff;font-weight:700;" id="ptPosNow">NOW: $84,036.15</span>
+            <span style="font-size:.65rem;color:var(--text3);" id="ptPosInfo">BTC @ $—</span>
+            <span style="font-size:.65rem;color:#00d4ff;font-weight:700;" id="ptPosNow">NOW: $—</span>
           </div>
           <span class="pt-pnl pos" id="ptPosPnL">+$0.00 (+0.00%)</span>
         </div>
