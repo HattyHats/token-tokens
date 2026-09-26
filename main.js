@@ -338,13 +338,54 @@ const CACHE={
   del(k){delete this.store[k];}
 };
 
+// StorageCache: persistent client-side cache in localStorage with expiration & stale recovery
+const StorageCache = {
+  prefix: 'tt_cache_',
+  get(key) {
+    try {
+      const item = localStorage.getItem(this.prefix + key);
+      if (!item) return null;
+      const parsed = JSON.parse(item);
+      if (Date.now() > parsed.exp) return null;
+      return parsed.val;
+    } catch(e) { return null; }
+  },
+  getStale(key) {
+    try {
+      const item = localStorage.getItem(this.prefix + key);
+      if (!item) return null;
+      const parsed = JSON.parse(item);
+      return parsed.val;
+    } catch(e) { return null; }
+  },
+  set(key, val, ttl = 900000) { // default 15 minutes
+    try {
+      const payload = { val, exp: Date.now() + ttl, time: Date.now() };
+      localStorage.setItem(this.prefix + key, JSON.stringify(payload));
+    } catch(e) {
+      this.purgeOld();
+    }
+  },
+  purgeOld() {
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(this.prefix)) keys.push(k);
+      }
+      keys.filter(k => !k.includes('paprika_tickers')).forEach(k => localStorage.removeItem(k));
+    } catch(e) {}
+  }
+};
+
+let _cgCooldownUntil = 0;
 const API_KEY='';
 const BASE='https://api.coingecko.com/api/v3';
 
 function getUrl(path){
-  // Always append key as query param if we have one
-  const sep=path.includes('?')?'&':'?';
-  return API_KEY?`${BASE}${path}${sep}x_cg_demo_api_key=${encodeURIComponent(API_KEY)}`:`${BASE}${path}`;
+  const key = localStorage.getItem('tt_cg_api_key') || API_KEY;
+  const sep = path.includes('?') ? '&' : '?';
+  return key ? `${BASE}${path}${sep}x_cg_demo_api_key=${encodeURIComponent(key)}` : `${BASE}${path}`;
 }
 
 // Direct fetch — bypasses the queue, for time-sensitive single requests
@@ -1361,27 +1402,31 @@ async function fetchCCPrice(sym, id){
     }
   }catch(e){}
 
-  // 3. Try CoinGecko Simple Price
-  const coinId = id || Object.keys(CC_SYM).find(k => CC_SYM[k].toUpperCase() === s) || s.toLowerCase();
-  if(coinId){
-    try{
-      const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true`);
-      if(r.ok){
-        const j = await r.json();
-        if(j[coinId] && j[coinId].usd > 0){
-          const p = j[coinId].usd;
-          const chg = j[coinId].usd_24h_change || 0;
-          return {
-            price: p,
-            change: chg,
-            high24: p * 1.02,
-            low24: p * 0.98,
-            vol: j[coinId].usd_24h_vol || 0,
-            image: `https://assets.coincap.io/assets/icons/${s.toLowerCase()}@2x.png`
-          };
+  // 3. Try CoinGecko Simple Price (if not in cooldown)
+  if (Date.now() > _cgCooldownUntil) {
+    const coinId = id || Object.keys(CC_SYM).find(k => CC_SYM[k].toUpperCase() === s) || s.toLowerCase();
+    if(coinId){
+      try{
+        const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true`);
+        if(r.status === 429){
+          _cgCooldownUntil = Date.now() + 60000;
+        } else if(r.ok){
+          const j = await r.json();
+          if(j[coinId] && j[coinId].usd > 0){
+            const p = j[coinId].usd;
+            const chg = j[coinId].usd_24h_change || 0;
+            return {
+              price: p,
+              change: chg,
+              high24: p * 1.02,
+              low24: p * 0.98,
+              vol: j[coinId].usd_24h_vol || 0,
+              image: `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${s.toLowerCase()}.png`
+            };
+          }
         }
-      }
-    }catch(e){}
+      }catch(e){}
+    }
   }
 
   // 4. Try Binance Ticker Price
@@ -1397,9 +1442,17 @@ async function fetchCCPrice(sym, id){
           high24: p * 1.02,
           low24: p * 0.98,
           vol: 0,
-          image: `https://assets.coincap.io/assets/icons/${s.toLowerCase()}@2x.png`
+          image: `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${s.toLowerCase()}.png`
         };
       }
+    }
+  }catch(e){}
+
+  // 5. Try FallbackMarketEngine (CoinPaprika 2,000 tickers + single ticker)
+  try {
+    if(window.FallbackMarketEngine && typeof window.FallbackMarketEngine.getPrice === 'function'){
+      const fb = await FallbackMarketEngine.getPrice(s, id);
+      if(fb && fb.price > 0) return fb;
     }
   }catch(e){}
 
@@ -1464,7 +1517,7 @@ async function loadChart(id, days) {
   ST.candles = [];
 
   try {
-    const sym = CC_SYM[id] || (ST.wl.find(c => c.id === id)?.symbol || id).toUpperCase();
+    const sym = (CC_SYM[id] || (ST.wl.find(c => c.id === id)?.symbol) || (ST.coin && ST.coin.id === id ? ST.coin.symbol : '') || id).toUpperCase().split('-')[0];
     let candles = [];
 
     // 1. Primary: Coinbase Exchange Candles (100% open, keyless, CORS-enabled)
@@ -1605,6 +1658,251 @@ const POPULAR_TOKENS = [
   { id: 'fetch-ai', name: 'Artificial Superintelligence Alliance', symbol: 'FET' }
 ];
 
+// FallbackMarketEngine: multi-source decentralized market provider for 2,000+ tokens
+// Ensures search, modal browsing, sorting, and live prices work even during CoinGecko rate limits
+const FallbackMarketEngine = {
+  _tickers: null,
+  _fetchPromise: null,
+  _lastFetch: 0,
+  CATEGORY_MAP: {
+    'layer-1': new Set(['BTC','ETH','SOL','BNB','ADA','AVAX','DOT','TRX','TON','SUI','APT','NEAR','ATOM','ALGO','FTM','HBAR','KAS','ICP','XLM','LTC','BCH','XMR','ETC','EOS','VET','FLOW','THETA','EGLD','KAVA','ROSE','ZEC','DASH','MINA','XTZ','NEO','IOTA','CFX','ONE']),
+    'layer-2': new Set(['MATIC','POL','ARB','OP','STRK','MNT','METIS','BLAST','IMX','MANTA','ZK','SCROLL','STX','LRC','BOBA']),
+    'cardano-ecosystem': new Set(['ADA','SNEK','MIN','SUNDAE','WRT','LQ','INDY','WMT','IAG','AGIX','COPI','LENFI','DED']),
+    'decentralized-finance-defi': new Set(['UNI','AAVE','MKR','COMP','CRV','SNX','LDO','SUSHI','CAKE','PENDLE','JUP','RAY','RUNE','INJ','KAVA','BAL','DYDX','1INCH','YFI','RPL','CVX','GMX','OSMO','JOE','ORCA','LQ','MIN','SUNDAE','WRT','INDY']),
+    'meme-token': new Set(['DOGE','SHIB','PEPE','WIF','BONK','FLOKI','MEME','POPCAT','BRETT','MOG','BOME','MEW','TURBO','BABYDOGE','NEIRO','SNEK','PEPECOIN','COQ','MYRO','LADYS','WEN','SLERF','TOSHI']),
+    'gaming': new Set(['SAND','MANA','AXS','GALA','IMX','ENJ','BEAM','RON','PIXEL','YGG','ILV','ALICE','MAGIC','PRIME','SUPER','PORTAL','HERO','WAXP','UOS']),
+    'artificial-intelligence': new Set(['FET','RNDR','RENDER','NEAR','ICP','TAO','AGIX','OCEAN','AKT','GLM','PRIME','ROSE','ARKM','NMR','GRT','WLD','ALI','AIOZ','NOS','PAAL']),
+    'stablecoins': new Set(['USDT','USDC','DAI','FDUSD','USDE','TUSD','USDD','PYUSD','USDP','FRAX','LUSD','BUSD','GUSD']),
+    'real-world-assets-rwa': new Set(['ONDO','OM','CFG','MPL','PENDLE','GFI','CTC','TRU','POLYX','DUSK','PROPS','LTO','CPOOL']),
+    'non-fungible-tokens-nft': new Set(['BLUR','LOOKS','SUPER','RARI','NFT','APE','RARE','X2Y2','PUDGY'])
+  },
+
+  async loadTickers(force = false) {
+    if (!force && this._tickers && (Date.now() - this._lastFetch < 900000)) {
+      return this._tickers;
+    }
+    if (this._fetchPromise) return this._fetchPromise;
+
+    this._fetchPromise = (async () => {
+      // Check localStorage first
+      if (!force) {
+        const cached = StorageCache.get('paprika_tickers');
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+          this._tickers = cached;
+          this._lastFetch = Date.now();
+          return this._tickers;
+        }
+      }
+
+      try {
+        const res = await fetch('https://api.coinpaprika.com/v1/tickers');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            this._tickers = data;
+            this._lastFetch = Date.now();
+            StorageCache.set('paprika_tickers', data, 1800000); // 30 min cache
+            return this._tickers;
+          }
+        }
+      } catch (err) {
+        console.warn('FallbackMarketEngine tickers fetch notice:', err);
+      }
+
+      // Stale cache fallback
+      const stale = StorageCache.getStale('paprika_tickers');
+      if (stale && Array.isArray(stale) && stale.length > 0) {
+        this._tickers = stale;
+        return this._tickers;
+      }
+
+      // Minimal popular tokens fallback if all else fails
+      if (!this._tickers) {
+        this._tickers = (POPULAR_TOKENS || []).map((p, idx) => ({
+          id: p.id,
+          name: p.name,
+          symbol: p.symbol,
+          rank: idx + 1,
+          quotes: { USD: { price: 0, percent_change_24h: 0, market_cap: 0, volume_24h: 0 } }
+        }));
+      }
+      return this._tickers;
+    })();
+
+    try {
+      const res = await this._fetchPromise;
+      return res;
+    } finally {
+      this._fetchPromise = null;
+    }
+  },
+
+  async getMarketPage({ cat = '', sort = 'market_cap_desc', page = 1, per = 50, query = '' } = {}, signal = null) {
+    const tickers = await this.loadTickers();
+    let list = [...(tickers || [])];
+
+    if (query && query.trim().length >= 2) {
+      const q = query.toLowerCase().trim();
+      list = list.filter(t => (t.name || '').toLowerCase().includes(q) || (t.symbol || '').toLowerCase().includes(q) || (t.id || '').toLowerCase().includes(q));
+      
+      // If query returned few results, try online search
+      if (list.length < 5 && !signal?.aborted) {
+        try {
+          const sRes = await fetch(`https://api.coinpaprika.com/v1/search?q=${encodeURIComponent(q)}&c=currencies`, { signal });
+          if (sRes.ok) {
+            const sJson = await sRes.json();
+            const curr = sJson.currencies || [];
+            const seen = new Set(list.map(x => x.symbol?.toUpperCase()));
+            curr.forEach(c => {
+              const sym = c.symbol?.toUpperCase();
+              if (sym && !seen.has(sym)) {
+                seen.add(sym);
+                list.push({
+                  id: c.id,
+                  name: c.name,
+                  symbol: sym,
+                  rank: c.rank || 9999,
+                  quotes: { USD: { price: null, percent_change_24h: null, market_cap: null, volume_24h: null } }
+                });
+              }
+            });
+          }
+        } catch(e) {}
+      }
+    } else if (cat && this.CATEGORY_MAP[cat]) {
+      const symSet = this.CATEGORY_MAP[cat];
+      list = list.filter(t => symSet.has((t.symbol || '').toUpperCase()));
+    }
+
+    // Apply sorting
+    if (sort === 'market_cap_asc') {
+      list.sort((a, b) => (b.quotes?.USD?.market_cap || 0) - (a.quotes?.USD?.market_cap || 0)).reverse();
+    } else if (sort === 'volume_desc') {
+      list.sort((a, b) => (b.quotes?.USD?.volume_24h || 0) - (a.quotes?.USD?.volume_24h || 0));
+    } else if (sort === 'price_change_desc_24h') {
+      list.sort((a, b) => (b.quotes?.USD?.percent_change_24h || -999) - (a.quotes?.USD?.percent_change_24h || -999));
+    } else if (sort === 'price_change_asc_24h') {
+      list.sort((a, b) => (a.quotes?.USD?.percent_change_24h || 999) - (b.quotes?.USD?.percent_change_24h || 999));
+    } else if (sort === 'gecko_desc') {
+      list.sort((a, b) => (b.quotes?.USD?.volume_24h || 0) * Math.abs(b.quotes?.USD?.percent_change_24h || 1) - (a.quotes?.USD?.volume_24h || 0) * Math.abs(a.quotes?.USD?.percent_change_24h || 1));
+    } else {
+      // default: market_cap_desc
+      list.sort((a, b) => (a.rank || 9999) - (b.rank || 9999));
+    }
+
+    const total = list.length;
+    const slice = list.slice((page - 1) * per, page * per);
+    const data = slice.map(t => {
+      const sym = (t.symbol || '').toUpperCase();
+      const p = t.quotes?.USD?.price;
+      return {
+        id: t.id,
+        name: t.name,
+        symbol: sym,
+        price: p != null ? p : null,
+        change: t.quotes?.USD?.percent_change_24h != null ? t.quotes.USD.percent_change_24h : null,
+        mcap: t.quotes?.USD?.market_cap != null ? t.quotes.USD.market_cap : null,
+        vol: t.quotes?.USD?.volume_24h != null ? t.quotes.USD.volume_24h : null,
+        image: `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym.toLowerCase()}.png`,
+        rank: t.rank || null,
+        high24: p ? p * 1.02 : null,
+        low24: p ? p * 0.98 : null,
+      };
+    });
+
+    return { data, total };
+  },
+
+  async search(query) {
+    if (!query || query.length < 2) return [];
+    const tickers = await this.loadTickers();
+    const q = query.toLowerCase().trim();
+    const matched = (tickers || []).filter(t => 
+      (t.symbol || '').toLowerCase().includes(q) || (t.name || '').toLowerCase().includes(q)
+    ).slice(0, 15);
+
+    return matched.map(t => ({
+      id: t.id,
+      name: t.name,
+      symbol: (t.symbol || '').toUpperCase(),
+      price: t.quotes?.USD?.price || null,
+      change: t.quotes?.USD?.percent_change_24h != null ? t.quotes.USD.percent_change_24h : null,
+      thumb: `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${(t.symbol||'').toLowerCase()}.png`
+    }));
+  },
+
+  async getPrice(sym, id) {
+    const s = (sym || '').toUpperCase();
+    const tickers = await this.loadTickers();
+    let found = (tickers || []).find(t => (t.symbol || '').toUpperCase() === s);
+    if (!found && id) {
+      found = (tickers || []).find(t => t.id === id || t.id.includes(id));
+    }
+    if (found && found.quotes?.USD?.price > 0) {
+      const p = found.quotes.USD.price;
+      const chg = found.quotes.USD.percent_change_24h || 0;
+      return {
+        price: p,
+        change: chg,
+        high24: p * 1.02,
+        low24: p * 0.98,
+        vol: found.quotes.USD.volume_24h || 0,
+        image: `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${s.toLowerCase()}.png`
+      };
+    }
+    // Direct single ticker lookup
+    if (id || s) {
+      try {
+        const lookupId = id || `${s.toLowerCase()}-${s.toLowerCase()}`;
+        const res = await fetch(`https://api.coinpaprika.com/v1/tickers/${lookupId}`);
+        if (res.ok) {
+          const t = await res.json();
+          if (t && t.quotes?.USD?.price > 0) {
+            const p = t.quotes.USD.price;
+            return {
+              price: p,
+              change: t.quotes.USD.percent_change_24h || 0,
+              high24: p * 1.02,
+              low24: p * 0.98,
+              vol: t.quotes.USD.volume_24h || 0,
+              image: `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${s.toLowerCase()}.png`
+            };
+          }
+        }
+      } catch(e) {}
+    }
+    return null;
+  },
+
+  async getPopupData(id) {
+    const tickers = await this.loadTickers();
+    const sId = (id || '').toLowerCase();
+    const t = (tickers || []).find(x => x.id === sId || x.id.includes(sId) || (x.symbol || '').toLowerCase() === sId);
+    if (!t) return null;
+    const u = t.quotes?.USD || {};
+    return {
+      name: t.name,
+      symbol: t.symbol,
+      market_cap_rank: t.rank,
+      circulating_supply: t.total_supply,
+      max_supply: t.max_supply,
+      genesis_date: t.first_data_at,
+      market_data: {
+        current_price: { usd: u.price },
+        price_change_percentage_24h: u.percent_change_24h,
+        price_change_percentage_7d: u.percent_change_7d,
+        price_change_percentage_30d: u.percent_change_30d,
+        ath: { usd: u.ath_price },
+        ath_date: { usd: u.ath_date },
+        market_cap: { usd: u.market_cap },
+        total_volume: { usd: u.volume_24h },
+        high_24h: { usd: u.price ? u.price * 1.02 : null },
+        low_24h: { usd: u.price ? u.price * 0.98 : null }
+      }
+    };
+  }
+};
+
 // Setup search input listeners properly
 function setupSearch(){
   const inp = document.getElementById('sbIn');
@@ -1639,21 +1937,33 @@ async function doSearch(q){
              arr.findIndex(x => (x.symbol||'').toLowerCase() === sym) === idx;
     });
 
-    // 2. Fetch remote matches from CoinGecko open search API
-    let remoteCoins = [];
+    // 2. Fetch matches from FallbackMarketEngine (2,000 top ranked tokens)
+    let fbMatches = [];
     try {
-      const res = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`, {
-        headers: { 'Accept': 'application/json' }
-      });
-      if (res.ok) {
-        const json = await res.json();
-        remoteCoins = json.coins || [];
+      if(FallbackMarketEngine && typeof FallbackMarketEngine.search === 'function'){
+        fbMatches = await FallbackMarketEngine.search(q);
       }
-    } catch(cgErr) {
-      console.warn('CoinGecko search fallback notice:', cgErr);
+    } catch(e) {}
+
+    // 3. Fetch remote matches from CoinGecko open search API if not in cooldown
+    let remoteCoins = [];
+    if (Date.now() > _cgCooldownUntil) {
+      try {
+        const res = await fetch(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(q)}`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (res.status === 429) {
+          _cgCooldownUntil = Date.now() + 60000;
+        } else if (res.ok) {
+          const json = await res.json();
+          remoteCoins = json.coins || [];
+        }
+      } catch(cgErr) {
+        console.warn('CoinGecko search fallback notice:', cgErr);
+      }
     }
 
-    // Combine local + remote coins without duplicates
+    // Combine local + fallback + remote coins without duplicates
     const seen = new Set();
     const combined = [];
 
@@ -1665,7 +1975,20 @@ async function doSearch(q){
           id: c.id,
           name: c.name || sym,
           symbol: sym,
-          thumb: c.image || `https://assets.coincap.io/assets/icons/${sym.toLowerCase()}@2x.png`
+          thumb: c.image || `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym.toLowerCase()}.png`
+        });
+      }
+    }
+
+    for (const c of fbMatches) {
+      const sym = (c.symbol || '').toUpperCase();
+      if (!seen.has(sym)) {
+        seen.add(sym);
+        combined.push({
+          id: c.id,
+          name: c.name || sym,
+          symbol: sym,
+          thumb: c.thumb || `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym.toLowerCase()}.png`
         });
       }
     }
@@ -1678,7 +2001,7 @@ async function doSearch(q){
           id: c.id,
           name: c.name || sym,
           symbol: sym,
-          thumb: c.thumb || c.large || `https://assets.coincap.io/assets/icons/${sym.toLowerCase()}@2x.png`
+          thumb: c.thumb || c.large || `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${sym.toLowerCase()}.png`
         });
       }
     }
@@ -1701,20 +2024,53 @@ async function doSearch(q){
       if (w.price) priceMap[w.id] = { price: w.price, change: w.change };
       if (w.price && w.symbol) priceMap[w.symbol.toUpperCase()] = { price: w.price, change: w.change };
     });
+    if (window.LivePriceEngine && window.LivePriceEngine.prices) {
+      Object.entries(window.LivePriceEngine.prices).forEach(([s, p]) => {
+        if (!priceMap[s] && p > 0) priceMap[s] = { price: p, change: null };
+      });
+    }
 
+    // Fill prices from FallbackMarketEngine matches
+    for (const c of sorted) {
+      if (!priceMap[c.id] && !priceMap[c.symbol]) {
+        const fp = fbMatches.find(x => x.symbol === c.symbol);
+        if (fp && fp.price > 0) {
+          priceMap[c.symbol] = { price: fp.price, change: fp.change };
+          priceMap[c.id] = { price: fp.price, change: fp.change };
+        }
+      }
+    }
+
+    // If still missing prices and not in CG cooldown, try CoinGecko Simple Price
     const needPriceIds = sorted.filter(c => !priceMap[c.id] && !priceMap[c.symbol]).map(c => c.id).slice(0, 10);
-    if (needPriceIds.length > 0) {
+    if (needPriceIds.length > 0 && Date.now() > _cgCooldownUntil) {
       try {
         const pRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${needPriceIds.join(',')}&vs_currencies=usd&include_24hr_change=true`, {
           headers: { 'Accept': 'application/json' }
         });
-        if (pRes.ok) {
+        if (pRes.status === 429) {
+          _cgCooldownUntil = Date.now() + 60000;
+        } else if (pRes.ok) {
           const pJson = await pRes.json();
           for (const [k, v] of Object.entries(pJson)) {
             priceMap[k] = { price: v.usd, change: v.usd_24h_change };
           }
         }
       } catch(pe) {}
+    }
+
+    // For any remaining missing prices, check FallbackMarketEngine.getPrice
+    const stillNeed = sorted.filter(c => !priceMap[c.id] && !priceMap[c.symbol]);
+    if (stillNeed.length > 0) {
+      await Promise.allSettled(stillNeed.map(async c => {
+        try {
+          const pr = await FallbackMarketEngine.getPrice(c.symbol, c.id);
+          if (pr && pr.price > 0) {
+            priceMap[c.symbol] = { price: pr.price, change: pr.change };
+            priceMap[c.id] = { price: pr.price, change: pr.change };
+          }
+        } catch(e) {}
+      }));
     }
 
     const inWL = new Set((ST.wl || []).map(c => (c.symbol || '').toUpperCase()));
@@ -2138,142 +2494,187 @@ async function fetchModal(){
   document.getElementById('mPg').innerHTML = '';
   const b = ST.mb;
 
-  try {
-    let data = [];
-
-    if (b.q.length >= 2) {
-      // ── SEARCH: /search for IDs, then /coins/markets for prices ──────────
-      const sr = await cgFetch(`/search?query=${encodeURIComponent(b.q)}`, 30000, sig);
-      const allCoins = sr.coins || [];
-      b.total = allCoins.length;
-      const pageCoins = allCoins.slice((b.page - 1) * b.per, b.page * b.per);
-      if (!pageCoins.length) {
-        tg.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);">No results found for "${b.q}"</div>`;
-        return;
-      }
-      const ids = pageCoins.map(c => c.id).join(',');
-      let priceMap = {};
-      try {
-        const pd = await cgFetch(`/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h`, 45000, sig);
-        pd.forEach(d => priceMap[d.id] = d);
-      } catch(e) {}
-      data = pageCoins.map(c => {
-        const p = priceMap[c.id];
-        return {
-          id:     c.id,
-          name:   c.name,
-          symbol: (c.symbol || '').toUpperCase(),
-          price:  p ? p.current_price : null,
-          change: p ? p.price_change_percentage_24h : null,
-          mcap:   p ? p.market_cap : null,
-          vol:    p ? p.total_volume : null,
-          image:  (p && p.image) ? p.image : (c.thumb || ''),
-          rank:   p ? p.market_cap_rank : (c.market_cap_rank || null),
-        };
-      });
-
-    } else {
-      // ── BROWSE: /coins/markets with category + sort ───────────────────────
-      const cat  = CG_CATS[b.cat] || '';
-      const catParam = cat ? `&category=${encodeURIComponent(cat)}` : '';
-      // Gainers/Losers aren't available on free tier as server-side sort.
-      // Fetch top 250 by mcap and sort client-side.
-      const needsClientSort = (b.sort === 'price_change_desc_24h' || b.sort === 'price_change_asc_24h');
-      const serverSort  = needsClientSort ? 'market_cap_desc' : (CG_SORT_MAP[b.sort] || 'market_cap_desc');
-      const fetchPer    = needsClientSort ? 250 : b.per;
-      const fetchPage   = needsClientSort ? 1   : b.page;
-      const url = `/coins/markets?vs_currency=usd${catParam}&order=${serverSort}&per_page=${fetchPer}&page=${fetchPage}&sparkline=false&price_change_percentage=24h`;
-      let raw = await cgFetch(url, needsClientSort ? 600000 : 600000, sig);
-
-      const mapCoin = d => ({
-        id:     d.id,
-        name:   d.name,
-        symbol: (d.symbol || '').toUpperCase(),
-        price:  d.current_price     != null ? d.current_price     : null,
-        change: d.price_change_percentage_24h != null ? d.price_change_percentage_24h : null,
-        mcap:   d.market_cap        != null ? d.market_cap        : null,
-        vol:    d.total_volume      != null ? d.total_volume      : null,
-        image:  d.image  || '',
-        rank:   d.market_cap_rank   || null,
-        high24: d.high_24h          || null,
-        low24:  d.low_24h           || null,
-      });
-
-      if (needsClientSort) {
-        const asc = (b.sort === 'price_change_asc_24h');
-        raw.sort((a, z) => {
-          const av = (a.price_change_percentage_24h != null) ? a.price_change_percentage_24h : (asc ? Infinity : -Infinity);
-          const zv = (z.price_change_percentage_24h != null) ? z.price_change_percentage_24h : (asc ? Infinity : -Infinity);
-          return asc ? av - zv : zv - av;
-        });
-        b.total = raw.length;
-        raw = raw.slice((b.page - 1) * b.per, b.page * b.per);
-      } else {
-        b.total = cat ? Math.max(raw.length, b.per * b.page) : 18000;
-      }
-      data = raw.map(mapCoin);
-    }
-
-    b.data = data;
+  // 1. Check persistent localStorage cache for instant zero-lag rendering
+  const cacheKey = `modal_${b.cat||'all'}_${b.sort||'default'}_${b.page||1}_${b.per||50}_${encodeURIComponent(b.q||'')}`;
+  const cached = StorageCache.get(cacheKey);
+  if (cached && Array.isArray(cached.data) && cached.data.length > 0) {
+    b.data = cached.data;
+    b.total = cached.total || cached.data.length;
     document.getElementById('mCnt').textContent = b.q ? `${b.total} results` : `Page ${b.page}`;
     renderModal();
     renderMPg();
+    return;
+  }
 
-  } catch(err) {
-    if (err && err.name === 'AbortError') return; // cancelled by newer request, ignore
-    console.error('fetchModal error:', err);
+  let loaded = false;
+
+  // 2. Try CoinGecko if not in cooldown
+  if (Date.now() > _cgCooldownUntil) {
+    try {
+      let data = [];
+      if (b.q.length >= 2) {
+        const sr = await cgFetch(`/search?query=${encodeURIComponent(b.q)}`, 30000, sig);
+        const allCoins = sr.coins || [];
+        b.total = allCoins.length;
+        const pageCoins = allCoins.slice((b.page - 1) * b.per, b.page * b.per);
+        if (!pageCoins.length) {
+          tg.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);">No results found for "${esc(b.q)}"</div>`;
+          return;
+        }
+        const ids = pageCoins.map(c => c.id).join(',');
+        let priceMap = {};
+        try {
+          const pd = await cgFetch(`/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h`, 45000, sig);
+          pd.forEach(d => priceMap[d.id] = d);
+        } catch(e) {}
+        data = pageCoins.map(c => {
+          const p = priceMap[c.id];
+          return {
+            id:     c.id,
+            name:   c.name,
+            symbol: (c.symbol || '').toUpperCase(),
+            price:  p ? p.current_price : null,
+            change: p ? p.price_change_percentage_24h : null,
+            mcap:   p ? p.market_cap : null,
+            vol:    p ? p.total_volume : null,
+            image:  (p && p.image) ? p.image : (c.thumb || ''),
+            rank:   p ? p.market_cap_rank : (c.market_cap_rank || null),
+          };
+        });
+      } else {
+        const cat  = CG_CATS[b.cat] || '';
+        const catParam = cat ? `&category=${encodeURIComponent(cat)}` : '';
+        const needsClientSort = (b.sort === 'price_change_desc_24h' || b.sort === 'price_change_asc_24h');
+        const serverSort  = needsClientSort ? 'market_cap_desc' : (CG_SORT_MAP[b.sort] || 'market_cap_desc');
+        const fetchPer    = needsClientSort ? 250 : b.per;
+        const fetchPage   = needsClientSort ? 1   : b.page;
+        const url = `/coins/markets?vs_currency=usd${catParam}&order=${serverSort}&per_page=${fetchPer}&page=${fetchPage}&sparkline=false&price_change_percentage=24h`;
+        let raw = await cgFetch(url, needsClientSort ? 600000 : 600000, sig);
+
+        const mapCoin = d => ({
+          id:     d.id,
+          name:   d.name,
+          symbol: (d.symbol || '').toUpperCase(),
+          price:  d.current_price     != null ? d.current_price     : null,
+          change: d.price_change_percentage_24h != null ? d.price_change_percentage_24h : null,
+          mcap:   d.market_cap        != null ? d.market_cap        : null,
+          vol:    d.total_volume      != null ? d.total_volume      : null,
+          image:  d.image  || '',
+          rank:   d.market_cap_rank   || null,
+          high24: d.high_24h          || null,
+          low24:  d.low_24h           || null,
+        });
+
+        if (needsClientSort) {
+          const asc = (b.sort === 'price_change_asc_24h');
+          raw.sort((a, z) => {
+            const av = (a.price_change_percentage_24h != null) ? a.price_change_percentage_24h : (asc ? Infinity : -Infinity);
+            const zv = (z.price_change_percentage_24h != null) ? z.price_change_percentage_24h : (asc ? Infinity : -Infinity);
+            return asc ? av - zv : zv - av;
+          });
+          b.total = raw.length;
+          raw = raw.slice((b.page - 1) * b.per, b.page * b.per);
+        } else {
+          b.total = cat ? Math.max(raw.length, b.per * b.page) : 18000;
+        }
+        data = raw.map(mapCoin);
+      }
+
+      b.data = data;
+      StorageCache.set(cacheKey, { data: b.data, total: b.total }, 900000);
+      loaded = true;
+    } catch(cgErr) {
+      if (cgErr && cgErr.name === 'AbortError') return;
+      console.warn('CoinGecko fetchModal notice (switching to fallback):', cgErr);
+      if (cgErr.message && cgErr.message.includes('429')) {
+        _cgCooldownUntil = Date.now() + 60000;
+      }
+    }
+  }
+
+  // 3. Fallback: FallbackMarketEngine or Stale StorageCache
+  if (!loaded) {
+    try {
+      const stale = StorageCache.getStale(cacheKey);
+      if (stale && Array.isArray(stale.data) && stale.data.length > 0) {
+        b.data = stale.data;
+        b.total = stale.total || stale.data.length;
+        loaded = true;
+      } else {
+        const fbResult = await FallbackMarketEngine.getMarketPage({
+          cat: b.cat,
+          sort: b.sort,
+          page: b.page,
+          per: b.per,
+          query: b.q
+        }, sig);
+        if (fbResult && fbResult.data && fbResult.data.length > 0) {
+          b.data = fbResult.data;
+          b.total = fbResult.total;
+          StorageCache.set(cacheKey, { data: b.data, total: b.total }, 900000);
+          loaded = true;
+        }
+      }
+    } catch(fbErr) {
+      if (fbErr && fbErr.name === 'AbortError') return;
+      console.error('FallbackMarketEngine failed:', fbErr);
+    }
+  }
+
+  if (loaded) {
+    if (!b.data.length && b.q) {
+      tg.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);">No results found for "${esc(b.q)}"</div>`;
+      return;
+    }
+    const isFb = Date.now() < _cgCooldownUntil;
+    document.getElementById('mCnt').textContent = b.q
+      ? `${b.total} results`
+      : `Page ${b.page}${isFb ? ' • 2,000+ Available' : ''}`;
+    renderModal();
+    renderMPg();
+  } else {
     tg.innerHTML = `<div style="grid-column:1/-1;padding:32px 20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;line-height:2;">
       <div style="font-size:1.5rem;margin-bottom:8px;">⚠</div>
       <div style="color:var(--text);margin-bottom:8px;">Could not load token data</div>
-      <div style="font-size:.75rem;margin-bottom:16px;">${err.message === 'Rate limited (429)' ? '⏳ CoinGecko rate limit hit. Wait 30 seconds and try again.' : 'Error: '+(err.message||'Network error')}</div>
+      <div style="font-size:.75rem;margin-bottom:16px;">Network connection issue. Please check your internet connection.</div>
       <button onclick="fetchModal()" style="background:rgba(0,212,255,.1);border:1px solid var(--accent);color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:.78rem;padding:8px 20px;border-radius:5px;cursor:pointer;margin-top:4px;">↻ Try Again</button>
     </div>`;
   }
 }
 
-// cgFetch: direct fetch for modal/popup — bypasses queue, has own cache + retry
-// Separate from the background apiFetch queue so UI feels instant
-let _cgAbort = null; // cancel previous in-flight modal request
+// cgFetch: direct fetch for modal/popup — with fast failover on rate limit
+let _cgAbort = null;
 
 async function cgFetch(path, ttl=60000, signal=null) {
   const url = getUrl(path);
   const hit = CACHE.get(url);
   if (hit) return hit;
 
-  const delays = [0, 5000, 12000]; // immediate, then backoff on rate limit
-  let lastErr;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (attempt > 0) {
-      // Show waiting message in modal
-      const tg = document.getElementById('tGrid');
-      if (tg && tg.innerHTML.includes('spin')) {
-        tg.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;">
-          <div class="spin" style="margin:0 auto 12px;"></div>
-          Rate limited — retrying in ${delays[attempt]/1000}s…
-        </div>`;
-      }
-      await sleep(delays[attempt]);
-    }
-    try {
-      const opts = { headers: { 'Accept': 'application/json' } };
-      if (signal) opts.signal = signal;
-      const r = await fetch(url, opts);
-      if (r.status === 429) {
-        lastErr = new Error('Rate limited (429)');
-        continue;
-      }
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = await r.json();
-      if (ttl > 0) CACHE.set(url, data, ttl);
-      setDot('ok');
-      return data;
-    } catch(e) {
-      if (e.name === 'AbortError') throw e;
-      lastErr = e;
-    }
+  // If in rate-limit cooldown, fail fast so caller can immediately use FallbackMarketEngine
+  if (Date.now() < _cgCooldownUntil) {
+    throw new Error('Rate limited (429)');
   }
-  setDot('err');
-  throw lastErr || new Error('Request failed');
+
+  try {
+    const opts = { headers: { 'Accept': 'application/json' } };
+    if (signal) opts.signal = signal;
+    const r = await fetch(url, opts);
+    if (r.status === 429) {
+      _cgCooldownUntil = Date.now() + 60000;
+      throw new Error('Rate limited (429)');
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    if (ttl > 0) CACHE.set(url, data, ttl);
+    setDot('ok');
+    return data;
+  } catch(e) {
+    if (e.name === 'AbortError') throw e;
+    if (e.message && e.message.includes('429')) {
+      _cgCooldownUntil = Date.now() + 60000;
+    }
+    throw e;
+  }
 }
 
 function renderModal(){
@@ -4993,6 +5394,10 @@ async function initApp(){
 
   setupSearch();
   setupModalSearch();
+  // Preload token tickers in the background to ensure instantaneous browsing & zero rate limit delay
+  if(window.FallbackMarketEngine && typeof window.FallbackMarketEngine.loadTickers === 'function'){
+    FallbackMarketEngine.loadTickers().catch(()=>{});
+  }
   initCoinInfoPopup();
   initTimeMachine();
   updateAlertCoinName();
@@ -5148,6 +5553,15 @@ async function showCoinInfo(e, id, name, symbol, image){
       renderCoinInfoPopup(data);
     } catch(err) {
       if(_cipCurrentId !== id) return;
+      try {
+        if(window.FallbackMarketEngine && typeof window.FallbackMarketEngine.getPopupData === 'function'){
+          const fallbackData = await FallbackMarketEngine.getPopupData(id);
+          if(fallbackData && _cipCurrentId === id){
+            renderCoinInfoPopup(fallbackData);
+            return;
+          }
+        }
+      } catch(fe) {}
       if(body) body.innerHTML = '<div class="cip-loading" style="color:var(--red);">⚠ Could not load — check connection</div>';
     }
   }, 250);
@@ -5315,6 +5729,8 @@ if(typeof setMSort === 'function') window.setMSort = setMSort;
 if(typeof setupModalSearch === 'function') window.setupModalSearch = setupModalSearch;
 if(typeof fetchModal === 'function') window.fetchModal = fetchModal;
 if(typeof cgFetch === 'function') window.cgFetch = cgFetch;
+if(typeof StorageCache !== 'undefined') window.StorageCache = StorageCache;
+if(typeof FallbackMarketEngine !== 'undefined') window.FallbackMarketEngine = FallbackMarketEngine;
 if(typeof renderModal === 'function') window.renderModal = renderModal;
 if(typeof mAdd === 'function') window.mAdd = mAdd;
 if(typeof renderMPg === 'function') window.renderMPg = renderMPg;
