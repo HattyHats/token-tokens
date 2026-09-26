@@ -3421,6 +3421,12 @@ function initPaperTrading(){
   if(btn) btn.classList.toggle('on', SIM.active);
   if(navBtn) navBtn.classList.toggle('on', SIM.active);
   if(dtBtn) dtBtn.classList.toggle('active', SIM.active);
+  const shareBtn = document.getElementById('ptLastShareBtn');
+  if(shareBtn && SIM.history && SIM.history.length > 0){
+    shareBtn.style.display = 'inline-flex';
+    const count = Math.min(3, SIM.history.length);
+    shareBtn.textContent = count > 1 ? `📸 Past Cards (${count})` : '📸 Last Card';
+  }
   updateSimUI();
 }
 
@@ -3599,7 +3605,11 @@ function closeSimPosition(posId, silent = false){
   renderChart();
 
   const shareBtn = document.getElementById('ptLastShareBtn');
-  if(shareBtn) shareBtn.style.display = 'inline-flex';
+  if(shareBtn){
+    shareBtn.style.display = 'inline-flex';
+    const count = Math.min(3, (SIM.history || []).length);
+    shareBtn.textContent = count > 1 ? `📸 Past Cards (${count})` : '📸 Last Card';
+  }
 
   if(!silent){
     showToast(
@@ -3642,7 +3652,17 @@ function updateSimUI(){
       return;
     }
 
-    wrap.innerHTML = positions.map(pos => {
+    // 1. Remove cards for positions that are no longer active
+    const activeIds = new Set(positions.map(p => p.id));
+    Array.from(wrap.children).forEach(child => {
+      const cardId = child.getAttribute('data-id');
+      if(!activeIds.has(cardId)){
+        child.remove();
+      }
+    });
+
+    // 2. Insert new cards or update existing cards in-place without destroying DOM nodes
+    positions.forEach((pos, index) => {
       const isCurrentCoin = (ST.coin && ((ST.coin.id === pos.coinId) || ((ST.coin.symbol || '').toUpperCase() === (pos.symbol || '').toUpperCase())));
       let curPrice = null;
       if(isCurrentCoin && window.LivePriceEngine && window.LivePriceEngine.lastPrice){
@@ -3660,19 +3680,36 @@ function updateSimUI(){
       const pnlUSD = (pnlPct / 100) * pos.amountUSD;
       const isProfit = pnlUSD >= 0;
 
-      return `<div class="pt-pos-card" id="ptCard_${pos.id}" data-id="${pos.id}">
-        <span class="pt-pos-side ${pos.side}">${pos.side.toUpperCase()}</span>
-        <div style="display:flex;flex-direction:column;gap:1px;">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:.65rem;color:var(--text3);">${pos.symbol} @ $${fP(pos.entryPrice)}</span>
-            <span style="font-size:.65rem;color:#00d4ff;font-weight:700;">NOW: $${fP(curPrice)}</span>
+      let card = wrap.querySelector(`.pt-pos-card[data-id="${pos.id}"]`);
+      if(!card){
+        card = document.createElement('div');
+        card.className = 'pt-pos-card';
+        card.id = `ptCard_${pos.id}`;
+        card.setAttribute('data-id', pos.id);
+        card.innerHTML = `
+          <span class="pt-pos-side ${pos.side}">${pos.side.toUpperCase()}</span>
+          <div style="display:flex;flex-direction:column;gap:1px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="pt-pos-info" style="font-size:.65rem;color:var(--text3);">${pos.symbol} @ $${fP(pos.entryPrice)}</span>
+              <span class="pt-pos-now" style="font-size:.65rem;color:#00d4ff;font-weight:700;">NOW: $${fP(curPrice)}</span>
+            </div>
+            <span class="pt-pnl ${isProfit ? 'pos' : 'neg'}">${fPnL(pnlUSD, pnlPct)}</span>
           </div>
-          <span class="pt-pnl ${isProfit ? 'pos' : 'neg'}">${fPnL(pnlUSD, pnlPct)}</span>
-        </div>
-        <button type="button" class="pt-btn-close" onclick="closeSimPosition('${pos.id}')" title="Close this position at market price">✕ Close</button>
-        <button type="button" class="pt-btn-share" onclick="openPnLModalById('${pos.id}')" title="Share PnL card">📸</button>
-      </div>`;
-    }).join('');
+          <button type="button" class="pt-btn-close" onclick="closeSimPosition('${pos.id}')" title="Close this position at market price">✕ Close</button>
+          <button type="button" class="pt-btn-share" onclick="openPnLModalById('${pos.id}')" title="Share PnL card">📸</button>
+        `;
+        const refNode = wrap.children[index] || null;
+        wrap.insertBefore(card, refNode);
+      } else {
+        const nowEl = card.querySelector('.pt-pos-now');
+        if(nowEl) nowEl.textContent = `NOW: $${fP(curPrice)}`;
+        const pnlEl = card.querySelector('.pt-pnl');
+        if(pnlEl){
+          pnlEl.className = `pt-pnl ${isProfit ? 'pos' : 'neg'}`;
+          pnlEl.textContent = fPnL(pnlUSD, pnlPct);
+        }
+      }
+    });
     return;
   }
 
@@ -3804,25 +3841,94 @@ function renderSimOverlay(ctx, vis, toX, toY, pH, PAD_L, PAD_R, W){
 
 /* ══════════════════ CYBERPUNK PNL SHARE CARD GENERATOR ══════════════════ */
 let _lastPnLTrade = null;
+let _pnlCardList = [];
+let _activePnLCardIndex = 0;
 
 function openPnLModal(trade){
-  _lastPnLTrade = trade || SIM.position || (SIM.history.length ? SIM.history[SIM.history.length - 1] : {
-    symbol: (ST.coin.symbol || 'BTC').toUpperCase(),
-    name: ST.coin.name || 'Bitcoin',
-    side: 'long',
-    entryPrice: ST.coin.price || 84200,
-    exitPrice: (ST.coin.price || 84200) * 1.054,
-    pnlPct: 5.4,
-    pnlUSD: 54.00,
-    amountUSD: 1000
-  });
+  const history = (SIM && Array.isArray(SIM.history)) ? SIM.history : [];
+  const pastClosed = history.slice(-3).reverse();
+
+  if(trade){
+    const others = pastClosed.filter(t => t.id !== trade.id);
+    _pnlCardList = [trade, ...others].slice(0, 3);
+  } else if(pastClosed.length > 0){
+    _pnlCardList = pastClosed;
+  } else if(SIM.positions && SIM.positions.length > 0){
+    _pnlCardList = SIM.positions.slice(0, 3).map(pos => {
+      const curP = (window.LivePriceEngine ? window.LivePriceEngine.getLivePrice(pos.symbol) : null) || pos.entryPrice;
+      const pnlPct = pos.side === 'long'
+        ? ((curP - pos.entryPrice) / pos.entryPrice) * 100
+        : ((pos.entryPrice - curP) / pos.entryPrice) * 100;
+      const pnlUSD = (pnlPct / 100) * pos.amountUSD;
+      return {
+        ...pos,
+        exitPrice: curP,
+        pnlPct,
+        pnlUSD
+      };
+    });
+  } else {
+    _pnlCardList = [{
+      symbol: (ST.coin.symbol || 'BTC').toUpperCase(),
+      name: ST.coin.name || 'Bitcoin',
+      side: 'long',
+      entryPrice: ST.coin.price || 84200,
+      exitPrice: (ST.coin.price || 84200) * 1.054,
+      pnlPct: 5.4,
+      pnlUSD: 54.00,
+      amountUSD: 1000
+    }];
+  }
+
+  _activePnLCardIndex = 0;
+  _lastPnLTrade = _pnlCardList[0];
 
   const modal = document.getElementById('pnlModal');
-  const canvas = document.getElementById('pnlCardCanvas');
-  if(!modal || !canvas) return;
+  if(!modal) return;
 
-  drawPnLCard(canvas, _lastPnLTrade);
+  renderPnLModalTabs();
+  renderActivePnLCard();
+
   modal.classList.remove('hide');
+}
+
+function selectPnLCard(index){
+  if(index < 0 || index >= _pnlCardList.length) return;
+  _activePnLCardIndex = index;
+  _lastPnLTrade = _pnlCardList[index];
+  renderPnLModalTabs();
+  renderActivePnLCard();
+}
+
+function renderPnLModalTabs(){
+  const nav = document.getElementById('pnlTabsBar');
+  if(!nav) return;
+  if(!_pnlCardList || _pnlCardList.length <= 1){
+    nav.style.display = 'none';
+    return;
+  }
+  nav.style.display = 'flex';
+  nav.innerHTML = _pnlCardList.map((t, i) => {
+    const isAct = i === _activePnLCardIndex;
+    const isProfit = (t.pnlUSD || 0) >= 0;
+    const pnlSign = isProfit ? '+' : '';
+    const pnlStr = `${pnlSign}$${fP(t.pnlUSD || 0)} (${pnlSign}${(t.pnlPct || 0).toFixed(2)}%)`;
+    return `
+      <button type="button" class="pnl-tab ${isAct ? 'active' : ''}" onclick="selectPnLCard(${i})" title="View Past Card #${i+1}">
+        <span class="pnl-tab-idx">#${i+1}</span>
+        <span class="pnl-tab-side ${t.side || 'long'}">${(t.side || 'long').toUpperCase()}</span>
+        <span class="pnl-tab-sym">${t.symbol || 'BTC'}</span>
+        <span class="pnl-tab-pnl ${isProfit ? 'pos' : 'neg'}">${pnlStr}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function renderActivePnLCard(){
+  const canvas = document.getElementById('pnlCardCanvas');
+  if(!canvas) return;
+  const trade = _pnlCardList[_activePnLCardIndex] || _lastPnLTrade;
+  if(trade) drawPnLCard(canvas, trade);
 }
 
 function closePnLModal(){
@@ -5496,6 +5602,7 @@ window.closeSimPosition = closeSimPosition;
 window.resetSimWallet = resetSimWallet;
 window.openPnLModal = openPnLModal;
 window.openPnLModalById = openPnLModalById;
+window.selectPnLCard = selectPnLCard;
 window.closePnLModal = closePnLModal;
 window.downloadPnLCard = downloadPnLCard;
 window.copyPnLCard = copyPnLCard;

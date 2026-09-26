@@ -11,8 +11,8 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=4.6">
-  <script defer src="./main.js?v=4.6"></script>
+  <link rel="stylesheet" href="./style.css?v=4.7">
+  <script defer src="./main.js?v=4.7"></script>
   <script>
     // ══════════════════════════════════════════════════════════════
     // BULLETPROOF LIVE PRICE STREAMING & PAPER TRADING CONTROLLER
@@ -108,7 +108,15 @@
           return;
         }
 
-        wrap.innerHTML = positions.map(function(pos) {
+        var activeIds = new Set(positions.map(function(p) { return p.id; }));
+        Array.from(wrap.children).forEach(function(child) {
+          var cardId = child.getAttribute('data-id');
+          if (!activeIds.has(cardId)) {
+            child.remove();
+          }
+        });
+
+        positions.forEach(function(pos, index) {
           var isCurrent = !pos.symbol || (pos.symbol.toUpperCase() === activeSym);
           var curP = null;
           if (isCurrent && curMarketP) {
@@ -124,19 +132,34 @@
           var pnlUSD = (pnlPct / 100) * pos.amountUSD;
           var isProfit = pnlUSD >= 0;
 
-          return '<div class="pt-pos-card" id="ptCard_' + pos.id + '" data-id="' + pos.id + '">' +
-            '<span class="pt-pos-side ' + pos.side + '">' + (pos.side || 'long').toUpperCase() + '</span>' +
-            '<div style="display:flex;flex-direction:column;gap:1px;">' +
-              '<div style="display:flex;align-items:center;gap:6px;">' +
-                '<span style="font-size:.65rem;color:var(--text3);">' + (pos.symbol || 'BTC') + ' @ $' + fP_inline(pos.entryPrice) + '</span>' +
-                '<span style="font-size:.65rem;color:#00d4ff;font-weight:700;">NOW: $' + fP_inline(curP) + '</span>' +
+          var card = wrap.querySelector('.pt-pos-card[data-id="' + pos.id + '"]');
+          if (!card) {
+            card = document.createElement('div');
+            card.className = 'pt-pos-card';
+            card.id = 'ptCard_' + pos.id;
+            card.setAttribute('data-id', pos.id);
+            card.innerHTML = '<span class="pt-pos-side ' + pos.side + '">' + (pos.side || 'long').toUpperCase() + '</span>' +
+              '<div style="display:flex;flex-direction:column;gap:1px;">' +
+                '<div style="display:flex;align-items:center;gap:6px;">' +
+                  '<span class="pt-pos-info" style="font-size:.65rem;color:var(--text3);">' + (pos.symbol || 'BTC') + ' @ $' + fP_inline(pos.entryPrice) + '</span>' +
+                  '<span class="pt-pos-now" style="font-size:.65rem;color:#00d4ff;font-weight:700;">NOW: $' + fP_inline(curP) + '</span>' +
+                '</div>' +
+                '<span class="pt-pnl ' + (isProfit ? 'pos' : 'neg') + '">' + fPnL_inline(pnlUSD, pnlPct) + '</span>' +
               '</div>' +
-              '<span class="pt-pnl ' + (isProfit ? 'pos' : 'neg') + '">' + fPnL_inline(pnlUSD, pnlPct) + '</span>' +
-            '</div>' +
-            '<button type="button" class="pt-btn-close" onclick="closeSimPosition(\'' + pos.id + '\')" title="Close position">✕ Close</button>' +
-            '<button type="button" class="pt-btn-share" onclick="openPnLModalById(\'' + pos.id + '\')" title="Share card">📸</button>' +
-          '</div>';
-        }).join('');
+              '<button type="button" class="pt-btn-close" onclick="closeSimPosition(\'' + pos.id + '\')" title="Close position">✕ Close</button>' +
+              '<button type="button" class="pt-btn-share" onclick="openPnLModalById(\'' + pos.id + '\')" title="Share card">📸</button>';
+            var refNode = wrap.children[index] || null;
+            wrap.insertBefore(card, refNode);
+          } else {
+            var nowEl = card.querySelector('.pt-pos-now');
+            if (nowEl) nowEl.textContent = 'NOW: $' + fP_inline(curP);
+            var pnlEl = card.querySelector('.pt-pnl');
+            if (pnlEl) {
+              pnlEl.className = 'pt-pnl ' + (isProfit ? 'pos' : 'neg');
+              pnlEl.textContent = fPnL_inline(pnlUSD, pnlPct);
+            }
+          }
+        });
         return;
       }
 
@@ -336,7 +359,11 @@
       if (typeof window.renderChart === 'function') window.renderChart();
 
       var shareBtn = document.getElementById('ptLastShareBtn');
-      if (shareBtn) shareBtn.style.display = 'inline-flex';
+      if (shareBtn) {
+        shareBtn.style.display = 'inline-flex';
+        var c = Math.min(3, (window.SIM.history || []).length);
+        shareBtn.textContent = c > 1 ? '📸 Past Cards (' + c + ')' : '📸 Last Card';
+      }
 
       if (!silent && typeof window.showToast === 'function') {
         window.showToast((pnlUSD >= 0 ? '🎉 PROFIT REALIZED' : '🛑 TRADE CLOSED'), (pnlUSD >= 0 ? '+' : '') + '$' + fP_inline(pnlUSD) + ' (' + pnlPct.toFixed(2) + '%)', pnlUSD >= 0 ? 'success' : 'warn', 4000);
@@ -405,6 +432,12 @@
       if (btn) btn.classList.toggle('on', window.SIM.active);
       if (navBtn) navBtn.classList.toggle('on', window.SIM.active);
       if (dtBtn) dtBtn.classList.toggle('active', window.SIM.active);
+      var shareBtn = document.getElementById('ptLastShareBtn');
+      if (shareBtn && window.SIM.history && window.SIM.history.length > 0) {
+        shareBtn.style.display = 'inline-flex';
+        var c = Math.min(3, window.SIM.history.length);
+        shareBtn.textContent = c > 1 ? '📸 Past Cards (' + c + ')' : '📸 Last Card';
+      }
       window.updateSimUI();
     });
   </script>
@@ -1514,7 +1547,9 @@
       <div class="sm-title">📸 SHARE CYBER PnL CARD</div>
       <button class="sm-close" onclick="closePnLModal()">✕</button>
     </div>
-    <div style="padding:16px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+    <div style="padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <!-- Past 3 Cards Switcher Tabs -->
+      <div class="pnl-tabs-bar" id="pnlTabsBar" style="display:none;"></div>
       <canvas id="pnlCardCanvas" width="1200" height="675" class="pnl-card-preview" style="max-width:100%;height:auto;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.8);"></canvas>
       <div style="display:flex;gap:12px;width:100%;justify-content:center;flex-wrap:wrap;">
         <button class="pt-btn-share" style="padding:9px 18px;font-size:.78rem;" onclick="downloadPnLCard()">💾 Download PNG</button>
