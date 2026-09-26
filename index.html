@@ -47,9 +47,16 @@
       if (a < .001) return p.toFixed(6);
       if (a < .1) return p.toFixed(5);
       if (a < 1) return p.toFixed(4);
-      if (a < 100) return p.toFixed(2);
-      if (a < 10000) return p.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-      return p.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+      return p.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function fPnL_inline(pnlUSD, pnlPct) {
+      if (pnlUSD == null || isNaN(pnlUSD)) return '+$0.00 (+0.00%)';
+      var sign = pnlUSD >= 0 ? '+' : '-';
+      var usdStr = Math.abs(pnlUSD).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      var pctSign = pnlPct >= 0 ? '+' : '';
+      var pctStr = (pnlPct || 0).toFixed(2);
+      return sign + '$' + usdStr + ' (' + pctSign + pctStr + '%)';
     }
 
     window.savePaperTrading = window.savePaperTrading || function() {
@@ -66,6 +73,14 @@
     window.updateSimUI = window.updateSimUI || function() {
       var balEl = document.getElementById('ptBalance');
       if (balEl) balEl.textContent = '$' + fP_inline(window.SIM.balance);
+
+      var activeSym = (window.ST && window.ST.coin && window.ST.coin.symbol) ? window.ST.coin.symbol.toUpperCase() : 'BTC';
+      var ptLiveEl = document.getElementById('ptLivePrice');
+      var ptLiveSymEl = document.getElementById('ptLiveSym');
+      if (ptLiveSymEl) ptLiveSymEl.textContent = activeSym;
+      var curMarketP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : (window.ST && window.ST.coin ? window.ST.coin.price : null);
+      if (ptLiveEl && curMarketP > 0) ptLiveEl.textContent = '$' + fP_inline(curMarketP);
+
       var card = document.getElementById('ptPosCard');
       if (!card) return;
       if (!window.SIM.position) {
@@ -76,20 +91,23 @@
       var pos = window.SIM.position;
       var sideEl = document.getElementById('ptPosSide');
       var infoEl = document.getElementById('ptPosInfo');
+      var nowEl = document.getElementById('ptPosNow');
       var pnlEl = document.getElementById('ptPosPnL');
       if (sideEl) {
         sideEl.className = 'pt-pos-side ' + pos.side;
         sideEl.textContent = (pos.side || 'long').toUpperCase();
       }
-      var curPrice = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : (pos.entryPrice || 84000);
+      var isCurrent = !pos.symbol || (pos.symbol.toUpperCase() === activeSym);
+      var curPrice = (isCurrent && curMarketP) ? curMarketP : (pos.entryPrice || 84000);
       var pnlPct = pos.side === 'long'
         ? ((curPrice - pos.entryPrice) / pos.entryPrice) * 100
         : ((pos.entryPrice - curPrice) / pos.entryPrice) * 100;
       var pnlUSD = (pnlPct / 100) * pos.amountUSD;
       if (infoEl) infoEl.textContent = (pos.symbol || 'BTC') + ' @ $' + fP_inline(pos.entryPrice);
+      if (nowEl) nowEl.textContent = 'NOW: $' + fP_inline(curPrice);
       if (pnlEl) {
         pnlEl.className = 'pt-pnl ' + (pnlUSD >= 0 ? 'pos' : 'neg');
-        pnlEl.textContent = (pnlUSD >= 0 ? '+' : '') + '$' + fP_inline(pnlUSD) + ' (' + pnlPct.toFixed(2) + '%)';
+        pnlEl.textContent = fPnL_inline(pnlUSD, pnlPct);
       }
     };
 
@@ -286,6 +304,11 @@
     .pt-wallet { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .pt-bal-lbl { color: #3a5a80 !important; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; }
     .pt-bal-val { font-family: 'Orbitron', sans-serif; font-size: 1rem; font-weight: 700; color: #00d4ff !important; text-shadow: 0 0 10px rgba(0,212,255,.4); }
+    .pt-live-ticker { display: flex; flex-direction: column; justify-content: center; gap: 1px; background: rgba(0,212,255,.08) !important; border: 1px solid rgba(0,212,255,.35) !important; border-radius: 4px; padding: 4px 10px; flex-shrink: 0; }
+    .pt-live-lbl { display: inline-flex; align-items: center; gap: 4px; color: #7a9cc0 !important; font-size: .6rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; }
+    .pt-live-val { font-family: 'Share Tech Mono', monospace; font-size: .95rem; font-weight: 700; color: #00d4ff !important; letter-spacing: .02em; transition: color .15s ease; }
+    .pt-live-val.flash-up { color: #00ff88 !important; text-shadow: 0 0 12px rgba(0,255,136,.8) !important; }
+    .pt-live-val.flash-down { color: #ff3366 !important; text-shadow: 0 0 12px rgba(255,51,102,.8) !important; }
     .pt-inputs { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; flex-shrink: 0; }
     .pt-in { background: #050810 !important; border: 1px solid rgba(0,212,255,.35) !important; color: #00d4ff !important; font-family: 'Share Tech Mono', monospace !important; font-size: .82rem !important; padding: 4px 8px; border-radius: 4px; width: 85px; outline: none; }
     .pt-quick-btn { background: rgba(0,212,255,.08) !important; border: 1px solid rgba(0,212,255,.25) !important; color: #7a9cc0 !important; font-family: 'Share Tech Mono', monospace !important; font-size: .65rem !important; padding: 4px 7px; border-radius: 4px; cursor: pointer !important; touch-action: manipulation; }
@@ -523,6 +546,10 @@
           <div class="pt-bal-val" id="ptBalance">$10,000.00</div>
         </div>
       </div>
+      <div class="pt-live-ticker" id="ptLiveTicker" title="Real-Time Market Price Feed">
+        <div class="pt-live-lbl"><span class="ch-live-dot"></span> LIVE <span id="ptLiveSym">BTC</span></div>
+        <div class="pt-live-val" id="ptLivePrice">$84,036.15</div>
+      </div>
       <div class="pt-inputs">
         <span style="color:var(--text3);font-size:.68rem;font-weight:600;">TRADE ($):</span>
         <input class="pt-in" id="ptAmountIn" type="number" value="1000" min="10" step="50" aria-label="Trade Amount in USD">
@@ -539,8 +566,11 @@
       <div class="pt-pos-card" id="ptPosCard" style="display:none;">
         <span class="pt-pos-side long" id="ptPosSide">LONG</span>
         <div style="display:flex;flex-direction:column;gap:1px;">
-          <span style="font-size:.65rem;color:var(--text3);" id="ptPosInfo">BTC @ $84,200</span>
-          <span class="pt-pnl pos" id="ptPosPnL">+$0.00 (+0.0%)</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:.65rem;color:var(--text3);" id="ptPosInfo">BTC @ $84,200.00</span>
+            <span style="font-size:.65rem;color:#00d4ff;font-weight:700;" id="ptPosNow">NOW: $84,036.15</span>
+          </div>
+          <span class="pt-pnl pos" id="ptPosPnL">+$0.00 (+0.00%)</span>
         </div>
         <button type="button" class="pt-btn-close" onclick="closeSimPosition()" title="Close current simulated position at market price">✕ Close</button>
         <button type="button" class="pt-btn-share" onclick="openPnLModal()" title="View and share cyberpunk trade card">📸 Share</button>

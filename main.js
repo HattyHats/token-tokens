@@ -581,6 +581,8 @@ const LivePriceEngine = {
       this.lastTickTime = Date.now();
       const oldPrice = ST.coin.price || price;
       ST.coin.price = price;
+      this.lastPrice = price;
+      window.LivePriceEngine.lastPrice = price;
 
       // Update header price element with animated flash
       const priceEl = document.getElementById('chPrice');
@@ -590,6 +592,21 @@ const LivePriceEngine = {
           priceEl.classList.remove('flash-up', 'flash-down');
           void priceEl.offsetWidth; // trigger reflow
           priceEl.classList.add(price > oldPrice ? 'flash-up' : 'flash-down');
+        }
+      }
+
+      // Update Paper Trading Bar Live Price Display
+      const ptLiveEl = document.getElementById('ptLivePrice');
+      const ptLiveSymEl = document.getElementById('ptLiveSym');
+      if(ptLiveSymEl) ptLiveSymEl.textContent = sym;
+      if(ptLiveEl){
+        const oldPtPrice = parseFloat(ptLiveEl.dataset.price || '0');
+        ptLiveEl.textContent = '$' + fP(price);
+        ptLiveEl.dataset.price = price;
+        if(oldPtPrice && oldPtPrice !== price){
+          ptLiveEl.classList.remove('flash-up', 'flash-down');
+          void ptLiveEl.offsetWidth;
+          ptLiveEl.classList.add(price > oldPtPrice ? 'flash-up' : 'flash-down');
         }
       }
 
@@ -619,8 +636,8 @@ const LivePriceEngine = {
         if(price < last.l) last.l = price;
       }
 
-      // Update floating Paper Trading PnL
-      if(SIM.position && SIM.position.symbol === sym){
+      // Update floating Paper Trading PnL & Position
+      if(SIM.position){
         updateSimUI();
       }
 
@@ -691,16 +708,27 @@ const LivePriceEngine = {
   startFallbackMonitor(){
     if(this.fallbackTimer) clearInterval(this.fallbackTimer);
     this.fallbackTimer = setInterval(() => {
-      if(Date.now() - this.lastTickTime > 6000){
+      if(Date.now() - this.lastTickTime >= 1800){
         this.pollActiveCoin();
       }
-    }, 5000);
+    }, 1500);
   },
 
   async pollActiveCoin(){
     const sym = (ST.coin.symbol || '').toUpperCase();
     if(!sym) return;
     try {
+      const cbRes = await fetch(`https://api.coinbase.com/v2/prices/${sym}-USD/spot`).catch(()=>null);
+      if(cbRes && cbRes.ok){
+        const cbJson = await cbRes.json().catch(()=>null);
+        if(cbJson && cbJson.data && cbJson.data.amount){
+          const p = parseFloat(cbJson.data.amount);
+          if(p > 0){
+            this.handleTick(sym, p, null, null);
+            return;
+          }
+        }
+      }
       const p = await fetchCCPrice(sym);
       if(p && p.price > 0){
         this.handleTick(sym, p.price, p.change ? (p.price / (1 + p.change / 100)) : null, null);
@@ -1294,6 +1322,11 @@ function updateHdr(c, oldPrice){
   if(c.mcap)document.getElementById('chMcap').textContent='MCap: $'+fL(c.mcap);
   if(c.vol)document.getElementById('chVol').textContent='Vol: $'+fL(c.vol);
   if(c.ath)document.getElementById('chATH').textContent='ATH: $'+fP(c.ath);
+  const ptLiveEl = document.getElementById('ptLivePrice');
+  const ptLiveSymEl = document.getElementById('ptLiveSym');
+  if(ptLiveSymEl) ptLiveSymEl.textContent = (c.symbol||'BTC').toUpperCase();
+  if(ptLiveEl && c.price) ptLiveEl.textContent = '$' + fP(c.price);
+  updateSimUI();
 }
 
 /* ══════════════════ TRENDING ══════════════════ */
@@ -2914,6 +2947,13 @@ function updateSimUI(){
   const balEl = document.getElementById('ptBalance');
   if(balEl) balEl.textContent = '$' + fP(SIM.balance);
 
+  const activeSym = (ST.coin && ST.coin.symbol) ? ST.coin.symbol.toUpperCase() : 'BTC';
+  const ptLiveEl = document.getElementById('ptLivePrice');
+  const ptLiveSymEl = document.getElementById('ptLiveSym');
+  if(ptLiveSymEl) ptLiveSymEl.textContent = activeSym;
+  const currentMarketP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : (ST.coin ? ST.coin.price : 84000);
+  if(ptLiveEl && currentMarketP > 0) ptLiveEl.textContent = '$' + fP(currentMarketP);
+
   const card = document.getElementById('ptPosCard');
   if(!card) return;
 
@@ -2926,6 +2966,7 @@ function updateSimUI(){
   const pos = SIM.position;
   const sideEl = document.getElementById('ptPosSide');
   const infoEl = document.getElementById('ptPosInfo');
+  const nowEl  = document.getElementById('ptPosNow');
   const pnlEl  = document.getElementById('ptPosPnL');
 
   if(sideEl){
@@ -2933,24 +2974,24 @@ function updateSimUI(){
     sideEl.textContent = pos.side.toUpperCase();
   }
 
-  const liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && ST.coin.id === pos.coinId) ? window.LivePriceEngine.lastPrice : null;
+  const isCurrentCoin = (ST.coin.id === pos.coinId) || ((ST.coin.symbol || '').toUpperCase() === (pos.symbol || '').toUpperCase());
+  const liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && isCurrentCoin) ? window.LivePriceEngine.lastPrice : null;
   const lastCandle = ST.candles && ST.candles.length ? ST.candles[ST.candles.length - 1] : null;
-  const curPrice = liveP || ((ST.coin.id === pos.coinId && lastCandle) ? lastCandle.c : (ST.coin.id === pos.coinId && ST.coin.price ? ST.coin.price : pos.entryPrice));
+  const curPrice = liveP || (isCurrentCoin && lastCandle ? lastCandle.c : (isCurrentCoin && ST.coin.price ? ST.coin.price : pos.entryPrice));
   const pnlPct = pos.side === 'long'
     ? ((curPrice - pos.entryPrice) / pos.entryPrice) * 100
     : ((pos.entryPrice - curPrice) / pos.entryPrice) * 100;
   const pnlUSD = (pnlPct / 100) * pos.amountUSD;
 
   if(infoEl) {
-    if(pos.coinId !== ST.coin.id) {
-      infoEl.textContent = `${pos.symbol} @ $${fP(pos.entryPrice)} (Active)`;
-    } else {
-      infoEl.textContent = `${pos.symbol} @ $${fP(pos.entryPrice)}`;
-    }
+    infoEl.textContent = `${pos.symbol} @ $${fP(pos.entryPrice)}`;
+  }
+  if(nowEl) {
+    nowEl.textContent = `NOW: $${fP(curPrice)}`;
   }
   if(pnlEl){
     pnlEl.className = 'pt-pnl ' + (pnlUSD >= 0 ? 'pos' : 'neg');
-    pnlEl.textContent = `${pnlUSD >= 0 ? '+' : ''}$${fP(pnlUSD)} (${pnlPct.toFixed(2)}%)`;
+    pnlEl.textContent = fPnL(pnlUSD, pnlPct);
   }
 }
 
@@ -4013,7 +4054,8 @@ function drawTMMarker(candleIdx){
   ctx.restore();
   setTimeout(()=>renderChart(),4500);
 }
-function fP(p){if(p==null)return'—';if(p===0)return'0.00';const a=Math.abs(p);if(a<.00001)return p.toFixed(8);if(a<.001)return p.toFixed(6);if(a<.1)return p.toFixed(5);if(a<1)return p.toFixed(4);if(a<100)return p.toFixed(2);if(a<10000)return p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});return p.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fP(p){if(p==null)return'—';if(p===0)return'0.00';const a=Math.abs(p);if(a<.00001)return p.toFixed(8);if(a<.001)return p.toFixed(6);if(a<.1)return p.toFixed(5);if(a<1)return p.toFixed(4);return p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fPnL(pnlUSD, pnlPct){if(pnlUSD==null||isNaN(pnlUSD))return'+$0.00 (+0.00%)';const sign=pnlUSD>=0?'+':'-';const usdStr=Math.abs(pnlUSD).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});const pctSign=pnlPct>=0?'+':'';const pctStr=(pnlPct||0).toFixed(2);return `${sign}$${usdStr} (${pctSign}${pctStr}%)`;}
 function fL(n){if(!n||n<=0)return'—';if(n>=1e12)return(n/1e12).toFixed(2)+'T';if(n>=1e9)return(n/1e9).toFixed(2)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toFixed(2);}
 function esc(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
 function rc(s){const cols=['#f7931a','#627eea','#9945ff','#0033ad','#c2a633','#00d4ff','#ff6b35','#00ff88','#e84142','#26a17b','#2775ca','#f0b90b'];let h=0;for(let i=0;i<(s||'').length;i++)h=(h*31+s.charCodeAt(i))%cols.length;return cols[h];}
