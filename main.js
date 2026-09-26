@@ -472,26 +472,69 @@ const LivePriceEngine = {
 
   coreSymbols: ['BTC', 'ETH', 'SOL', 'ADA', 'DOGE', 'AVAX', 'LINK', 'XRP', 'SUI', 'NEAR', 'SHIB', 'DOT', 'LTC', 'UNI', 'BNB'],
 
+  _initialized: false,
+
   destroy(){
     if(this.microTickTimer) clearInterval(this.microTickTimer);
     if(this.fallbackTimer) clearInterval(this.fallbackTimer);
     if(this.wlPollTimer) clearInterval(this.wlPollTimer);
     if(this.reconnectTimer) clearTimeout(this.reconnectTimer);
     if(this.cbWs){
-      try { this.cbWs.close(); } catch(e){}
+      try {
+        if(this.cbWs.readyState === WebSocket.OPEN){
+          this.cbWs.close();
+        } else {
+          this.cbWs.onopen = null;
+          this.cbWs.onmessage = null;
+          this.cbWs.onerror = null;
+          this.cbWs.onclose = null;
+          try { this.cbWs.close(); } catch(e){}
+        }
+      } catch(e){}
       this.cbWs = null;
     }
     if(this.krakenWs){
-      try { this.krakenWs.close(); } catch(e){}
+      try {
+        if(this.krakenWs.readyState === WebSocket.OPEN){
+          this.krakenWs.close();
+        } else {
+          this.krakenWs.onopen = null;
+          this.krakenWs.onmessage = null;
+          this.krakenWs.onerror = null;
+          this.krakenWs.onclose = null;
+          try { this.krakenWs.close(); } catch(e){}
+        }
+      } catch(e){}
       this.krakenWs = null;
     }
+    this._initialized = false;
+  },
+
+  connect(){
+    if(!this.cbWs || this.cbWs.readyState > 1){
+      this.connectCoinbase();
+    }
+    if(!this.krakenWs || this.krakenWs.readyState > 1){
+      this.connectKraken();
+    }
+    this.startMicroTicks();
+    this.startFallbackMonitor();
+    this.pollActiveCoin();
+    this.pollWatchlist();
   },
 
   init(){
+    // Prevent destructive duplicate re-initialization if already connected or connecting
+    if(this._initialized && (this.cbWs && this.cbWs.readyState <= 1)){
+      return;
+    }
+    this._initialized = true;
+
     if(window.LivePriceEngine && typeof window.LivePriceEngine.destroy === 'function' && window.LivePriceEngine !== this){
-      window.LivePriceEngine.destroy();
+      try { window.LivePriceEngine.destroy(); } catch(e){}
     }
     this.destroy();
+    this._initialized = true;
 
     const curSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : 'BTC').toUpperCase();
     this.activeSym = curSym;
@@ -845,9 +888,15 @@ const LivePriceEngine = {
       b.innerHTML = '<span class="ch-live-dot"></span>CONNECTING';
       b.title = 'Connecting to real-time feed...';
     } else {
-      b.className = 'ch-live-badge offline';
-      b.innerHTML = '<span class="ch-live-dot"></span>OFFLINE';
-      b.title = 'Real-time feed paused';
+      if(this.lastPrice && Date.now() - this.lastTickTime < 8000){
+        b.className = 'ch-live-badge live';
+        b.innerHTML = '<span class="ch-live-dot"></span>LIVE';
+        b.title = 'Real-Time Feed Active (REST Polling / Micro-ticks)';
+      } else {
+        b.className = 'ch-live-badge offline';
+        b.innerHTML = '<span class="ch-live-dot"></span>OFFLINE';
+        b.title = 'Real-time feed paused';
+      }
     }
   },
 
@@ -1632,6 +1681,17 @@ function updateHdr(c, oldPrice){
   if(c.image){img.src=c.image;img.style.display='block';}else img.style.display='none';
   document.getElementById('chSub').textContent=(c.symbol||'—').toUpperCase()+'/USD';
   document.getElementById('chTitle').textContent=c.name||'—';
+
+  // Keep LivePriceEngine in sync so real-time micro-ticks and streaming start immediately
+  if(c.price > 0 && window.LivePriceEngine){
+    const sym = (c.symbol || 'BTC').toUpperCase();
+    if(window.LivePriceEngine.activeSym === sym || !window.LivePriceEngine.lastPrice){
+      window.LivePriceEngine.lastPrice = c.price;
+      window.LivePriceEngine.lastRealPrice = c.price;
+      if(!window.LivePriceEngine.lastTickTime) window.LivePriceEngine.lastTickTime = Date.now();
+    }
+  }
+
   const priceEl = document.getElementById('chPrice');
   if(priceEl){
     if(c.price > 0){
@@ -1674,10 +1734,15 @@ async function loadTrending(){
     });
     if(res.ok){
       const json = await res.json();
-      const coins = (json.coins || []).slice(0, 7);
+      const rawCoins = (json.coins || []).map(item => item.item || {});
+      // Filter out obscure meme tokens: prioritize coins with top 300 market cap
+      const reputable = rawCoins
+        .filter(c => c.market_cap_rank && c.market_cap_rank > 0 && c.market_cap_rank <= 300)
+        .sort((a, b) => (a.market_cap_rank || 9999) - (b.market_cap_rank || 9999));
+      
+      const coins = reputable.length >= 3 ? reputable.slice(0, 7) : rawCoins.slice(0, 7);
       if(coins.length > 0){
-        trEl.innerHTML = coins.map((item, i) => {
-          const c = item.item || {};
+        trEl.innerHTML = coins.map((c, i) => {
           const sym = (c.symbol || '').toUpperCase();
           const img = c.thumb || c.small || '';
           const ch = c.data?.price_change_percentage_24h?.usd;

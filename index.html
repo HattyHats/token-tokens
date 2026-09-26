@@ -11,9 +11,9 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./src/style.css?v=4.2">
-  <link rel="stylesheet" href="./style.css?v=4.2">
-  <script defer src="./src/main.js?v=4.2" onerror="this.onerror=null;this.src='./main.js?v=4.2';"></script>
+  <link rel="stylesheet" href="./src/style.css?v=4.3">
+  <link rel="stylesheet" href="./style.css?v=4.3">
+  <script defer src="./src/main.js?v=4.3" onerror="this.onerror=null;this.src='./main.js?v=4.3';"></script>
   <script>
     // ══════════════════════════════════════════════════════════════
     // BULLETPROOF LIVE PRICE STREAMING & PAPER TRADING CONTROLLER
@@ -283,17 +283,7 @@
       if (navBtn) navBtn.classList.toggle('on', window.SIM.active);
       if (dtBtn) dtBtn.classList.toggle('active', window.SIM.active);
       window.updateSimUI();
-      if (window.LivePriceEngine && typeof window.LivePriceEngine.init === 'function') {
-        window.LivePriceEngine.init();
-      }
     });
-
-    // Also trigger immediately in case DOM is already ready
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      if (window.LivePriceEngine && typeof window.LivePriceEngine.init === 'function') {
-        window.LivePriceEngine.init();
-      }
-    }
   </script>
   <style>
     /* Critical UI Fallback: Guarantees dark theme integrity and full clickability under all caching/upload states */
@@ -481,11 +471,11 @@
     <div class="wl-list" id="wlList"><div style="padding:20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;font-size:.75rem;"><div class="spin" style="margin:0 auto 10px;"></div>Loading…</div></div>
 
     <div class="tr-sec" id="trendingPanel">
-      <div class="wl-hdr" style="cursor:pointer;" onclick="toggleTrendingPanel()" title="Click to collapse">
+      <div class="wl-hdr" style="cursor:pointer;" onclick="toggleTrendingPanel()" title="Click to expand/collapse">
         🔥 Trending
-        <button class="wl-ref" id="trendingToggle" style="font-size:.75rem;pointer-events:none;">▼</button>
+        <button class="wl-ref" id="trendingToggle" style="font-size:.75rem;pointer-events:none;">▶</button>
       </div>
-      <div id="trList"><div style="padding:12px;text-align:center;color:var(--text3);font-size:.75rem;">Loading…</div></div>
+      <div id="trList" style="display:none;"><div style="padding:12px;text-align:center;color:var(--text3);font-size:.75rem;">Loading…</div></div>
     </div>
 
     <!-- FEAR & GREED INDEX -->
