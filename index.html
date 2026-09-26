@@ -11,15 +11,262 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./src/style.css?v=3.2">
-  <link rel="stylesheet" href="./style.css?v=3.2">
-  <script defer src="./src/main.js?v=3.2"></script>
+  <link rel="stylesheet" href="./src/style.css?v=3.3">
+  <link rel="stylesheet" href="./style.css?v=3.3">
+  <script defer src="./src/main.js?v=3.3" onerror="this.onerror=null;this.src='./main.js?v=3.3';"></script>
+  <script>
+    // ══════════════════════════════════════════════════════════════
+    // BULLETPROOF PAPER TRADING CONTROLLER (Instant Execution)
+    // ══════════════════════════════════════════════════════════════
+    window.SIM = window.SIM || {
+      active: true,
+      balance: 10000.0,
+      position: null,
+      history: []
+    };
+
+    (function() {
+      try {
+        var saved = localStorage.getItem('tt_paper_wallet');
+        if (saved) {
+          var d = JSON.parse(saved);
+          if (typeof d.balance === 'number' && !isNaN(d.balance) && d.balance >= 10) window.SIM.balance = d.balance;
+          if (d.position) window.SIM.position = d.position;
+          if (Array.isArray(d.history)) window.SIM.history = d.history;
+        }
+        var act = localStorage.getItem('tt_paper_active');
+        window.SIM.active = act !== '0';
+      } catch(e) {}
+    })();
+
+    function fP_inline(p) {
+      if (p == null) return '—';
+      if (p === 0) return '0.00';
+      var a = Math.abs(p);
+      if (a < .00001) return p.toFixed(8);
+      if (a < .001) return p.toFixed(6);
+      if (a < .1) return p.toFixed(5);
+      if (a < 1) return p.toFixed(4);
+      if (a < 100) return p.toFixed(2);
+      if (a < 10000) return p.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      return p.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+    }
+
+    window.savePaperTrading = window.savePaperTrading || function() {
+      try {
+        localStorage.setItem('tt_paper_wallet', JSON.stringify({
+          balance: window.SIM.balance,
+          position: window.SIM.position,
+          history: (window.SIM.history || []).slice(-50)
+        }));
+        localStorage.setItem('tt_paper_active', window.SIM.active ? '1' : '0');
+      } catch(e) {}
+    };
+
+    window.updateSimUI = window.updateSimUI || function() {
+      var balEl = document.getElementById('ptBalance');
+      if (balEl) balEl.textContent = '$' + fP_inline(window.SIM.balance);
+      var card = document.getElementById('ptPosCard');
+      if (!card) return;
+      if (!window.SIM.position) {
+        card.style.display = 'none';
+        return;
+      }
+      card.style.display = 'flex';
+      var pos = window.SIM.position;
+      var sideEl = document.getElementById('ptPosSide');
+      var infoEl = document.getElementById('ptPosInfo');
+      var pnlEl = document.getElementById('ptPosPnL');
+      if (sideEl) {
+        sideEl.className = 'pt-pos-side ' + pos.side;
+        sideEl.textContent = (pos.side || 'long').toUpperCase();
+      }
+      var curPrice = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : (pos.entryPrice || 84000);
+      var pnlPct = pos.side === 'long'
+        ? ((curPrice - pos.entryPrice) / pos.entryPrice) * 100
+        : ((pos.entryPrice - curPrice) / pos.entryPrice) * 100;
+      var pnlUSD = (pnlPct / 100) * pos.amountUSD;
+      if (infoEl) infoEl.textContent = (pos.symbol || 'BTC') + ' @ $' + fP_inline(pos.entryPrice);
+      if (pnlEl) {
+        pnlEl.className = 'pt-pnl ' + (pnlUSD >= 0 ? 'pos' : 'neg');
+        pnlEl.textContent = (pnlUSD >= 0 ? '+' : '') + '$' + fP_inline(pnlUSD) + ' (' + pnlPct.toFixed(2) + '%)';
+      }
+    };
+
+    window.togglePaperTrading = function() {
+      var bar = document.getElementById('paperTradeBar');
+      var btn = document.getElementById('tradeBtn');
+      var navBtn = document.getElementById('navTradeBtn');
+      var dtBtn = document.getElementById('dtTrade');
+      if (!bar) return;
+      var isHidden = bar.classList.contains('hidden') || bar.style.display === 'none';
+      if (isHidden) {
+        bar.classList.remove('hidden');
+        bar.classList.add('show');
+        bar.style.display = 'flex';
+      } else {
+        bar.classList.add('hidden');
+        bar.classList.remove('show');
+        bar.style.display = 'none';
+      }
+      var active = !bar.classList.contains('hidden') && bar.style.display !== 'none';
+      if (btn) btn.classList.toggle('on', active);
+      if (navBtn) navBtn.classList.toggle('on', active);
+      if (dtBtn) dtBtn.classList.toggle('active', active);
+      window.SIM.active = active;
+      try { localStorage.setItem('tt_paper_active', active ? '1' : '0'); } catch(e) {}
+      if (typeof window.updateSimUI === 'function') window.updateSimUI();
+      if (typeof window.renderChart === 'function') window.renderChart();
+    };
+
+    window.setPTAmount = function(val) {
+      var inp = document.getElementById('ptAmountIn');
+      if (!inp) return;
+      if (typeof val === 'number') {
+        inp.value = val;
+      } else if (typeof val === 'string' && val.endsWith('%')) {
+        var pct = parseInt(val, 10) / 100;
+        var bal = (window.SIM.balance && !isNaN(window.SIM.balance)) ? window.SIM.balance : 10000;
+        inp.value = Math.max(10, Math.floor(bal * pct));
+      }
+    };
+
+    window.openSimPosition = function(side) {
+      if (window.SIM.position) {
+        window.closeSimPosition(true);
+      }
+      var inp = document.getElementById('ptAmountIn');
+      var amount = parseFloat(inp ? inp.value : '1000');
+      if (isNaN(amount) || amount < 10) amount = 1000;
+      if (!window.SIM.balance || isNaN(window.SIM.balance) || window.SIM.balance < 10) {
+        window.SIM.balance = 10000.0;
+      }
+      if (amount > window.SIM.balance) {
+        amount = window.SIM.balance;
+        if (inp) inp.value = amount;
+      }
+      var liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : null;
+      var domPEl = document.getElementById('chPrice');
+      var domP = domPEl ? parseFloat(domPEl.textContent.replace(/[^0-9.]/g, '')) : null;
+      var candleP = (window.ST && window.ST.candles && window.ST.candles.length) ? window.ST.candles[window.ST.candles.length - 1].c : null;
+      var coinP = (window.ST && window.ST.coin && window.ST.coin.price) ? window.ST.coin.price : null;
+      var price = liveP || domP || candleP || coinP || 84100;
+
+      var qty = amount / price;
+      window.SIM.balance -= amount;
+      var sym = (window.ST && window.ST.coin && window.ST.coin.symbol) ? window.ST.coin.symbol.toUpperCase() : 'BTC';
+      var name = (window.ST && window.ST.coin && window.ST.coin.name) ? window.ST.coin.name : 'Bitcoin';
+      var coinId = (window.ST && window.ST.coin && window.ST.coin.id) ? window.ST.coin.id : 'bitcoin';
+
+      window.SIM.position = {
+        id: 'pos_' + Date.now(),
+        coinId: coinId,
+        symbol: sym,
+        name: name,
+        side: side,
+        amountUSD: amount,
+        entryPrice: price,
+        qty: qty,
+        timestamp: Date.now()
+      };
+
+      window.savePaperTrading();
+      window.updateSimUI();
+      if (typeof window.renderChart === 'function') window.renderChart();
+      if (typeof window.showToast === 'function') {
+        window.showToast((side === 'long' ? '🟢 LONG OPENED' : '🔴 SHORT OPENED'), side.toUpperCase() + ' ' + qty.toFixed(4) + ' ' + sym + ' @ $' + fP_inline(price), 'success', 3500);
+      }
+    };
+
+    window.closeSimPosition = function(silent) {
+      if (!window.SIM.position) return;
+      var pos = window.SIM.position;
+      var liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && window.ST && window.ST.coin && window.ST.coin.id === pos.coinId) ? window.LivePriceEngine.lastPrice : null;
+      var domPEl = document.getElementById('chPrice');
+      var domP = domPEl ? parseFloat(domPEl.textContent.replace(/[^0-9.]/g, '')) : null;
+      var candleP = (window.ST && window.ST.candles && window.ST.candles.length) ? window.ST.candles[window.ST.candles.length - 1].c : null;
+      var exitPrice = liveP || domP || candleP || pos.entryPrice;
+
+      var pnlPct = pos.side === 'long'
+        ? ((exitPrice - pos.entryPrice) / pos.entryPrice) * 100
+        : ((pos.entryPrice - exitPrice) / pos.entryPrice) * 100;
+      var pnlUSD = (pnlPct / 100) * pos.amountUSD;
+      var returnTotal = Math.max(0, pos.amountUSD + pnlUSD);
+
+      window.SIM.balance += returnTotal;
+      var tradeRecord = {
+        id: pos.id,
+        coinId: pos.coinId,
+        symbol: pos.symbol,
+        name: pos.name,
+        side: pos.side,
+        amountUSD: pos.amountUSD,
+        entryPrice: pos.entryPrice,
+        qty: pos.qty,
+        exitPrice: exitPrice,
+        exitTime: Date.now(),
+        pnlPct: pnlPct,
+        pnlUSD: pnlUSD
+      };
+      if (!Array.isArray(window.SIM.history)) window.SIM.history = [];
+      window.SIM.history.push(tradeRecord);
+      window._lastPnLTrade = tradeRecord;
+      window.SIM.position = null;
+
+      window.savePaperTrading();
+      window.updateSimUI();
+      if (typeof window.renderChart === 'function') window.renderChart();
+
+      var shareBtn = document.getElementById('ptLastShareBtn');
+      if (shareBtn) shareBtn.style.display = 'inline-flex';
+
+      if (!silent && typeof window.showToast === 'function') {
+        window.showToast((pnlUSD >= 0 ? '🎉 PROFIT REALIZED' : '🛑 TRADE CLOSED'), (pnlUSD >= 0 ? '+' : '') + '$' + fP_inline(pnlUSD) + ' (' + pnlPct.toFixed(2) + '%)', pnlUSD >= 0 ? 'success' : 'warn', 4000);
+      }
+    };
+
+    window.resetSimWallet = function() {
+      window.SIM.balance = 10000.0;
+      window.SIM.position = null;
+      window.savePaperTrading();
+      window.updateSimUI();
+      if (typeof window.renderChart === 'function') window.renderChart();
+      if (typeof window.showToast === 'function') {
+        window.showToast('↺ Wallet Reset', 'Simulated balance restored to $10,000.00.', 'info', 2500);
+      }
+    };
+
+    window.openPnLModal = window.openPnLModal || function() {
+      var modal = document.getElementById('pnlModal');
+      if (modal) modal.classList.remove('hide');
+    };
+    window.closePnLModal = window.closePnLModal || function() {
+      var modal = document.getElementById('pnlModal');
+      if (modal) modal.classList.add('hide');
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var bar = document.getElementById('paperTradeBar');
+      var btn = document.getElementById('tradeBtn');
+      var navBtn = document.getElementById('navTradeBtn');
+      var dtBtn = document.getElementById('dtTrade');
+      if (bar) {
+        bar.classList.toggle('show', window.SIM.active);
+        bar.classList.toggle('hidden', !window.SIM.active);
+        bar.style.display = window.SIM.active ? 'flex' : 'none';
+      }
+      if (btn) btn.classList.toggle('on', window.SIM.active);
+      if (navBtn) navBtn.classList.toggle('on', window.SIM.active);
+      if (dtBtn) dtBtn.classList.toggle('active', window.SIM.active);
+      window.updateSimUI();
+    });
+  </script>
   <style>
     /* Critical UI Fallback: Guarantees dark theme integrity and full clickability under all caching/upload states */
     .tf, .ct { cursor: pointer !important; touch-action: manipulation; }
-    #tradeBtn.on { background: rgba(0,212,255,.16) !important; border-color: #00d4ff !important; color: #00d4ff !important; box-shadow: 0 0 10px rgba(0,212,255,.35) !important; }
+    #tradeBtn.on, #navTradeBtn.on { background: rgba(0,212,255,.16) !important; border-color: #00d4ff !important; color: #00d4ff !important; box-shadow: 0 0 10px rgba(0,212,255,.35) !important; }
     .paper-trade-bar {
-      display: none;
+      display: flex !important;
       background: linear-gradient(90deg,#0a1020 0%,#0d1628 50%,#0a1020 100%) !important;
       border-bottom: 1px solid rgba(0,212,255,.3) !important;
       padding: 8px 16px !important;
@@ -34,6 +281,7 @@
       z-index: 25;
       box-shadow: 0 4px 20px rgba(0,0,0,.5);
     }
+    .paper-trade-bar.hidden { display: none !important; }
     .paper-trade-bar.show { display: flex !important; }
     .pt-wallet { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .pt-bal-lbl { color: #3a5a80 !important; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; }
@@ -114,6 +362,7 @@
   <div class="hdr-logo">Token-Tokens</div>
   <nav class="hdr-nav">
     <button class="nb on" onclick="showTab('chart')">📊 Chart</button>
+    <button class="nb on" id="navTradeBtn" onclick="togglePaperTrading(); showTab('chart');" title="Toggle Paper Trading Terminal">💼 Paper Trade</button>
     <button class="nb" onclick="showTab('learn')">📚 Learn</button>
     <div class="hatty-drop-wrap" id="hattyDropWrap">
       <button class="nb hatty-drop-btn" onclick="toggleHattyDrop(event)">
@@ -246,7 +495,7 @@
         <button class="ct" id="lineBtn" onclick="setCT('line')">Line</button>
         <div class="dv"></div>
         <button class="ct" id="patternBtn" onclick="togglePatternScanner()" title="Toggle AI Chart Pattern Scanner">🎯 Patterns</button>
-        <button class="ct" id="tradeBtn" onclick="togglePaperTrading()" title="Toggle Paper Trading Terminal">💼 Paper Trade</button>
+        <button class="ct on" id="tradeBtn" onclick="togglePaperTrading()" title="Toggle Paper Trading Terminal">💼 Paper Trade</button>
         <div class="dv"></div>
         <button class="live-btn" onclick="doRefresh()"><span class="ldot"></span>LIVE</button>
       </div>
@@ -266,7 +515,7 @@
     </div>
 
     <!-- PAPER TRADING TERMINAL BAR -->
-    <div class="paper-trade-bar" id="paperTradeBar" style="display:none;">
+    <div class="paper-trade-bar show" id="paperTradeBar">
       <div class="pt-wallet">
         <span style="font-size:1.15rem;">💼</span>
         <div>
@@ -394,6 +643,9 @@
         </button>
         <button class="rp-dtool" id="dtNote" onclick="setDrawTool('note')" title="Add Note">
           <span class="rp-ind-icon">📝</span><span class="rp-label">Note</span>
+        </button>
+        <button class="rp-dtool" id="dtTrade" onclick="togglePaperTrading()" title="Toggle Paper Trading Terminal">
+          <span class="rp-ind-icon">💼</span><span class="rp-label">Paper Trade</span>
         </button>
 
         <div class="rp-sep"></div>

@@ -2727,8 +2727,8 @@ function renderPatterns(ctx, vis, toX, toY, pH, PAD_L, PAD_R, W){
 }
 
 /* ══════════════════ PAPER TRADING TERMINAL ══════════════════ */
-const SIM = {
-  active: false,
+const SIM = window.SIM = window.SIM || {
+  active: true,
   balance: 10000.0,
   position: null,
   history: []
@@ -2739,20 +2739,26 @@ function initPaperTrading(){
     const saved = localStorage.getItem('tt_paper_wallet');
     if(saved){
       const d = JSON.parse(saved);
-      if(typeof d.balance === 'number') SIM.balance = d.balance;
+      if(typeof d.balance === 'number' && !isNaN(d.balance) && d.balance >= 10) SIM.balance = d.balance;
       if(d.position) SIM.position = d.position;
       if(Array.isArray(d.history)) SIM.history = d.history;
     }
     const act = localStorage.getItem('tt_paper_active');
-    if(act === '1') SIM.active = true;
+    // Active by default unless user explicitly closed it
+    SIM.active = act !== '0';
   }catch(e){}
   const bar = document.getElementById('paperTradeBar');
   const btn = document.getElementById('tradeBtn');
+  const navBtn = document.getElementById('navTradeBtn');
+  const dtBtn = document.getElementById('dtTrade');
   if(bar){
+    bar.classList.toggle('hidden', !SIM.active);
     bar.classList.toggle('show', SIM.active);
     bar.style.display = SIM.active ? 'flex' : 'none';
   }
   if(btn) btn.classList.toggle('on', SIM.active);
+  if(navBtn) navBtn.classList.toggle('on', SIM.active);
+  if(dtBtn) dtBtn.classList.toggle('active', SIM.active);
   updateSimUI();
 }
 
@@ -2772,11 +2778,16 @@ function togglePaperTrading(){
   try{ localStorage.setItem('tt_paper_active', SIM.active ? '1' : '0'); }catch(e){}
   const bar = document.getElementById('paperTradeBar');
   const btn = document.getElementById('tradeBtn');
+  const navBtn = document.getElementById('navTradeBtn');
+  const dtBtn = document.getElementById('dtTrade');
   if(bar){
+    bar.classList.toggle('hidden', !SIM.active);
     bar.classList.toggle('show', SIM.active);
     bar.style.display = SIM.active ? 'flex' : 'none';
   }
   if(btn) btn.classList.toggle('on', SIM.active);
+  if(navBtn) navBtn.classList.toggle('on', SIM.active);
+  if(dtBtn) dtBtn.classList.toggle('active', SIM.active);
   updateSimUI();
   renderChart();
 }
@@ -2788,38 +2799,37 @@ function setPTAmount(val){
     inp.value = val;
   } else if(typeof val === 'string' && val.endsWith('%')){
     const pct = parseInt(val) / 100;
-    const calc = Math.max(10, Math.floor(SIM.balance * pct));
+    const bal = (SIM.balance && !isNaN(SIM.balance)) ? SIM.balance : 10000;
+    const calc = Math.max(10, Math.floor(bal * pct));
     inp.value = calc;
   }
 }
 
 function openSimPosition(side){
+  // If a position already exists, smoothly close it and realize PnL without blocking
   if(SIM.position){
-    const confirmSwitch = confirm(`You currently have an open ${SIM.position.side.toUpperCase()} position on ${SIM.position.symbol}. Would you like to close it now to open this new ${side.toUpperCase()} position?`);
-    if(confirmSwitch){
-      closeSimPosition();
-    } else {
-      showToast('⚠️ Position Active', `Please close your current ${SIM.position.side.toUpperCase()} trade before opening a new position.`, 'info', 2500);
-      return;
-    }
-  }
-  const inp = document.getElementById('ptAmountIn');
-  const amount = parseFloat(inp?.value || '1000');
-  if(!amount || amount < 10){
-    showToast('Invalid Amount', 'Minimum trade size is $10.', 'warn', 2000);
-    return;
-  }
-  if(amount > SIM.balance){
-    showToast('Insufficient Funds', `Available simulated balance is $${fP(SIM.balance)}.`, 'err', 2500);
-    return;
+    closeSimPosition(true);
   }
 
-  // Get current execution price: prefer live WebSocket price, then latest candle close, then coin price, fallback 100
+  const inp = document.getElementById('ptAmountIn');
+  let amount = parseFloat(inp?.value || '1000');
+  if(isNaN(amount) || amount < 10) amount = 1000;
+
+  if(!SIM.balance || isNaN(SIM.balance) || SIM.balance < 10){
+    SIM.balance = 10000.0;
+  }
+  if(amount > SIM.balance){
+    amount = SIM.balance;
+    if(inp) inp.value = amount;
+  }
+
+  // Get current execution price: prefer live WebSocket price, then DOM price, then latest candle, then coin price, fallback 100
   const liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : null;
+  const domP = parseFloat((document.getElementById('chPrice')?.textContent || '').replace(/[^0-9.]/g, '')) || null;
   const lastCandle = ST.candles && ST.candles.length ? ST.candles[ST.candles.length - 1] : null;
-  const price = liveP || (lastCandle ? lastCandle.c : (ST.coin.price || 100));
+  const price = liveP || domP || (lastCandle ? lastCandle.c : (ST.coin.price || 100));
   if(!price || price <= 0){
-    showToast('Price Error', 'Unable to fetch current market price for trade execution.', 'err', 2000);
+    showToast('Price Error', 'Unable to fetch current market price for trade execution.', 'warn', 2000);
     return;
   }
 
@@ -2848,12 +2858,13 @@ function openSimPosition(side){
   );
 }
 
-function closeSimPosition(){
+function closeSimPosition(silent = false){
   if(!SIM.position) return;
   const pos = SIM.position;
   const liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && ST.coin.id === pos.coinId) ? window.LivePriceEngine.lastPrice : null;
+  const domP = (ST.coin.id === pos.coinId) ? (parseFloat((document.getElementById('chPrice')?.textContent || '').replace(/[^0-9.]/g, '')) || null) : null;
   const lastCandle = ST.candles && ST.candles.length ? ST.candles[ST.candles.length - 1] : null;
-  const exitPrice = liveP || ((ST.coin.id === pos.coinId && lastCandle) ? lastCandle.c : (ST.coin.id === pos.coinId && ST.coin.price ? ST.coin.price : pos.entryPrice));
+  const exitPrice = liveP || domP || ((ST.coin.id === pos.coinId && lastCandle) ? lastCandle.c : (ST.coin.id === pos.coinId && ST.coin.price ? ST.coin.price : pos.entryPrice));
   
   const pnlPct = pos.side === 'long'
     ? ((exitPrice - pos.entryPrice) / pos.entryPrice) * 100
@@ -2880,22 +2891,23 @@ function closeSimPosition(){
   const shareBtn = document.getElementById('ptLastShareBtn');
   if(shareBtn) shareBtn.style.display = 'inline-flex';
 
-  showToast(
-    pnlUSD >= 0 ? '🎉 TRADE CLOSED IN PROFIT' : '🛑 TRADE CLOSED',
-    `Realized PnL: ${pnlUSD >= 0 ? '+' : ''}$${fP(pnlUSD)} (${pnlPct.toFixed(2)}%) · Click [📸 Last Card] to view card`,
-    pnlUSD >= 0 ? 'success' : 'warn',
-    4000
-  );
+  if(!silent){
+    showToast(
+      pnlUSD >= 0 ? '🎉 TRADE CLOSED IN PROFIT' : '🛑 TRADE CLOSED',
+      `Realized PnL: ${pnlUSD >= 0 ? '+' : ''}$${fP(pnlUSD)} (${pnlPct.toFixed(2)}%) · Click [📸 Last Card] to view card`,
+      pnlUSD >= 0 ? 'success' : 'warn',
+      4000
+    );
+  }
 }
 
 function resetSimWallet(){
-  if(!confirm('Reset simulated wallet balance to $10,000.00 and clear active trades?')) return;
   SIM.balance = 10000.0;
   SIM.position = null;
   savePaperTrading();
   updateSimUI();
   renderChart();
-  showToast('↺ Wallet Reset', 'Simulated balance restored to $10,000.00.', 'info', 2000);
+  showToast('↺ Wallet Reset', 'Simulated balance restored to $10,000.00.', 'info', 2500);
 }
 
 function updateSimUI(){

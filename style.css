@@ -1229,7 +1229,7 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── PAPER TRADING TERMINAL BAR ─────────────────────── */
 .paper-trade-bar{
-  display:none;
+  display:flex !important;
   background:linear-gradient(90deg,#0a1020 0%,#0d1628 50%,#0a1020 100%) !important;
   border-bottom:1px solid rgba(0,212,255,.3) !important;
   padding:8px 16px !important;
@@ -1244,6 +1244,7 @@ button{cursor:pointer;font-family:inherit;}
   z-index:25;
   box-shadow:0 4px 20px rgba(0,0,0,.5);
 }
+.paper-trade-bar.hidden{display:none !important;}
 .paper-trade-bar.show{display:flex !important;}
 .pt-wallet{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .pt-bal-lbl{color:#3a5a80 !important;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;}
