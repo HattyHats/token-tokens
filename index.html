@@ -11,32 +11,64 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./src/style.css?v=3.1">
-  <link rel="stylesheet" href="./style.css?v=3.1">
-  <script defer src="./src/main.js?v=3.1"></script>
+  <link rel="stylesheet" href="./src/style.css?v=3.2">
+  <link rel="stylesheet" href="./style.css?v=3.2">
+  <script defer src="./src/main.js?v=3.2"></script>
   <style>
-    /* Critical UI Fallback: Guarantees dark theme integrity under all caching/upload states */
-    .paper-trade-bar{display:none;background:linear-gradient(90deg,#0a1020 0%,#0d1628 50%,#0a1020 100%) !important;border-bottom:1px solid rgba(0,212,255,.3) !important;padding:6px 16px !important;align-items:center;justify-content:space-between;gap:12px;font-family:'Share Tech Mono',monospace;font-size:.78rem;flex-wrap:nowrap;overflow-x:auto;box-shadow:0 4px 20px rgba(0,0,0,.5);position:relative;z-index:15;}
-    .paper-trade-bar.show{display:flex !important;}
-    .pt-wallet{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-    .pt-bal-lbl{color:#3a5a80 !important;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;}
-    .pt-bal-val{font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:700;color:#00d4ff !important;text-shadow:0 0 10px rgba(0,212,255,.4);}
-    .pt-inputs{display:flex;align-items:center;gap:5px;flex-shrink:0;}
-    .pt-in{background:#050810 !important;border:1px solid rgba(0,212,255,.35) !important;color:#00d4ff !important;font-family:'Share Tech Mono',monospace !important;font-size:.82rem !important;padding:4px 8px;border-radius:4px;width:85px;outline:none;}
-    .pt-quick-btn{background:rgba(0,212,255,.08) !important;border:1px solid rgba(0,212,255,.25) !important;color:#7a9cc0 !important;font-family:'Share Tech Mono',monospace !important;font-size:.65rem !important;padding:4px 7px;border-radius:4px;cursor:pointer;}
-    .pt-actions{display:flex;align-items:center;gap:7px;flex-shrink:0;}
-    .pt-btn-buy{background:linear-gradient(135deg,rgba(0,255,136,.25),rgba(0,255,136,.1)) !important;border:1px solid #00ff88 !important;color:#00ff88 !important;font-family:'Orbitron',sans-serif !important;font-size:.72rem !important;font-weight:700 !important;padding:6px 13px;border-radius:4px;cursor:pointer;}
-    .pt-btn-sell{background:linear-gradient(135deg,rgba(255,51,102,.25),rgba(255,51,102,.1)) !important;border:1px solid #ff3366 !important;color:#ff3366 !important;font-family:'Orbitron',sans-serif !important;font-size:.72rem !important;font-weight:700 !important;padding:6px 13px;border-radius:4px;cursor:pointer;}
-    .pt-btn-reset{background:rgba(255,255,255,.04) !important;border:1px solid rgba(122,156,192,.3) !important;color:#7a9cc0 !important;font-family:'Share Tech Mono',monospace !important;font-size:.68rem !important;padding:5px 10px;border-radius:4px;cursor:pointer;flex-shrink:0;}
-    .pt-btn-dismiss{background:transparent !important;border:none !important;color:#3a5a80 !important;font-size:.85rem !important;cursor:pointer;padding:2px 6px;margin-left:auto;flex-shrink:0;}
-    .pt-btn-dismiss:hover{color:#ff3366 !important;}
-    .pattern-banner{display:none;background:linear-gradient(90deg,rgba(123,47,255,.2),rgba(0,212,255,.14),rgba(10,16,32,.98)) !important;border-bottom:1px solid rgba(0,212,255,.35) !important;padding:6px 16px !important;align-items:center;justify-content:space-between;gap:12px;font-family:'Share Tech Mono',monospace;font-size:.75rem;flex-wrap:nowrap;overflow-x:auto;position:relative;z-index:10;}
-    .pattern-banner.show{display:flex !important;}
-    .pat-pill{background:rgba(0,212,255,.1) !important;border:1px solid rgba(0,212,255,.3) !important;padding:3px 8px;border-radius:4px;color:#e0eeff !important;font-size:.7rem;}
-    .pat-signal{font-family:'Orbitron',sans-serif;font-weight:700;font-size:.72rem;padding:3px 10px;border-radius:20px;letter-spacing:.06em;}
-    .pat-signal.neutral{background:rgba(255,200,0,.2) !important;color:#ffc800 !important;border:1px solid #ffc800 !important;}
-    .ch-live-badge{display:inline-flex !important;align-items:center;gap:5px;padding:2px 7px;border-radius:10px;font-family:'Share Tech Mono',monospace;font-size:.62rem;font-weight:700;letter-spacing:.08em;background:rgba(0,255,136,.12) !important;border:1px solid rgba(0,255,136,.35) !important;color:#00ff88 !important;box-shadow:0 0 10px rgba(0,255,136,.2);}
-    .ch-live-dot{width:6px;height:6px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;animation:liveDotPulse 1.5s infinite ease-in-out;}
+    /* Critical UI Fallback: Guarantees dark theme integrity and full clickability under all caching/upload states */
+    .tf, .ct { cursor: pointer !important; touch-action: manipulation; }
+    #tradeBtn.on { background: rgba(0,212,255,.16) !important; border-color: #00d4ff !important; color: #00d4ff !important; box-shadow: 0 0 10px rgba(0,212,255,.35) !important; }
+    .paper-trade-bar {
+      display: none;
+      background: linear-gradient(90deg,#0a1020 0%,#0d1628 50%,#0a1020 100%) !important;
+      border-bottom: 1px solid rgba(0,212,255,.3) !important;
+      padding: 8px 16px !important;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      row-gap: 8px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .78rem;
+      flex-wrap: wrap !important;
+      position: relative;
+      z-index: 25;
+      box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    }
+    .paper-trade-bar.show { display: flex !important; }
+    .pt-wallet { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .pt-bal-lbl { color: #3a5a80 !important; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; }
+    .pt-bal-val { font-family: 'Orbitron', sans-serif; font-size: 1rem; font-weight: 700; color: #00d4ff !important; text-shadow: 0 0 10px rgba(0,212,255,.4); }
+    .pt-inputs { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; flex-shrink: 0; }
+    .pt-in { background: #050810 !important; border: 1px solid rgba(0,212,255,.35) !important; color: #00d4ff !important; font-family: 'Share Tech Mono', monospace !important; font-size: .82rem !important; padding: 4px 8px; border-radius: 4px; width: 85px; outline: none; }
+    .pt-quick-btn { background: rgba(0,212,255,.08) !important; border: 1px solid rgba(0,212,255,.25) !important; color: #7a9cc0 !important; font-family: 'Share Tech Mono', monospace !important; font-size: .65rem !important; padding: 4px 7px; border-radius: 4px; cursor: pointer !important; touch-action: manipulation; }
+    .pt-quick-btn:hover { background: rgba(0,212,255,.25) !important; color: #00d4ff !important; border-color: #00d4ff !important; }
+    .pt-actions { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+    .pt-btn-buy { background: linear-gradient(135deg,rgba(0,255,136,.3),rgba(0,255,136,.12)) !important; border: 1.5px solid #00ff88 !important; color: #00ff88 !important; font-family: 'Orbitron', sans-serif !important; font-size: .72rem !important; font-weight: 700 !important; padding: 6px 13px; border-radius: 4px; cursor: pointer !important; touch-action: manipulation; letter-spacing: .06em; box-shadow: 0 0 8px rgba(0,255,136,.2); }
+    .pt-btn-buy:hover { background: #00ff88 !important; color: #050810 !important; box-shadow: 0 0 14px rgba(0,255,136,.6) !important; }
+    .pt-btn-sell { background: linear-gradient(135deg,rgba(255,51,102,.3),rgba(255,51,102,.12)) !important; border: 1.5px solid #ff3366 !important; color: #ff3366 !important; font-family: 'Orbitron', sans-serif !important; font-size: .72rem !important; font-weight: 700 !important; padding: 6px 13px; border-radius: 4px; cursor: pointer !important; touch-action: manipulation; letter-spacing: .06em; box-shadow: 0 0 8px rgba(255,51,102,.2); }
+    .pt-btn-sell:hover { background: #ff3366 !important; color: #fff !important; box-shadow: 0 0 14px rgba(255,51,102,.6) !important; }
+    .pt-pos-card { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,.55) !important; border: 1px solid rgba(0,212,255,.35) !important; border-radius: 6px; padding: 4px 10px; flex-shrink: 0; }
+    .pt-pos-side { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: .72rem; padding: 2px 6px; border-radius: 3px; }
+    .pt-pos-side.long { background: rgba(0,255,136,.2) !important; color: #00ff88 !important; border: 1px solid rgba(0,255,136,.4) !important; }
+    .pt-pos-side.short { background: rgba(255,51,102,.2) !important; color: #ff3366 !important; border: 1px solid rgba(255,51,102,.4) !important; }
+    .pt-pnl { font-family: 'Share Tech Mono', monospace; font-size: .85rem; font-weight: 700; }
+    .pt-pnl.pos { color: #00ff88 !important; text-shadow: 0 0 8px rgba(0,255,136,.4); }
+    .pt-pnl.neg { color: #ff3366 !important; text-shadow: 0 0 8px rgba(255,51,102,.4); }
+    .pt-btn-close { background: rgba(255,200,0,.2) !important; border: 1px solid #ffc800 !important; color: #ffc800 !important; font-family: 'Share Tech Mono', monospace !important; font-size: .65rem !important; font-weight: 700 !important; padding: 3px 8px; border-radius: 4px; cursor: pointer !important; touch-action: manipulation; }
+    .pt-btn-close:hover { background: #ffc800 !important; color: #050810 !important; }
+    .pt-btn-share { background: rgba(123,47,255,.2) !important; border: 1px solid #7b2fff !important; color: #c49eff !important; font-family: 'Share Tech Mono', monospace !important; font-size: .68rem !important; padding: 4px 8px; border-radius: 4px; cursor: pointer !important; touch-action: manipulation; }
+    .pt-btn-share:hover { background: #7b2fff !important; color: #fff !important; }
+    .pt-btn-reset { background: rgba(255,255,255,.04) !important; border: 1px solid rgba(122,156,192,.3) !important; color: #7a9cc0 !important; font-family: 'Share Tech Mono', monospace !important; font-size: .68rem !important; padding: 5px 10px; border-radius: 4px; cursor: pointer !important; touch-action: manipulation; flex-shrink: 0; }
+    .pt-btn-reset:hover { border-color: #00d4ff !important; color: #00d4ff !important; }
+    .pt-btn-dismiss { background: transparent !important; border: none !important; color: #7a9cc0 !important; font-size: .9rem !important; cursor: pointer !important; touch-action: manipulation; padding: 2px 6px; flex-shrink: 0; }
+    .pt-btn-dismiss:hover { color: #ff3366 !important; }
+    .pattern-banner { display: none; background: linear-gradient(90deg,rgba(123,47,255,.2),rgba(0,212,255,.14),rgba(10,16,32,.98)) !important; border-bottom: 1px solid rgba(0,212,255,.35) !important; padding: 6px 16px !important; align-items: center; justify-content: space-between; gap: 12px; font-family: 'Share Tech Mono', monospace; font-size: .75rem; flex-wrap: wrap !important; position: relative; z-index: 20; }
+    .pattern-banner.show { display: flex !important; }
+    .pat-pill { background: rgba(0,212,255,.1) !important; border: 1px solid rgba(0,212,255,.3) !important; padding: 3px 8px; border-radius: 4px; color: #e0eeff !important; font-size: .7rem; }
+    .pat-signal { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: .72rem; padding: 3px 10px; border-radius: 20px; letter-spacing: .06em; }
+    .pat-signal.neutral { background: rgba(255,200,0,.2) !important; color: #ffc800 !important; border: 1px solid #ffc800 !important; }
+    .ch-live-badge { display: inline-flex !important; align-items: center; gap: 5px; padding: 2px 7px; border-radius: 10px; font-family: 'Share Tech Mono', monospace; font-size: .62rem; font-weight: 700; letter-spacing: .08em; background: rgba(0,255,136,.12) !important; border: 1px solid rgba(0,255,136,.35) !important; color: #00ff88 !important; box-shadow: 0 0 10px rgba(0,255,136,.2); }
+    .ch-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 8px #00ff88; animation: liveDotPulse 1.5s infinite ease-in-out; }
   </style>
 </head>
 <body>
@@ -236,24 +268,24 @@
     <!-- PAPER TRADING TERMINAL BAR -->
     <div class="paper-trade-bar" id="paperTradeBar" style="display:none;">
       <div class="pt-wallet">
-        <span style="font-size:1.1rem;">💼</span>
+        <span style="font-size:1.15rem;">💼</span>
         <div>
           <div class="pt-bal-lbl">Simulated Wallet</div>
           <div class="pt-bal-val" id="ptBalance">$10,000.00</div>
         </div>
       </div>
       <div class="pt-inputs">
-        <span style="color:var(--text3);font-size:.68rem;">TRADE ($):</span>
-        <input class="pt-in" id="ptAmountIn" type="number" value="1000" min="10" step="50">
-        <button class="pt-quick-btn" onclick="setPTAmount(500)">$500</button>
-        <button class="pt-quick-btn" onclick="setPTAmount(1000)">$1K</button>
-        <button class="pt-quick-btn" onclick="setPTAmount('25%')">25%</button>
-        <button class="pt-quick-btn" onclick="setPTAmount('50%')">50%</button>
-        <button class="pt-quick-btn" onclick="setPTAmount('100%')">MAX</button>
+        <span style="color:var(--text3);font-size:.68rem;font-weight:600;">TRADE ($):</span>
+        <input class="pt-in" id="ptAmountIn" type="number" value="1000" min="10" step="50" aria-label="Trade Amount in USD">
+        <button type="button" class="pt-quick-btn" onclick="setPTAmount(500)">$500</button>
+        <button type="button" class="pt-quick-btn" onclick="setPTAmount(1000)">$1K</button>
+        <button type="button" class="pt-quick-btn" onclick="setPTAmount('25%')">25%</button>
+        <button type="button" class="pt-quick-btn" onclick="setPTAmount('50%')">50%</button>
+        <button type="button" class="pt-quick-btn" onclick="setPTAmount('100%')">MAX</button>
       </div>
       <div class="pt-actions">
-        <button class="pt-btn-buy" onclick="openSimPosition('long')">▲ BUY / LONG</button>
-        <button class="pt-btn-sell" onclick="openSimPosition('short')">▼ SELL / SHORT</button>
+        <button type="button" class="pt-btn-buy" onclick="openSimPosition('long')" title="Open simulated Long position">▲ BUY / LONG</button>
+        <button type="button" class="pt-btn-sell" onclick="openSimPosition('short')" title="Open simulated Short position">▼ SELL / SHORT</button>
       </div>
       <div class="pt-pos-card" id="ptPosCard" style="display:none;">
         <span class="pt-pos-side long" id="ptPosSide">LONG</span>
@@ -261,12 +293,14 @@
           <span style="font-size:.65rem;color:var(--text3);" id="ptPosInfo">BTC @ $84,200</span>
           <span class="pt-pnl pos" id="ptPosPnL">+$0.00 (+0.0%)</span>
         </div>
-        <button class="pt-btn-close" onclick="closeSimPosition()">✕ Close</button>
-        <button class="pt-btn-share" onclick="openPnLModal()">📸 Share</button>
+        <button type="button" class="pt-btn-close" onclick="closeSimPosition()" title="Close current simulated position at market price">✕ Close</button>
+        <button type="button" class="pt-btn-share" onclick="openPnLModal()" title="View and share cyberpunk trade card">📸 Share</button>
       </div>
-      <button class="pt-btn-share" id="ptLastShareBtn" onclick="openPnLModal()" style="display:none;padding:5px 10px;font-size:.7rem;" title="View Last Closed Trade PnL Card">📸 Last Card</button>
-      <button class="pt-btn-reset" onclick="resetSimWallet()" title="Reset virtual wallet to $10,000">↺ Reset</button>
-      <button class="pt-btn-dismiss" onclick="togglePaperTrading()" title="Close paper trading bar">✕</button>
+      <div class="pt-controls" style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;">
+        <button type="button" class="pt-btn-share" id="ptLastShareBtn" onclick="openPnLModal()" style="display:none;padding:5px 10px;font-size:.7rem;" title="View Last Closed Trade PnL Card">📸 Last Card</button>
+        <button type="button" class="pt-btn-reset" onclick="resetSimWallet()" title="Reset virtual wallet to $10,000">↺ Reset</button>
+        <button type="button" class="pt-btn-dismiss" onclick="togglePaperTrading()" title="Close paper trading bar">✕</button>
+      </div>
     </div>
 
     <!-- MINI TIMEFRAME CHARTS -->

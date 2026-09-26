@@ -2743,9 +2743,16 @@ function initPaperTrading(){
       if(d.position) SIM.position = d.position;
       if(Array.isArray(d.history)) SIM.history = d.history;
     }
+    const act = localStorage.getItem('tt_paper_active');
+    if(act === '1') SIM.active = true;
   }catch(e){}
   const bar = document.getElementById('paperTradeBar');
-  if(bar) bar.style.display = SIM.active ? 'flex' : 'none';
+  const btn = document.getElementById('tradeBtn');
+  if(bar){
+    bar.classList.toggle('show', SIM.active);
+    bar.style.display = SIM.active ? 'flex' : 'none';
+  }
+  if(btn) btn.classList.toggle('on', SIM.active);
   updateSimUI();
 }
 
@@ -2756,11 +2763,13 @@ function savePaperTrading(){
       position: SIM.position,
       history: SIM.history.slice(-50)
     }));
+    localStorage.setItem('tt_paper_active', SIM.active ? '1' : '0');
   }catch(e){}
 }
 
 function togglePaperTrading(){
   SIM.active = !SIM.active;
+  try{ localStorage.setItem('tt_paper_active', SIM.active ? '1' : '0'); }catch(e){}
   const bar = document.getElementById('paperTradeBar');
   const btn = document.getElementById('tradeBtn');
   if(bar){
@@ -2786,8 +2795,13 @@ function setPTAmount(val){
 
 function openSimPosition(side){
   if(SIM.position){
-    showToast('⚠️ Position Active', 'Please close your current trade before opening a new position.', 'info', 2500);
-    return;
+    const confirmSwitch = confirm(`You currently have an open ${SIM.position.side.toUpperCase()} position on ${SIM.position.symbol}. Would you like to close it now to open this new ${side.toUpperCase()} position?`);
+    if(confirmSwitch){
+      closeSimPosition();
+    } else {
+      showToast('⚠️ Position Active', `Please close your current ${SIM.position.side.toUpperCase()} trade before opening a new position.`, 'info', 2500);
+      return;
+    }
   }
   const inp = document.getElementById('ptAmountIn');
   const amount = parseFloat(inp?.value || '1000');
@@ -2800,8 +2814,10 @@ function openSimPosition(side){
     return;
   }
 
+  // Get current execution price: prefer live WebSocket price, then latest candle close, then coin price, fallback 100
+  const liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice) ? window.LivePriceEngine.lastPrice : null;
   const lastCandle = ST.candles && ST.candles.length ? ST.candles[ST.candles.length - 1] : null;
-  const price = lastCandle ? lastCandle.c : (ST.coin.price || 100);
+  const price = liveP || (lastCandle ? lastCandle.c : (ST.coin.price || 100));
   if(!price || price <= 0){
     showToast('Price Error', 'Unable to fetch current market price for trade execution.', 'err', 2000);
     return;
@@ -2827,16 +2843,17 @@ function openSimPosition(side){
   showToast(
     (side === 'long' ? '🟢 LONG OPENED' : '🔴 SHORT OPENED'),
     `${side.toUpperCase()} ${qty.toFixed(4)} ${SIM.position.symbol} @ $${fP(price)} ($${fP(amount)})`,
-    'ok',
-    3000
+    'success',
+    3500
   );
 }
 
 function closeSimPosition(){
   if(!SIM.position) return;
   const pos = SIM.position;
+  const liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && ST.coin.id === pos.coinId) ? window.LivePriceEngine.lastPrice : null;
   const lastCandle = ST.candles && ST.candles.length ? ST.candles[ST.candles.length - 1] : null;
-  const exitPrice = (ST.coin.id === pos.coinId && lastCandle) ? lastCandle.c : pos.entryPrice;
+  const exitPrice = liveP || ((ST.coin.id === pos.coinId && lastCandle) ? lastCandle.c : (ST.coin.id === pos.coinId && ST.coin.price ? ST.coin.price : pos.entryPrice));
   
   const pnlPct = pos.side === 'long'
     ? ((exitPrice - pos.entryPrice) / pos.entryPrice) * 100
@@ -2866,7 +2883,7 @@ function closeSimPosition(){
   showToast(
     pnlUSD >= 0 ? '🎉 TRADE CLOSED IN PROFIT' : '🛑 TRADE CLOSED',
     `Realized PnL: ${pnlUSD >= 0 ? '+' : ''}$${fP(pnlUSD)} (${pnlPct.toFixed(2)}%) · Click [📸 Last Card] to view card`,
-    pnlUSD >= 0 ? 'ok' : 'err',
+    pnlUSD >= 0 ? 'success' : 'warn',
     4000
   );
 }
@@ -2904,14 +2921,21 @@ function updateSimUI(){
     sideEl.textContent = pos.side.toUpperCase();
   }
 
+  const liveP = (window.LivePriceEngine && window.LivePriceEngine.lastPrice && ST.coin.id === pos.coinId) ? window.LivePriceEngine.lastPrice : null;
   const lastCandle = ST.candles && ST.candles.length ? ST.candles[ST.candles.length - 1] : null;
-  const curPrice = (ST.coin.id === pos.coinId && lastCandle) ? lastCandle.c : pos.entryPrice;
+  const curPrice = liveP || ((ST.coin.id === pos.coinId && lastCandle) ? lastCandle.c : (ST.coin.id === pos.coinId && ST.coin.price ? ST.coin.price : pos.entryPrice));
   const pnlPct = pos.side === 'long'
     ? ((curPrice - pos.entryPrice) / pos.entryPrice) * 100
     : ((pos.entryPrice - curPrice) / pos.entryPrice) * 100;
   const pnlUSD = (pnlPct / 100) * pos.amountUSD;
 
-  if(infoEl) infoEl.textContent = `${pos.symbol} @ $${fP(pos.entryPrice)}`;
+  if(infoEl) {
+    if(pos.coinId !== ST.coin.id) {
+      infoEl.textContent = `${pos.symbol} @ $${fP(pos.entryPrice)} (Active)`;
+    } else {
+      infoEl.textContent = `${pos.symbol} @ $${fP(pos.entryPrice)}`;
+    }
+  }
   if(pnlEl){
     pnlEl.className = 'pt-pnl ' + (pnlUSD >= 0 ? 'pos' : 'neg');
     pnlEl.textContent = `${pnlUSD >= 0 ? '+' : ''}$${fP(pnlUSD)} (${pnlPct.toFixed(2)}%)`;
@@ -4661,4 +4685,5 @@ window.closePnLModal = closePnLModal;
 window.downloadPnLCard = downloadPnLCard;
 window.copyPnLCard = copyPnLCard;
 window.LivePriceEngine = LivePriceEngine;
+window.SIM = SIM;
 
