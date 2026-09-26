@@ -172,6 +172,7 @@
         <img class="ch-img" id="chImg" src="" alt="" style="display:none" onerror="this.style.display='none'">
         <div><div class="ch-sub" id="chSub">BTC/USD</div><div class="ch-title" id="chTitle">Bitcoin</div></div>
         <div class="ch-price" id="chPrice">$—</div>
+        <div class="ch-live-badge live" id="chLiveBadge" title="Real-Time WebSocket Feed Active"><span class="ch-live-dot"></span>LIVE</div>
         <div class="ch-badge pos" id="chBadge">—</div>
         <div class="ch-meta"><span id="chMcap">MCap: —</span><span id="chVol">Vol 24h: —</span><span id="chATH" style="color:var(--accent3);font-size:.62rem;"></span></div>
       </div>
@@ -187,8 +188,59 @@
         <button class="ct on" id="candleBtn" onclick="setCT('candle')">Candle</button>
         <button class="ct" id="lineBtn" onclick="setCT('line')">Line</button>
         <div class="dv"></div>
+        <button class="ct" id="patternBtn" onclick="togglePatternScanner()" title="Toggle AI Chart Pattern Scanner">🎯 Patterns</button>
+        <button class="ct" id="tradeBtn" onclick="togglePaperTrading()" title="Toggle Paper Trading Terminal">💼 Paper Trade</button>
+        <div class="dv"></div>
         <button class="live-btn" onclick="doRefresh()"><span class="ldot"></span>LIVE</button>
       </div>
+    </div>
+
+    <!-- AI PATTERN SCANNER & CONFLUENCE BANNER -->
+    <div class="pattern-banner" id="patternBanner">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="pat-tag bullish" id="patName">🎯 SCANNING PATTERNS…</span>
+        <span class="pat-pill" id="patConfidence">Confidence: —</span>
+        <span class="pat-pill" id="patTarget">Target: —</span>
+      </div>
+      <div class="pat-meta">
+        <span style="color:var(--text3);font-size:.68rem;" id="patRationale">Analyzing swing structure…</span>
+        <span class="pat-signal neutral" id="patSignal">CONFLUENCE: —</span>
+      </div>
+    </div>
+
+    <!-- PAPER TRADING TERMINAL BAR -->
+    <div class="paper-trade-bar" id="paperTradeBar">
+      <div class="pt-wallet">
+        <span style="font-size:1.1rem;">💼</span>
+        <div>
+          <div class="pt-bal-lbl">Simulated Wallet</div>
+          <div class="pt-bal-val" id="ptBalance">$10,000.00</div>
+        </div>
+      </div>
+      <div class="pt-inputs">
+        <span style="color:var(--text3);font-size:.68rem;">TRADE ($):</span>
+        <input class="pt-in" id="ptAmountIn" type="number" value="1000" min="10" step="50">
+        <button class="pt-quick-btn" onclick="setPTAmount(500)">$500</button>
+        <button class="pt-quick-btn" onclick="setPTAmount(1000)">$1K</button>
+        <button class="pt-quick-btn" onclick="setPTAmount('25%')">25%</button>
+        <button class="pt-quick-btn" onclick="setPTAmount('50%')">50%</button>
+        <button class="pt-quick-btn" onclick="setPTAmount('100%')">MAX</button>
+      </div>
+      <div class="pt-actions">
+        <button class="pt-btn-buy" onclick="openSimPosition('long')">▲ BUY / LONG</button>
+        <button class="pt-btn-sell" onclick="openSimPosition('short')">▼ SELL / SHORT</button>
+      </div>
+      <div class="pt-pos-card" id="ptPosCard" style="display:none;">
+        <span class="pt-pos-side long" id="ptPosSide">LONG</span>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+          <span style="font-size:.65rem;color:var(--text3);" id="ptPosInfo">BTC @ $84,200</span>
+          <span class="pt-pnl pos" id="ptPosPnL">+$0.00 (+0.0%)</span>
+        </div>
+        <button class="pt-btn-close" onclick="closeSimPosition()">✕ Close</button>
+        <button class="pt-btn-share" onclick="openPnLModal()">📸 Share</button>
+      </div>
+      <button class="pt-btn-share" id="ptLastShareBtn" onclick="openPnLModal()" style="display:none;padding:5px 10px;font-size:.7rem;" title="View Last Closed Trade PnL Card">📸 Last Card</button>
+      <button class="pt-btn-reset" onclick="resetSimWallet()" title="Reset virtual wallet to $10,000">↺ Reset</button>
     </div>
 
     <!-- MINI TIMEFRAME CHARTS -->
@@ -988,6 +1040,26 @@
 </div>
 
 
+
+<!-- CYBERPUNK PNL SHARE CARD MODAL -->
+<div id="pnlModal" class="m-bg hide" onclick="if(event.target===this)closePnLModal()">
+  <div class="pnl-modal-box">
+    <div class="sm-hdr">
+      <div class="sm-title">📸 SHARE CYBER PnL CARD</div>
+      <button class="sm-close" onclick="closePnLModal()">✕</button>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+      <canvas id="pnlCardCanvas" width="1200" height="675" class="pnl-card-preview" style="max-width:100%;height:auto;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.8);"></canvas>
+      <div style="display:flex;gap:12px;width:100%;justify-content:center;flex-wrap:wrap;">
+        <button class="pt-btn-share" style="padding:9px 18px;font-size:.78rem;" onclick="downloadPnLCard()">💾 Download PNG</button>
+        <button class="pt-btn-buy" style="padding:9px 18px;font-size:.78rem;" onclick="copyPnLCard()">📋 Copy Image</button>
+      </div>
+      <div style="font-size:.62rem;color:var(--text3);font-family:'Share Tech Mono',monospace;text-align:center;">
+        Watermarked with Token-Tokens by HattyHats · High-res 1200×675 PNG
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
