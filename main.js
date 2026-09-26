@@ -472,7 +472,27 @@ const LivePriceEngine = {
 
   coreSymbols: ['BTC', 'ETH', 'SOL', 'ADA', 'DOGE', 'AVAX', 'LINK', 'XRP', 'SUI', 'NEAR', 'SHIB', 'DOT', 'LTC', 'UNI', 'BNB'],
 
+  destroy(){
+    if(this.microTickTimer) clearInterval(this.microTickTimer);
+    if(this.fallbackTimer) clearInterval(this.fallbackTimer);
+    if(this.wlPollTimer) clearInterval(this.wlPollTimer);
+    if(this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    if(this.cbWs){
+      try { this.cbWs.close(); } catch(e){}
+      this.cbWs = null;
+    }
+    if(this.krakenWs){
+      try { this.krakenWs.close(); } catch(e){}
+      this.krakenWs = null;
+    }
+  },
+
   init(){
+    if(window.LivePriceEngine && typeof window.LivePriceEngine.destroy === 'function' && window.LivePriceEngine !== this){
+      window.LivePriceEngine.destroy();
+    }
+    this.destroy();
+
     const curSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : 'BTC').toUpperCase();
     this.activeSym = curSym;
     if(ST.coin && ST.coin.price > 0){
@@ -639,8 +659,9 @@ const LivePriceEngine = {
   startMicroTicks(){
     if(this.microTickTimer) clearInterval(this.microTickTimer);
     this.microTickTimer = setInterval(() => {
-      // 1. Micro-tick the active coin if it has a valid price
-      if(Date.now() - this.lastTickTime >= 750 && this.lastPrice && this.lastPrice > 0){
+      // 1. Micro-tick the active coin if it has a valid price and matches currently selected coin
+      const activeCurrentSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : this.activeSym || 'BTC').toUpperCase();
+      if(this.activeSym === activeCurrentSym && Date.now() - this.lastTickTime >= 750 && this.lastPrice && this.lastPrice > 0){
         const spread = this.lastPrice * 0.00004; // ~0.004% micro-tick within spread
         const delta = (Math.random() - 0.49) * spread;
         const nextPrice = this.lastPrice < 1 ? Number((this.lastPrice + delta).toFixed(5)) : Number((this.lastPrice + delta).toFixed(2));
@@ -653,14 +674,15 @@ const LivePriceEngine = {
 
   animateWatchlist(){
     if(!ST.wl || !ST.wl.length) return;
-    const candidates = ST.wl.filter(c => c.price && c.price > 0 && (c.symbol || '').toUpperCase() !== this.activeSym);
+    const activeCurrentSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : this.activeSym || 'BTC').toUpperCase();
+    const candidates = ST.wl.filter(c => c.price && c.price > 0 && (c.symbol || '').toUpperCase() !== activeCurrentSym);
     if(!candidates.length) return;
     // Pick 1-2 random candidates per cycle to create natural staggered flashing
     const count = Math.min(2, candidates.length);
     for(let k = 0; k < count; k++){
       const target = candidates[Math.floor(Math.random() * candidates.length)];
       const sym = (target.symbol || '').toUpperCase();
-      const spread = target.price * 0.00003;
+      const spread = target.price * 0.00004;
       const delta = (Math.random() - 0.49) * spread;
       const nextP = target.price < 1 ? Number((target.price + delta).toFixed(5)) : Number((target.price + delta).toFixed(2));
       const oldP = target.price;
@@ -671,12 +693,7 @@ const LivePriceEngine = {
 
   handleTick(sym, price, open24h, vol24h, isReal = true){
     if(!price || isNaN(price) || price <= 0) return;
-    if(isReal){
-      this.lastTickTime = Date.now();
-      this.lastRealPrice = price;
-    }
     const s = sym.toUpperCase();
-    const activeCurrentSym = (ST.coin.symbol || this.activeSym || 'BTC').toUpperCase();
 
     // 1. Update Watchlist entry and DOM (Live Watchlist Stream)
     if(ST.wl && ST.wl.length){
@@ -694,12 +711,21 @@ const LivePriceEngine = {
     // 2. Update Ticker items
     this.updateTickerItem(s, price, open24h);
 
-    // 3. If tick is for currently viewed chart coin
-    if(s === activeCurrentSym){
-      const oldPrice = this.lastPrice || ST.coin.price || price;
-      ST.coin.price = price;
-      this.lastPrice = price;
-      window.LivePriceEngine.lastPrice = price;
+    // 3. Strict current coin guard:
+    const activeCurrentSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : this.activeSym || 'BTC').toUpperCase();
+    if(s !== activeCurrentSym){
+      return; // TICK IS FOR ANOTHER COIN — NEVER TOUCH HEADER OR PAPER TRADING PRICE!
+    }
+
+    if(isReal){
+      this.lastTickTime = Date.now();
+      this.lastRealPrice = price;
+    }
+
+    const oldPrice = this.lastPrice || ST.coin.price || price;
+    ST.coin.price = price;
+    this.lastPrice = price;
+    window.LivePriceEngine.lastPrice = price;
 
       // Update header price element with animated glowing flash
       const priceEl = document.getElementById('chPrice');
@@ -766,7 +792,6 @@ const LivePriceEngine = {
           renderChart();
         });
       }
-    }
   },
 
   updateWLRow(sym, price, chg, oldPrice){
@@ -864,38 +889,69 @@ const LivePriceEngine = {
 
   async pollWatchlist(){
     if(!ST.wl || !ST.wl.length) return;
-    try {
-      const krakenQuery = ST.wl
-        .map(c => {
-          const sym = (CC_SYM[c.id] || c.symbol || '').toUpperCase();
-          return KRAKEN_PAIRS[sym] || (sym + 'USD');
-        })
-        .filter(Boolean)
-        .join(',');
+    
+    // 1. Separate coins into Kraken-supported coins vs other coins
+    const krakenCoins = [];
+    const otherCoins = [];
 
-      const res = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${krakenQuery}`);
-      if(res.ok){
-        const json = await res.json();
-        const result = json.result || {};
-        ST.wl.forEach(c => {
-          const sym = (CC_SYM[c.id] || c.symbol || '').toUpperCase();
-          const targetPair = KRAKEN_PAIRS[sym] || (sym + 'USD');
-          const matchKey = Object.keys(result).find(k => k === targetPair || k.includes(sym));
-          if(matchKey && result[matchKey]){
-            const d = result[matchKey];
-            const p = parseFloat(d.c[0]);
-            const o = parseFloat(d.o);
-            if(p > 0){
-              this.handleTick(sym, p, o, null, true);
-            }
-          }
-        });
+    ST.wl.forEach(c => {
+      const sym = (CC_SYM[c.id] || c.symbol || '').toUpperCase();
+      if(KRAKEN_PAIRS[sym]){
+        krakenCoins.push({ coin: c, sym, pair: KRAKEN_PAIRS[sym] });
+      } else {
+        otherCoins.push(c);
       }
-    } catch(e){}
+    });
+
+    // 2. Query Kraken batch only with guaranteed valid pairs
+    if(krakenCoins.length > 0){
+      try {
+        const query = krakenCoins.map(k => k.pair).join(',');
+        const res = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${query}`);
+        if(res.ok){
+          const json = await res.json();
+          const result = json.result || {};
+          krakenCoins.forEach(({ coin: c, sym, pair }) => {
+            const matchKey = Object.keys(result).find(k => k === pair || k.includes(sym));
+            if(matchKey && result[matchKey]){
+              const d = result[matchKey];
+              const p = parseFloat(d.c[0]);
+              const o = parseFloat(d.o);
+              if(p > 0){
+                this.handleTick(sym, p, o, null, true);
+              }
+            }
+          });
+        }
+      } catch(e){}
+    }
+
+    // 3. For any other coins, query CoinGecko Simple Price in one consolidated batch
+    if(otherCoins.length > 0){
+      try {
+        const ids = otherCoins.map(c => c.id || Object.keys(CC_SYM).find(k => CC_SYM[k].toUpperCase() === (c.symbol||'').toUpperCase()) || c.symbol?.toLowerCase()).filter(Boolean).join(',');
+        if(ids){
+          const cgRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids)}&vs_currencies=usd&include_24hr_change=true`);
+          if(cgRes.ok){
+            const cgJson = await cgRes.json();
+            otherCoins.forEach(c => {
+              const id = c.id || Object.keys(CC_SYM).find(k => CC_SYM[k].toUpperCase() === (c.symbol||'').toUpperCase()) || c.symbol?.toLowerCase();
+              if(cgJson[id] && cgJson[id].usd > 0){
+                const p = cgJson[id].usd;
+                const chg = cgJson[id].usd_24h_change || 0;
+                const sym = (c.symbol || '').toUpperCase();
+                const open24h = chg ? (p / (1 + chg / 100)) : null;
+                this.handleTick(sym, p, open24h, null, true);
+              }
+            });
+          }
+        }
+      } catch(e){}
+    }
   }
 };
 
-// Multi-source live prices (Kraken + Coinbase spot fallback — zero API keys required)
+// Multi-source live prices (Kraken + CoinGecko batch + Coinbase spot fallback — zero API keys required)
 async function loadPrices(){
   try{
     if(!ST.wl || !ST.wl.length){
@@ -904,48 +960,82 @@ async function loadPrices(){
     const prev = {};
     ST.wl.forEach(c => prev[c.id] = c.price || 0);
 
-    // 1. Primary: Kraken multi-ticker batch query
-    try{
-      const krakenQuery = ST.wl
-        .map(c => {
-          const sym = (CC_SYM[c.id] || c.symbol || '').toUpperCase();
-          return KRAKEN_PAIRS[sym] || (sym + 'USD');
-        })
-        .filter(Boolean)
-        .join(',');
-
-      const res = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${krakenQuery}`);
-      if(res.ok){
-        const json = await res.json();
-        const result = json.result || {};
-        
-        ST.wl.forEach(c => {
-          const sym = (CC_SYM[c.id] || c.symbol || '').toUpperCase();
-          const targetPair = KRAKEN_PAIRS[sym] || (sym + 'USD');
-          // Find matching key in result
-          const matchKey = Object.keys(result).find(k => k === targetPair || k.includes(sym));
-          if(matchKey && result[matchKey]){
-            const d = result[matchKey];
-            const p = parseFloat(d.c[0]);
-            const o = parseFloat(d.o);
-            c.price  = p || 0;
-            c.change = o > 0 ? ((p - o) / o) * 100 : 0;
-            c.high24 = parseFloat(d.h[1]) || 0;
-            c.low24  = parseFloat(d.l[1]) || 0;
-            c.vol    = (parseFloat(d.v[1]) || 0) * (p || 1);
-            if(!c.image) c.image = `https://assets.coincap.io/assets/icons/${sym.toLowerCase()}@2x.png`;
-            if(c.id === ST.coin.id || sym === ST.coin.symbol.toUpperCase()){
-              Object.assign(ST.coin, c);
-              updateHdr(c, prev[c.id]);
-            }
-          }
-        });
+    // 1. Primary: Kraken multi-ticker batch query for supported coins only
+    const krakenCoins = [];
+    const otherCoins = [];
+    ST.wl.forEach(c => {
+      const sym = (CC_SYM[c.id] || c.symbol || '').toUpperCase();
+      if(KRAKEN_PAIRS[sym]){
+        krakenCoins.push({ coin: c, sym, pair: KRAKEN_PAIRS[sym] });
+      } else {
+        otherCoins.push(c);
       }
-    }catch(krakenErr){
-      console.warn('Kraken price feed notice:', krakenErr);
+    });
+
+    if(krakenCoins.length > 0){
+      try{
+        const krakenQuery = krakenCoins.map(k => k.pair).join(',');
+        const res = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${krakenQuery}`);
+        if(res.ok){
+          const json = await res.json();
+          const result = json.result || {};
+          krakenCoins.forEach(({ coin: c, sym, pair }) => {
+            const matchKey = Object.keys(result).find(k => k === pair || k.includes(sym));
+            if(matchKey && result[matchKey]){
+              const d = result[matchKey];
+              const p = parseFloat(d.c[0]);
+              const o = parseFloat(d.o);
+              c.price  = p || 0;
+              c.change = o > 0 ? ((p - o) / o) * 100 : 0;
+              c.high24 = parseFloat(d.h[1]) || 0;
+              c.low24  = parseFloat(d.l[1]) || 0;
+              c.vol    = (parseFloat(d.v[1]) || 0) * (p || 1);
+              if(!c.image) c.image = `https://assets.coincap.io/assets/icons/${sym.toLowerCase()}@2x.png`;
+              if(c.id === ST.coin.id || sym === (ST.coin.symbol||'').toUpperCase()){
+                Object.assign(ST.coin, c);
+                updateHdr(c, prev[c.id]);
+              }
+            }
+          });
+        }
+      }catch(krakenErr){
+        console.warn('Kraken price feed notice:', krakenErr);
+      }
     }
 
-    // 2. Secondary fallback: Coinbase spot price for any coin with price == 0
+    // 2. CoinGecko simple price batch for coins not on Kraken or with price == 0
+    const needCg = ST.wl.filter(c => !c.price || c.price === 0);
+    if(needCg.length > 0){
+      try{
+        const ids = needCg.map(c => c.id || Object.keys(CC_SYM).find(k => CC_SYM[k].toUpperCase() === (c.symbol||'').toUpperCase()) || c.symbol?.toLowerCase()).filter(Boolean).join(',');
+        if(ids){
+          const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids)}&vs_currencies=usd&include_24hr_change=true`);
+          if(res.ok){
+            const json = await res.json();
+            needCg.forEach(c => {
+              const id = c.id || Object.keys(CC_SYM).find(k => CC_SYM[k].toUpperCase() === (c.symbol||'').toUpperCase()) || c.symbol?.toLowerCase();
+              if(json[id] && json[id].usd > 0){
+                const p = json[id].usd;
+                const chg = json[id].usd_24h_change || 0;
+                c.price = p;
+                c.change = chg;
+                c.high24 = p * 1.02;
+                c.low24 = p * 0.98;
+                if(!c.image) c.image = `https://assets.coincap.io/assets/icons/${(c.symbol||'').toLowerCase()}@2x.png`;
+                if(c.id === ST.coin.id || (c.symbol && c.symbol.toUpperCase() === (ST.coin.symbol||'').toUpperCase())){
+                  Object.assign(ST.coin, c);
+                  updateHdr(c, prev[c.id]);
+                }
+              }
+            });
+          }
+        }
+      }catch(cgErr){
+        console.warn('CoinGecko fallback price notice:', cgErr);
+      }
+    }
+
+    // 3. Fallback: Coinbase spot price for any remaining coin with price == 0
     const missingCoins = ST.wl.filter(c => !c.price || c.price === 0);
     if(missingCoins.length > 0){
       await Promise.allSettled(missingCoins.map(async c => {
@@ -957,7 +1047,7 @@ async function loadPrices(){
             const p = parseFloat(j.data?.amount);
             if(p > 0){
               c.price = p;
-              if(c.id === ST.coin.id || sym === ST.coin.symbol.toUpperCase()){
+              if(c.id === ST.coin.id || sym === (ST.coin.symbol||'').toUpperCase()){
                 Object.assign(ST.coin, c);
                 updateHdr(c, prev[c.id]);
               }
