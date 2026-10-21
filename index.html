@@ -11,8 +11,8 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=4.8">
-  <script defer src="./main.js?v=4.8"></script>
+  <link rel="stylesheet" href="./style.css?v=5.0">
+  <script defer src="./main.js?v=5.0"></script>
   <script>
     // ══════════════════════════════════════════════════════════════
     // BULLETPROOF LIVE PRICE STREAMING & PAPER TRADING CONTROLLER
@@ -52,6 +52,7 @@
       if (p == null) return '—';
       if (p === 0) return '0.00';
       var a = Math.abs(p);
+      if (a < .000001) return p.toFixed(9);
       if (a < .00001) return p.toFixed(8);
       if (a < .001) return p.toFixed(6);
       if (a < .1) return p.toFixed(5);
@@ -310,7 +311,7 @@
       var idx = 0;
       if (posId) {
         idx = window.SIM.positions.findIndex(function(p) { return p.id === posId || p.symbol === posId; });
-        if (idx === -1) idx = 0;
+        if (idx === -1) return;
       }
       var pos = window.SIM.positions[idx];
       if (!pos) return;
@@ -610,7 +611,6 @@
   </nav>
   <div class="hdr-r">
     <div class="api-dot wait" id="apiDot"><div class="spin" style="width:9px;height:9px;border-width:1.5px;"></div>&nbsp;connecting</div>
-    <button class="settings-btn" id="authBtn" onclick="document.getElementById('fbModal').style.display='flex'">👤 Log In</button>
     <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
     <button class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
   </div>
@@ -1422,25 +1422,6 @@
 <!-- Indicator info popup -->
 <div class="i-tip" id="iTip"><h4 id="itH"></h4><p id="itP"></p><div class="sig" id="itS"></div></div>
 
-<!-- FIREBASE AUTH UI MODAL -->
-<div id="fbModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(5,8,16,0.85);backdrop-filter:blur(5px);justify-content:center;align-items:center;">
-  <div style="background:var(--surface);border:1px solid var(--border);padding:30px;border-radius:12px;width:90%;max-width:400px;text-align:center;box-shadow:0 0 30px rgba(0,212,255,0.15);position:relative;">
-    <h2 style="font-family:'Orbitron',sans-serif;color:var(--accent);margin-bottom:20px;" id="fbModalTitle">Log In</h2>
-    <input type="email" id="fbEmail" placeholder="Email" style="width:100%;padding:12px;margin-bottom:15px;background:rgba(0,0,0,0.3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:'Share Tech Mono',monospace;">
-    <input type="password" id="fbPass" placeholder="Password" style="width:100%;padding:12px;margin-bottom:15px;background:rgba(0,0,0,0.3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-family:'Share Tech Mono',monospace;">
-    <div id="fbError" style="color:var(--red);font-size:0.8rem;margin-bottom:15px;min-height:16px;"></div>
-    <button id="fbSubmitBtn" style="width:100%;padding:12px;background:var(--accent);color:#000;border:none;border-radius:6px;font-weight:bold;margin-bottom:15px;" onclick="handleAuthSubmit()">Log In</button>
-    <div style="color:var(--text2);font-size:0.9rem;">
-      <span id="fbToggleText">Need an account?</span> 
-      <a href="#" style="color:var(--accent);" onclick="toggleAuthMode(event)">Sign Up</a>
-    </div>
-    <button style="position:absolute;top:15px;right:15px;background:none;border:none;color:var(--text2);font-size:1.2rem;" onclick="document.getElementById('fbModal').style.display='none'">✕</button>
-  </div>
-</div>
-
-
-
-
 <!-- ═════ COIN INFO POPUP ═════ -->
 <div class="coin-info-popup" id="coinInfoPopup">
   <div class="cip-hdr" id="cipHdr">
@@ -1471,6 +1452,13 @@
       </div>
       <div class="sm-row">
         <div class="sm-row-info">
+          <div class="sm-row-label">Paper Trading</div>
+          <div class="sm-row-sub">Active simulated positions &amp; balance</div>
+        </div>
+        <span class="sm-val" id="smPtCount">—</span>
+      </div>
+      <div class="sm-row">
+        <div class="sm-row-info">
           <div class="sm-row-label">Price Alerts</div>
           <div class="sm-row-sub">Active alert count</div>
         </div>
@@ -1485,8 +1473,8 @@
       </div>
       <div class="sm-row">
         <div class="sm-row-info">
-          <div class="sm-row-label">Local Storage</div>
-          <div class="sm-row-sub">Data saved in your browser</div>
+          <div class="sm-row-label">Browser Cache</div>
+          <div class="sm-row-sub">Saved in your local browser cache</div>
         </div>
         <span class="sm-val" id="smStorageKB">— KB</span>
       </div>

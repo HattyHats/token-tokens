@@ -603,7 +603,8 @@ const KRAKEN_PAIRS = {
   'AVAX': 'AVAXUSD',
   'DOT': 'DOTUSD',
   'LINK': 'LINKUSD',
-  'MATIC': 'MATICUSD',
+  'POL': 'POLUSD',
+  'MATIC': 'POLUSD',
   'LTC': 'XLTCZUSD',
   'UNI': 'UNIUSD',
   'SHIB': 'SHIBUSD',
@@ -615,6 +616,18 @@ const KRAKEN_PAIRS = {
   'BCH': 'BCHUSD',
   'XLM': 'XXLMZUSD'
 };
+
+// Precision-safe price calculator: protects low-priced altcoins (PEPE, SHIB, BONK) from rounding to zero
+function calcMicroTickPrice(currentPrice, delta) {
+  const p = currentPrice + delta;
+  if (!p || isNaN(p) || p <= 0) return currentPrice;
+  const a = Math.abs(p);
+  if (a < 0.000001) return Number(p.toFixed(9));
+  if (a < 0.0001) return Number(p.toFixed(8));
+  if (a < 0.01) return Number(p.toFixed(6));
+  if (a < 1) return Number(p.toFixed(5));
+  return Number(p.toFixed(2));
+}
 
 /* ══════════════════ REAL-TIME LIVE PRICE STREAMING ENGINE ══════════════════ */
 const LivePriceEngine = {
@@ -686,6 +699,14 @@ const LivePriceEngine = {
     this.startFallbackMonitor();
     this.pollActiveCoin();
     this.pollWatchlist();
+
+    // Subscribe any active paper trading positions loaded from storage
+    if(window.SIM && Array.isArray(window.SIM.positions) && window.SIM.positions.length > 0){
+      window.SIM.positions.forEach(p => {
+        const sym = (p.symbol || '').toUpperCase();
+        if(sym) this.subscribe(sym);
+      });
+    }
   },
 
   init(){
@@ -715,6 +736,14 @@ const LivePriceEngine = {
     this.startFallbackMonitor();
     this.pollActiveCoin();
     this.pollWatchlist();
+
+    // Subscribe any active paper trading positions loaded from storage
+    if(window.SIM && Array.isArray(window.SIM.positions) && window.SIM.positions.length > 0){
+      window.SIM.positions.forEach(p => {
+        const sym = (p.symbol || '').toUpperCase();
+        if(sym) this.subscribe(sym);
+      });
+    }
   },
 
   connectCoinbase(){
@@ -912,7 +941,7 @@ const LivePriceEngine = {
       if(this.activeSym === activeCurrentSym && Date.now() - this.lastTickTime >= 750 && this.lastPrice && this.lastPrice > 0){
         const spread = this.lastPrice * 0.00004; // ~0.004% micro-tick within spread
         const delta = (Math.random() - 0.49) * spread;
-        const nextPrice = this.lastPrice < 1 ? Number((this.lastPrice + delta).toFixed(5)) : Number((this.lastPrice + delta).toFixed(2));
+        const nextPrice = calcMicroTickPrice(this.lastPrice, delta);
         this.handleTick(this.activeSym, nextPrice, null, null, false);
       }
 
@@ -926,7 +955,7 @@ const LivePriceEngine = {
             if(curP > 0){
               const spread = curP * 0.00004;
               const delta = (Math.random() - 0.49) * spread;
-              const nextP = curP < 1 ? Number((curP + delta).toFixed(5)) : Number((curP + delta).toFixed(2));
+              const nextP = calcMicroTickPrice(curP, delta);
               this.prices[pSym] = nextP;
               posTicked = true;
             }
@@ -954,7 +983,7 @@ const LivePriceEngine = {
       const sym = (target.symbol || '').toUpperCase();
       const spread = target.price * 0.00004;
       const delta = (Math.random() - 0.49) * spread;
-      const nextP = target.price < 1 ? Number((target.price + delta).toFixed(5)) : Number((target.price + delta).toFixed(2));
+      const nextP = calcMicroTickPrice(target.price, delta);
       const oldP = target.price;
       target.price = nextP;
       this.updateWLRow(sym, nextP, target.change, oldP);
@@ -1097,7 +1126,7 @@ const LivePriceEngine = {
     const items = document.querySelectorAll(`.ti[data-ticker-sym="${sym}"]`);
     if(!items.length) return;
     items.forEach(el => {
-      const pStr = price >= 1 ? '$' + fP(price) : '$' + price.toFixed(4);
+      const pStr = '$' + fP(price);
       let chgStr = '';
       if(open24h && open24h > 0){
         const chg = ((price - open24h) / open24h) * 100;
@@ -1581,13 +1610,15 @@ async function loadChart(id, days) {
     ST.candles = candles;
     setDot('ok');
     
-    // Load mini charts in background without blocking
-    loadMiniCharts(id, sym);
-
     // Sync active mini chart highlight
     const tfMap2 = {'1':'mc1d','7':'mc1w','30':'mc1m','365':'mc1y'};
     document.querySelectorAll('.mc-item').forEach(b => b.classList.remove('active'));
     if(tfMap2[days]) document.getElementById(tfMap2[days])?.classList.add('active');
+
+    // Only load mini charts if not already loaded for this coin
+    if(!_miniChartsCache[sym]){
+      loadMiniCharts(id, sym);
+    }
 
     // Show appropriate zoom window; user can drag/scroll back
     const view = Math.min(100, ST.candles.length);
@@ -2175,6 +2206,9 @@ async function selectCoin(id, name, sym, img, knownPrice){
     }
   }catch(e){ console.warn('selectCoin price fetch failed:', e); }
 
+  // Load dedicated mini charts for the newly selected coin
+  loadMiniCharts(id, ccSym, true);
+
   await loadChart(id, ST.tf);
   saveState();
 }
@@ -2377,7 +2411,7 @@ async function loadTicker(){
         const p = parseFloat(v.c[0]);
         const o = parseFloat(v.o);
         const chg = o > 0 ? ((p - o) / o) * 100 : 0;
-        const p_str = p >= 1 ? '$' + fP(p) : '$' + p.toFixed(4);
+        const p_str = '$' + fP(p);
         const pos_neg = chg >= 0 ? 'pos' : 'neg';
         const sign = chg >= 0 ? '+' : '';
         items.push(`<div class="ti" data-ticker-sym="${sym}" style="cursor:pointer;" onclick="selectCoin('${cid}','${sym}','${sym}','',${p||0})">
@@ -3260,8 +3294,8 @@ function calcRSI(candles,p){
   let ag=0,al=0;
   for(let i=1;i<=p;i++){const d=cl[i]-cl[i-1];if(d>0)ag+=d;else al-=d;}
   ag/=p;al/=p;
-  res[p]=al===0?100:100-(100/(1+ag/al));
-  for(let i=p+1;i<cl.length;i++){const d=cl[i]-cl[i-1],g=d>0?d:0,l=d<0?-d:0;ag=(ag*(p-1)+g)/p;al=(al*(p-1)+l)/p;res[i]=al===0?100:100-(100/(1+ag/al));}
+  res[p]=al===0?(ag===0?50:100):100-(100/(1+ag/al));
+  for(let i=p+1;i<cl.length;i++){const d=cl[i]-cl[i-1],g=d>0?d:0,l=d<0?-d:0;ag=(ag*(p-1)+g)/p;al=(al*(p-1)+l)/p;res[i]=al===0?(ag===0?50:100):100-(100/(1+ag/al));}
   return res;
 }
 
@@ -3426,41 +3460,118 @@ function drawFGGauge(score, needleCol){
   ctx.fillText(score, cx, cy-22);
 }
 
-/* ══════════════════ MINI CHARTS ════════════════════════ */
-async function loadMiniCharts(coinId, symbol){
-  const sym = symbol || CC_SYM[coinId] || (ST.wl.find(c => c.id === coinId)?.symbol || 'BTC').toUpperCase();
+/* ══════════════════ MINI CHARTS (INDEPENDENT TIMEFRAMES) ══════════════════ */
+const _miniChartsCache = {};
 
-  // Instant render from already loaded candles
-  if (ST.candles && ST.candles.length >= 2) {
-    drawMiniChart('1', ST.candles.slice(-Math.min(24, ST.candles.length)));
-    drawMiniChart('7', ST.candles.slice(-Math.min(50, ST.candles.length)));
-    drawMiniChart('30', ST.candles.slice(-Math.min(90, ST.candles.length)));
-    drawMiniChart('365', ST.candles);
+async function loadMiniCharts(coinId, symbol, force = false){
+  const sym = (symbol || CC_SYM[coinId] || (ST.wl.find(c => c.id === coinId)?.symbol) || (ST.coin?.symbol) || 'BTC').toUpperCase();
+  if(!sym) return;
+
+  // 1. If already cached for this symbol and not forcing reload, draw cached independent curves immediately
+  if(!force && _miniChartsCache[sym]){
+    const c = _miniChartsCache[sym];
+    if(c['1']) drawMiniChart('1', c['1']);
+    if(c['7']) drawMiniChart('7', c['7']);
+    if(c['30']) drawMiniChart('30', c['30']);
+    if(c['365']) drawMiniChart('365', c['365']);
     return;
   }
 
-  // Fallback to Coinbase daily candles
+  // 2. Fetch independent true timeframes (1D hourly, 7D/30D/365D daily)
   try{
-    const res = await fetch(`https://api.exchange.coinbase.com/products/${sym}-USD/candles?granularity=86400`);
-    if(res.ok){
-      const raw = await res.json();
-      if(Array.isArray(raw) && raw.length >= 2){
-        const clean = raw.map(c => ({
-          t: c[0] * 1000,
-          l: parseFloat(c[1]),
-          h: parseFloat(c[2]),
-          o: parseFloat(c[3]),
-          c: parseFloat(c[4]),
-          v: parseFloat(c[5]) || 0
-        })).filter(c => c.c > 0).sort((a,b) => a.t - b.t);
-        if(clean.length >= 2){
-          drawMiniChart('1', clean.slice(-2));
-          drawMiniChart('7', clean.slice(-7));
-          drawMiniChart('30', clean.slice(-30));
-          drawMiniChart('365', clean);
-          return;
+    let hCandles = null;
+    let dCandles = null;
+
+    // Strategy A: Coinbase Exchange Candles (Keyless, CORS, high speed)
+    try {
+      const [hRes, dRes] = await Promise.all([
+        fetch(`https://api.exchange.coinbase.com/products/${sym}-USD/candles?granularity=3600`).catch(()=>null),
+        fetch(`https://api.exchange.coinbase.com/products/${sym}-USD/candles?granularity=86400`).catch(()=>null)
+      ]);
+
+      if(hRes && hRes.ok){
+        const rawH = await hRes.json().catch(()=>null);
+        if(Array.isArray(rawH) && rawH.length >= 2){
+          hCandles = rawH.map(c => ({ t: c[0] * 1000, c: parseFloat(c[4]) })).filter(c => c.c > 0).sort((a,b) => a.t - b.t);
         }
       }
+
+      if(dRes && dRes.ok){
+        const rawD = await dRes.json().catch(()=>null);
+        if(Array.isArray(rawD) && rawD.length >= 2){
+          dCandles = rawD.map(c => ({ t: c[0] * 1000, c: parseFloat(c[4]) })).filter(c => c.c > 0).sort((a,b) => a.t - b.t);
+        }
+      }
+    } catch(cbErr) {
+      console.warn('Coinbase mini charts notice:', cbErr);
+    }
+
+    // Strategy B: Kraken OHLC fallback if Coinbase didn't return data
+    if((!hCandles || !dCandles) && KRAKEN_PAIRS[sym]){
+      try {
+        const kPair = KRAKEN_PAIRS[sym];
+        const [kHRes, kDRes] = await Promise.all([
+          (!hCandles ? fetch(`https://api.kraken.com/0/public/OHLC?pair=${kPair}&interval=60`).catch(()=>null) : null),
+          (!dCandles ? fetch(`https://api.kraken.com/0/public/OHLC?pair=${kPair}&interval=1440`).catch(()=>null) : null)
+        ]);
+
+        if(kHRes && kHRes.ok){
+          const jH = await kHRes.json().catch(()=>null);
+          const keyH = Object.keys(jH?.result || {}).find(k => k !== 'last');
+          const rawH = jH?.result?.[keyH];
+          if(Array.isArray(rawH) && rawH.length >= 2){
+            hCandles = rawH.map(c => ({ t: c[0] * 1000, c: parseFloat(c[4]) })).filter(c => c.c > 0).sort((a,b) => a.t - b.t);
+          }
+        }
+
+        if(kDRes && kDRes.ok){
+          const jD = await kDRes.json().catch(()=>null);
+          const keyD = Object.keys(jD?.result || {}).find(k => k !== 'last');
+          const rawD = jD?.result?.[keyD];
+          if(Array.isArray(rawD) && rawD.length >= 2){
+            dCandles = rawD.map(c => ({ t: c[0] * 1000, c: parseFloat(c[4]) })).filter(c => c.c > 0).sort((a,b) => a.t - b.t);
+          }
+        }
+      } catch(kErr) {
+        console.warn('Kraken mini charts notice:', kErr);
+      }
+    }
+
+    // Strategy C: Generate clean curves from current coin price & 24h change if external APIs fail
+    if(!hCandles && !dCandles){
+      const curPrice = ST.coin.price || 100;
+      const ch24 = ST.coin.change || 0;
+      const p24Ago = curPrice / (1 + ch24 / 100);
+      hCandles = [
+        { t: Date.now() - 86400000, c: p24Ago },
+        { t: Date.now() - 43200000, c: (p24Ago + curPrice) / 2 },
+        { t: Date.now(), c: curPrice }
+      ];
+      dCandles = [
+        { t: Date.now() - 86400000 * 7, c: p24Ago * 0.98 },
+        { t: Date.now() - 86400000 * 3, c: p24Ago * 1.01 },
+        { t: Date.now(), c: curPrice }
+      ];
+    }
+
+    // Build the 4 true timeframes
+    const data1d   = hCandles ? hCandles.slice(-24) : (dCandles ? dCandles.slice(-2) : null);
+    const data7d   = dCandles ? dCandles.slice(-7)  : (hCandles ? hCandles.slice(-168) : null);
+    const data30d  = dCandles ? dCandles.slice(-30) : (hCandles ? hCandles.slice(-720) : null);
+    const data365d = dCandles ? dCandles : null;
+
+    if(data1d && data7d){
+      _miniChartsCache[sym] = {
+        '1': data1d,
+        '7': data7d,
+        '30': data30d || data7d,
+        '365': data365d || data30d || data7d
+      };
+
+      drawMiniChart('1', _miniChartsCache[sym]['1']);
+      drawMiniChart('7', _miniChartsCache[sym]['7']);
+      drawMiniChart('30', _miniChartsCache[sym]['30']);
+      drawMiniChart('365', _miniChartsCache[sym]['365']);
     }
   }catch(e){
     console.warn('loadMiniCharts notice:', e);
@@ -3472,20 +3583,24 @@ function drawMiniChart(tf, data){
   const pctId    = `mc${tf}dPct`;
   const canvas   = document.getElementById(canvasId);
   const pctEl    = document.getElementById(pctId);
-  if(!canvas) return;
+  if(!canvas || !data || !Array.isArray(data) || data.length < 2) return;
 
   const W = canvas.offsetWidth || 120;
   const H = 36;
-  canvas.width  = W * window.devicePixelRatio;
-  canvas.height = H * window.devicePixelRatio;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
   canvas.style.width  = W+'px';
   canvas.style.height = H+'px';
 
   const ctx = canvas.getContext('2d');
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
   ctx.clearRect(0,0,W,H);
 
-  const prices = data.map(d=>d.c !== undefined ? d.c : d.close);
+  const prices = data.map(d => (d && d.c !== undefined ? d.c : (d && d.close !== undefined ? d.close : d))).filter(p => typeof p === 'number' && !isNaN(p) && p > 0);
+  if(prices.length < 2) return;
+
   const mn = Math.min(...prices), mx = Math.max(...prices);
   const range = mx-mn||1;
   const toY   = v => 2 + (1-(v-mn)/range)*(H-4);
@@ -3828,6 +3943,17 @@ function initPaperTrading(){
     const count = Math.min(3, SIM.history.length);
     shareBtn.textContent = count > 1 ? `📸 Past Cards (${count})` : '📸 Last Card';
   }
+
+  // Auto-subscribe all active positions to LivePriceEngine
+  if(Array.isArray(SIM.positions) && SIM.positions.length > 0){
+    SIM.positions.forEach(p => {
+      const sym = (p.symbol || '').toUpperCase();
+      if(sym && window.LivePriceEngine && typeof window.LivePriceEngine.subscribe === 'function'){
+        window.LivePriceEngine.subscribe(sym);
+      }
+    });
+  }
+
   updateSimUI();
 }
 
@@ -3964,7 +4090,7 @@ function closeSimPosition(posId, silent = false){
   let idx = 0;
   if(posId){
     idx = SIM.positions.findIndex(p => p.id === posId || p.symbol === posId);
-    if(idx === -1) idx = 0;
+    if(idx === -1) return;
   }
   const pos = SIM.positions[idx];
   if(!pos) return;
@@ -4469,7 +4595,7 @@ function drawPnLCard(canvas, trade){
     ctx.fillText(m.label, mx, cardY + 55);
 
     ctx.fillStyle = m.color || '#e0eeff';
-    ctx.font = '700 26px "Share Tech Mono", monospace';
+    ctx.font = m.val.length > 15 ? '700 18px "Share Tech Mono", monospace' : (m.val.length > 12 ? '700 21px "Share Tech Mono", monospace' : '700 26px "Share Tech Mono", monospace');
     ctx.fillText(m.val, mx, cardY + 115);
   });
 
@@ -4483,7 +4609,7 @@ function drawPnLCard(canvas, trade){
 
   ctx.fillStyle = '#00d4ff';
   ctx.textAlign = 'right';
-  ctx.fillText('🔗 token-tokens.web.app', W - 60, H - 45);
+  ctx.fillText('🔗 hattyhats.github.io/token-tokens', W - 60, H - 45);
 }
 
 function downloadPnLCard(){
@@ -4679,7 +4805,9 @@ function loadState(){
 
 function clearSavedState(){
   localStorage.removeItem(LS_KEY);
-  showToast('🗑 Settings Cleared','Your saved watchlist, alerts, and drawings have been cleared. Refresh to reset.','info');
+  localStorage.removeItem('tt_paper_wallet');
+  localStorage.removeItem('tt_paper_active');
+  showToast('🗑 Settings Cleared','Your saved watchlist, alerts, paper trades, and drawings have been cleared. Refresh to reset.','info');
 }
 
 /* ══════════════════ PRICE ALERTS ══════════════════════════ */
@@ -4888,10 +5016,14 @@ function openSettings(){
   const modal = document.getElementById('settingsModal');
   if(!modal) return;
   // Populate live values
-  const saved = localStorage.getItem(LS_KEY);
-  const savedKB = saved ? (saved.length/1024).toFixed(1) : '0';
+  const saved = localStorage.getItem(LS_KEY) || '';
+  const savedPt = localStorage.getItem('tt_paper_wallet') || '';
+  const savedKB = ((saved.length + savedPt.length) / 1024).toFixed(1);
   const el = (id,val)=>{ const e=document.getElementById(id); if(e) e.textContent=val; };
   el('smWlCount', ST.wl.length + ' tokens');
+  const ptPositions = (window.SIM && Array.isArray(window.SIM.positions)) ? window.SIM.positions.length : 0;
+  const ptBal = (window.SIM && typeof window.SIM.balance === 'number') ? window.SIM.balance : 10000;
+  el('smPtCount', `${ptPositions} active · $${fP(ptBal)}`);
   el('smAlCount', ALERTS.length + ' alerts');
   el('smDrwCount', (DRW.drawings||[]).length + ' drawings');
   el('smStorageKB', savedKB + ' KB');
@@ -5203,7 +5335,8 @@ async function runTimeMachine() {
     if (res.ok) {
       const raw = await res.json();
       if (Array.isArray(raw) && raw.length > 0) {
-        const c = raw[0];
+        const targetSec = Date.UTC(yyyy, mm, dd, 0, 0, 0) / 1000;
+        const c = raw.find(row => Math.abs(row[0] - targetSec) < 43200) || raw[raw.length - 1] || raw[0];
         const closePrice = parseFloat(c[4]);
         const vol = parseFloat(c[5]) || null;
         if (closePrice > 0) {
@@ -5319,7 +5452,7 @@ function drawTMMarker(candleIdx){
   ctx.restore();
   setTimeout(()=>renderChart(),4500);
 }
-function fP(p){if(p==null)return'—';if(p===0)return'0.00';const a=Math.abs(p);if(a<.00001)return p.toFixed(8);if(a<.001)return p.toFixed(6);if(a<.1)return p.toFixed(5);if(a<1)return p.toFixed(4);return p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fP(p){if(p==null)return'—';if(p===0)return'0.00';const a=Math.abs(p);if(a<.000001)return p.toFixed(9);if(a<.00001)return p.toFixed(8);if(a<.001)return p.toFixed(6);if(a<.1)return p.toFixed(5);if(a<1)return p.toFixed(4);return p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fPnL(pnlUSD, pnlPct){if(pnlUSD==null||isNaN(pnlUSD))return'+$0.00 (+0.00%)';const sign=pnlUSD>=0?'+':'-';const usdStr=Math.abs(pnlUSD).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});const pctSign=pnlPct>=0?'+':'';const pctStr=(pnlPct||0).toFixed(2);return `${sign}$${usdStr} (${pctSign}${pctStr}%)`;}
 function fL(n){if(!n||n<=0)return'—';if(n>=1e12)return(n/1e12).toFixed(2)+'T';if(n>=1e9)return(n/1e9).toFixed(2)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toFixed(2);}
 function esc(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');}
@@ -5829,153 +5962,8 @@ if(typeof categories === 'function') window.categories = categories;
 if(typeof website === 'function') window.website = website;
 if(typeof row === 'function') window.row = row;
 
-/* ══════════════════ FIREBASE AUTH & DATABASE ════════════════════════ */
-let P_ = null;
-let _authMode = 'login';
-
-function F_() {
-  if (window.fbSignOut && window.firebaseAuth) {
-    window.fbSignOut(window.firebaseAuth);
-  } else {
-    let t = document.getElementById('authBtn');
-    if (t) {
-      t.innerHTML = '👤 Log In';
-      t.onclick = () => { document.getElementById('fbModal').style.display = 'flex'; };
-    }
-    showToast('Signed Out', 'You are now browsing in guest mode.', 'info', 2500);
-  }
-}
-
-function toggleAuthMode(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  _authMode = _authMode === 'login' ? 'signup' : 'login';
-  const title = document.getElementById('fbModalTitle');
-  const submitBtn = document.getElementById('fbSubmitBtn');
-  const toggleText = document.getElementById('fbToggleText');
-  const link = toggleText?.nextElementSibling;
-  const errEl = document.getElementById('fbError');
-  if (errEl) errEl.textContent = '';
-  
-  if (_authMode === 'signup') {
-    if (title) title.textContent = 'Sign Up';
-    if (submitBtn) submitBtn.textContent = 'Create Account';
-    if (toggleText) toggleText.textContent = 'Already have an account? ';
-    if (link) link.textContent = 'Log In';
-  } else {
-    if (title) title.textContent = 'Log In';
-    if (submitBtn) submitBtn.textContent = 'Log In';
-    if (toggleText) toggleText.textContent = 'Need an account? ';
-    if (link) link.textContent = 'Sign Up';
-  }
-}
-
-async function handleAuthSubmit() {
-  const email = document.getElementById('fbEmail')?.value.trim();
-  const pass = document.getElementById('fbPass')?.value.trim();
-  const errEl = document.getElementById('fbError');
-  if (errEl) errEl.textContent = '';
-
-  if (!email || !pass) {
-    if (errEl) errEl.textContent = 'Please enter both email and password.';
-    return;
-  }
-
-  if (!window.firebaseAuth || !window.fbSignInWithEmailAndPassword) {
-    // Local session fallback mode if Firebase SDK isn't loaded
-    showToast('👤 Signed In', 'Profile active: ' + email.split('@')[0], 'success', 3000);
-    document.getElementById('fbModal').style.display = 'none';
-    const t = document.getElementById('authBtn');
-    if (t) {
-      t.innerHTML = '👤 ' + email.split('@')[0];
-      t.onclick = () => {
-        t.innerHTML = '👤 Log In';
-        t.onclick = () => { document.getElementById('fbModal').style.display = 'flex'; };
-        showToast('Signed Out', 'You are now in guest mode.', 'info', 2500);
-      };
-    }
-    return;
-  }
-
-  try {
-    if (_authMode === 'signup') {
-      if (window.fbCreateUserWithEmailAndPassword) {
-        await window.fbCreateUserWithEmailAndPassword(window.firebaseAuth, email, pass);
-        showToast('Account Created', 'Welcome to Token-Tokens!', 'success', 3000);
-      }
-    } else {
-      await window.fbSignInWithEmailAndPassword(window.firebaseAuth, email, pass);
-      showToast('Welcome Back', 'Logged in successfully.', 'success', 3000);
-    }
-    document.getElementById('fbModal').style.display = 'none';
-  } catch (err) {
-    console.warn('Auth error:', err);
-    if (errEl) errEl.textContent = err.message ? err.message.replace('Firebase: ', '') : 'Authentication failed';
-  }
-}
-
-setTimeout(() => {
-  if (window.fbOnAuthStateChanged && window.firebaseAuth) {
-    window.fbOnAuthStateChanged(window.firebaseAuth, async e => {
-      P_ = e;
-      let t = document.getElementById('authBtn');
-      if (e) {
-        if (t) {
-          t.innerHTML = '👤 Sign Out';
-          t.onclick = F_;
-        }
-        try {
-          // Fetch watchlist from Realtime Database
-          let ref = window.fbRef(window.firebaseDb, `users/${e.uid}`);
-          let snapshot = await window.fbGet(ref);
-          if (snapshot.exists() && snapshot.val().watchlist?.length) {
-            ST.wl = snapshot.val().watchlist;
-            renderWL({});
-            saveState();
-          }
-        } catch (err) {
-          console.error('Error fetching watchlist from Firebase:', err);
-        }
-      } else {
-        if (t) {
-          t.innerHTML = '👤 Log In';
-          t.onclick = () => { document.getElementById('fbModal').style.display = 'flex'; };
-        }
-        // Do NOT wipe watchlist on guest/unauthenticated mode
-        if (!ST.wl || !ST.wl.length) {
-          loadState();
-        }
-        renderWL({});
-      }
-    });
-  }
-}, 800);
-
-// Intercept addWL and rmWL to save to Firebase
-const origAddWL = window.addWL || (typeof addWL === 'function' ? addWL : function(){});
-const origRmWL  = window.rmWL  || (typeof rmWL  === 'function' ? rmWL  : function(){});
-
-function syncFirebaseWL() {
-  if (P_ && window.fbRef && window.fbSet && window.firebaseDb) {
-    let ref = window.fbRef(window.firebaseDb, `users/${P_.uid}`);
-    window.fbSet(ref, { watchlist: ST.wl }).catch(err => {
-      console.error('Error saving watchlist to Firebase:', err);
-    });
-  }
-}
-
-if(typeof addWL === 'function') {
-  window.addWL = function(...args) { origAddWL(...args); syncFirebaseWL(); };
-  addWL = window.addWL;
-}
-if(typeof rmWL === 'function') {
-  window.rmWL = function(...args) { origRmWL(...args); syncFirebaseWL(); };
-  rmWL = window.rmWL;
-}
-
 // Window global exports
 window.enterApp = enterApp;
-window.handleAuthSubmit = handleAuthSubmit;
-window.toggleAuthMode = toggleAuthMode;
 window.toggleCNTPanel = toggleCNTPanel;
 window.openCardanoModal = openCardanoModal;
 window.quickAddCNT = quickAddCNT;
@@ -6015,6 +6003,7 @@ window.togglePaperTrading = togglePaperTrading;
 window.setPTAmount = setPTAmount;
 window.openSimPosition = openSimPosition;
 window.closeSimPosition = closeSimPosition;
+window.savePaperTrading = savePaperTrading;
 window.resetSimWallet = resetSimWallet;
 window.openPnLModal = openPnLModal;
 window.openPnLModalById = openPnLModalById;
@@ -6025,5 +6014,6 @@ window.copyPnLCard = copyPnLCard;
 window.LivePriceEngine = LivePriceEngine;
 window.SIM = SIM;
 window.updateSimUI = updateSimUI;
+window.calcMicroTickPrice = calcMicroTickPrice;
 window.ST = ST;
 
