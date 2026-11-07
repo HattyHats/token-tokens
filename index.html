@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Token-Tokens | Live Crypto Price Tracker by HattyHats</title>
 <meta name="description" content="Track real-time crypto prices, view live charts, set price alerts, and learn how to read crypto charts with Token-Tokens by HattyHats.">
-<meta name="theme-color" content="#050810">
+<meta name="theme-color" content="#060a14">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Token-Tokens">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="Token-Tokens">
@@ -22,8 +22,37 @@
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=6.4">
-  <script defer src="./main.js?v=6.4"></script>
+  <link rel="stylesheet" href="./style.css?v=6.5">
+  <script defer src="./main.js?v=6.5"></script>
+  <script>
+    // Ensure iPhone / iOS Dynamic Island & status bar safe-area clearance on cold start & full-screen viewports
+    (function() {
+      function syncIOSSafeArea() {
+        try {
+          var ua = navigator.userAgent || '';
+          var isIPhone = /\biPhone\b/i.test(ua);
+          if (!isIPhone) return;
+          var sh = Math.max(window.screen ? window.screen.height : 0, window.screen ? window.screen.width : 0);
+          var isPortrait = window.innerHeight >= window.innerWidth;
+          if (sh >= 812 && isPortrait) {
+            var isStandalone = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+            var chromeDiff = sh - window.innerHeight;
+            if (isStandalone || chromeDiff < 105) {
+              document.documentElement.style.setProperty('--ios-top-safe', '56px');
+            } else {
+              document.documentElement.style.setProperty('--ios-top-safe', '0px');
+            }
+          } else {
+            document.documentElement.style.setProperty('--ios-top-safe', '0px');
+          }
+        } catch(e) {}
+      }
+      syncIOSSafeArea();
+      window.addEventListener('resize', syncIOSSafeArea);
+      window.addEventListener('orientationchange', syncIOSSafeArea);
+      document.addEventListener('DOMContentLoaded', syncIOSSafeArea);
+    })();
+  </script>
   <script>
     // ══════════════════════════════════════════════════════════════
     // BULLETPROOF LIVE PRICE STREAMING & PAPER TRADING CONTROLLER

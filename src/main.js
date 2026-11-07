@@ -37,6 +37,8 @@ function enterApp() {
     splash.style.transform = 'scale(1.04)';
     splash.style.filter = 'blur(8px)';
     setTimeout(() => {
+      splash.style.filter = 'none';
+      splash.style.transform = 'none';
       splash.style.display = 'none';
       splash.style.visibility = 'hidden';
       if (app) {
