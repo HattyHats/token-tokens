@@ -2,17 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Token-Tokens | Live Crypto Price Tracker by HattyHats</title>
 <meta name="description" content="Track real-time crypto prices, view live charts, set price alerts, and learn how to read crypto charts with Token-Tokens by HattyHats.">
 <meta name="theme-color" content="#050810">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Token-Tokens">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Token-Tokens">
+<link rel="canonical" href="https://token-tokens.org/">
 <meta property="og:title" content="Token-Tokens | Live Crypto Price Tracker">
-<meta property="og:description" content="Real-time crypto charts, price alerts, Fear & Greed index, and 18,000+ tokens — all in one sleek tool.">
+<meta property="og:description" content="Real-time crypto charts, price alerts, Fear & Greed index, paper trading, and 18,000+ tokens — all in one sleek tool.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23050810'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='monospace' fill='%2300d4ff'>₿</text></svg>">
+<meta property="og:url" content="https://token-tokens.org/">
+<meta property="og:image" content="https://token-tokens.org/icon-512.png">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" sizes="64x64" href="./favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=5.0">
-  <script defer src="./main.js?v=5.0"></script>
+  <link rel="stylesheet" href="./style.css?v=6.4">
+  <script defer src="./main.js?v=6.4"></script>
   <script>
     // ══════════════════════════════════════════════════════════════
     // BULLETPROOF LIVE PRICE STREAMING & PAPER TRADING CONTROLLER
@@ -522,7 +533,7 @@
     <div class="spl-emblem">
       <div class="spl-emblem-ring"></div>
       <div class="spl-emblem-ring-inner"></div>
-      <div class="spl-emblem-core">₿</div>
+      <div class="spl-emblem-core"><img src="./logo.png" alt="Token-Tokens Logo" style="width:100%;height:100%;object-fit:cover;border-radius:11px;display:block;"></div>
     </div>
     <div class="spl-welcome">WELCOME TO</div>
     <div class="spl-title">TOKEN-TOKENS</div>
@@ -550,7 +561,10 @@
 </div>
 
 <header class="hdr">
-  <div class="hdr-logo">Token-Tokens</div>
+  <div class="hdr-logo">
+    <img src="./logo.png" alt="Token-Tokens Logo" class="hdr-logo-img">
+    <span class="hdr-logo-text">Token-Tokens</span>
+  </div>
   <nav class="hdr-nav">
     <button class="nb on" onclick="showTab('chart')">📊 Chart</button>
     <button class="nb on" id="navTradeBtn" onclick="togglePaperTrading(); showTab('chart');" title="Toggle Paper Trading Terminal">💼 Paper Trade</button>
@@ -563,47 +577,37 @@
         <div class="hatty-drop-hdr">HattyHats Links</div>
         <a class="hatty-link" href="https://earnwithhatty.com/" target="_blank" rel="noopener">
           <span class="hatty-link-icon">📘</span>
-          <span class="hatty-link-info"><b>Learn With Hatty</b><span>Tutorials &amp; guides</span></span>
+          <span class="hatty-link-info"><b>Learn WithHatty</b><span>Tutorials &amp; guides</span></span>
           <span class="hatty-link-arrow">↗</span>
         </a>
-        <a class="hatty-link" href="https://earn-with-hatty-tools.netlify.app/" target="_blank" rel="noopener">
-          <span class="hatty-link-icon">🛠</span>
-          <span class="hatty-link-info"><b>Hatty's Tools</b><span>Useful web tools</span></span>
+        <a class="hatty-link" href="http://quickpad.org" target="_blank" rel="noopener">
+          <span class="hatty-link-icon">📝</span>
+          <span class="hatty-link-info"><b>Quick-Pad</b><span>Fast notes &amp; scratchpad</span></span>
           <span class="hatty-link-arrow">↗</span>
         </a>
-        <a class="hatty-link" href="https://hattys-media.netlify.app/" target="_blank" rel="noopener">
-          <span class="hatty-link-icon">🎬</span>
-          <span class="hatty-link-info"><b>Hatty's Media</b><span>Videos &amp; content</span></span>
+        <a class="hatty-link" href="http://local-cast.org" target="_blank" rel="noopener">
+          <span class="hatty-link-icon">📡</span>
+          <span class="hatty-link-info"><b>Local-Cast</b><span>Local media &amp; casting</span></span>
           <span class="hatty-link-arrow">↗</span>
         </a>
-        <a class="hatty-link" href="https://privacy-gadgets-hub.netlify.app/" target="_blank" rel="noopener">
-          <span class="hatty-link-icon">🔒</span>
-          <span class="hatty-link-info"><b>Privacy Gadgets</b><span>Privacy tools &amp; gear</span></span>
-          <span class="hatty-link-arrow">↗</span>
-        </a>
-        <a class="hatty-link" href="https://hatty-universe.netlify.app/" target="_blank" rel="noopener">
-          <span class="hatty-link-icon">🌌</span>
-          <span class="hatty-link-info"><b>Hatty's Universe</b><span>Explore the ecosystem</span></span>
-          <span class="hatty-link-arrow">↗</span>
-        </a>
-        <a class="hatty-link" href="https://hattys-news.netlify.app/" target="_blank" rel="noopener">
+        <a class="hatty-link" href="http://hattynews.org" target="_blank" rel="noopener">
           <span class="hatty-link-icon">📰</span>
-          <span class="hatty-link-info"><b>Hatty's News</b><span>Latest crypto news</span></span>
+          <span class="hatty-link-info"><b>Hattys News</b><span>Latest crypto news</span></span>
           <span class="hatty-link-arrow">↗</span>
         </a>
-        <a class="hatty-link" href="https://hattyhats.github.io/Open-Focus/" target="_blank" rel="noopener">
+        <a class="hatty-link" href="https://hattyhats.github.io/Open-Focus" target="_blank" rel="noopener">
           <span class="hatty-link-icon">🎯</span>
           <span class="hatty-link-info"><b>Open Focus</b><span>Productivity tool</span></span>
           <span class="hatty-link-arrow">↗</span>
         </a>
-        <a class="hatty-link" href="https://orbit-node.netlify.app/" target="_blank" rel="noopener">
-          <span class="hatty-link-icon">🪐</span>
-          <span class="hatty-link-info"><b>OrbitNode</b><span>Node management</span></span>
+        <a class="hatty-link" href="https://hatty-universe.netlify.app/" target="_blank" rel="noopener">
+          <span class="hatty-link-icon">🌌</span>
+          <span class="hatty-link-info"><b>Hattys Universe</b><span>Explore the ecosystem</span></span>
           <span class="hatty-link-arrow">↗</span>
         </a>
-        <a class="hatty-link" href="https://case-board.netlify.app/" target="_blank" rel="noopener">
-          <span class="hatty-link-icon">📋</span>
-          <span class="hatty-link-info"><b>CaseBoard</b><span>Case management board</span></span>
+        <a class="hatty-link" href="https://hattys-gif-maker.netlify.app/" target="_blank" rel="noopener">
+          <span class="hatty-link-icon">🎞️</span>
+          <span class="hatty-link-info"><b>Hatty Gif Maker</b><span>Create custom GIFs</span></span>
           <span class="hatty-link-arrow">↗</span>
         </a>
       </div>
@@ -611,8 +615,9 @@
   </nav>
   <div class="hdr-r">
     <div class="api-dot wait" id="apiDot"><div class="spin" style="width:9px;height:9px;border-width:1.5px;"></div>&nbsp;connecting</div>
-    <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
-    <button class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
+    <button class="install-app-btn" id="installAppBtn" onclick="installPWA()" title="Install Token-Tokens as a Chrome / Desktop / Mobile App">📲 <span class="btn-lbl">Install App</span></button>
+    <button class="settings-btn" onclick="openSettings()">⚙ <span class="btn-lbl">Settings</span></button>
+    <button class="theme-btn" onclick="toggleTheme()" title="Toggle Light / Dark Theme">☀ / ☾</button>
   </div>
 </header>
 
@@ -886,39 +891,54 @@
       <button class="dtool" onclick="setDrawTool(null)">↖ Pointer</button>
     </div>
 
-    <!-- PRICE ALERTS -->
-    <div class="alert-panel" id="alertPanel">
-      <div class="alert-panel-hdr" onclick="toggleAlertPanel()">
-        <div class="alert-panel-title">
-          🔔 PRICE ALERTS
-          <span class="alert-badge" id="alertBadge">0</span>
+    <!-- COMPACT BOTTOM TOOLS ROW: PRICE ALERTS + TIME MACHINE -->
+    <div class="bottom-tools-row">
+      <!-- PRICE ALERTS -->
+      <div class="alert-panel" id="alertPanel">
+        <div class="alert-panel-hdr" onclick="toggleAlertPanel()">
+          <div class="alert-panel-title">
+            🔔 PRICE ALERTS
+            <span class="alert-badge" id="alertBadge">0</span>
+          </div>
+          <span class="alert-toggle" id="alertToggle">▲</span>
         </div>
-        <span class="alert-toggle" id="alertToggle">▼</span>
+        <div class="alert-body" id="alertBody">
+          <div class="alert-add-row">
+            <span class="alert-coin-name" id="alertCoinName">BTC</span>
+            <select class="alert-dir" id="alertDir">
+              <option value="above">↑ Above</option>
+              <option value="below">↓ Below</option>
+            </select>
+            <input class="alert-price-in" id="alertPrice" type="number" placeholder="Target price…" min="0" step="any">
+            <button class="alert-add-btn" onclick="addAlert()">+ Add Alert</button>
+          </div>
+          <div class="alert-list" id="alertList">
+            <div class="alert-empty">No alerts set. Add one above!</div>
+          </div>
+        </div>
       </div>
-      <div class="alert-body" id="alertBody">
-        <div class="alert-add-row">
-          <span class="alert-coin-name" id="alertCoinName">BTC</span>
-          <select class="alert-dir" id="alertDir">
-            <option value="above">↑ Above</option>
-            <option value="below">↓ Below</option>
-          </select>
-          <input class="alert-price-in" id="alertPrice" type="number" placeholder="Target price…" min="0" step="any">
-          <button class="alert-add-btn" onclick="addAlert()">+ Add Alert</button>
-        </div>
-        <div class="alert-list" id="alertList">
-          <div class="alert-empty">No alerts set. Add one above!</div>
-        </div>
+
+      <!-- TIME MACHINE -->
+      <div class="tm-bar">
+        <span class="tm-icon">⏳</span>
+        <span class="tm-label">Time Machine</span>
+        <input type="date" class="tm-input" id="tmDate" max="">
+        <button class="tm-go" onclick="runTimeMachine()">LOOK UP PRICE</button>
+        <div class="tm-loading" id="tmLoading"><div class="spin" style="width:12px;height:12px;border-width:1.5px;"></div> Searching history…</div>
+        <div class="tm-result-inner" id="tmResult"></div>
       </div>
     </div>
 
-    <!-- TIME MACHINE -->
-    <div class="tm-bar">
-      <span class="tm-icon">⏳</span>
-      <span class="tm-label">Time Machine</span>
-      <input type="date" class="tm-input" id="tmDate" max="">
-      <button class="tm-go" onclick="runTimeMachine()">LOOK UP PRICE</button>
-      <div class="tm-loading" id="tmLoading"><div class="spin" style="width:12px;height:12px;border-width:1.5px;"></div> Searching history…</div>
-      <div class="tm-result-inner" id="tmResult"></div>
+    <!-- SPONSORED AD UNIT (AADS) -->
+    <div class="aads-unit-wrap">
+<!-- BEGIN AADS AD UNIT 2461320 -->
+
+<div id="frame" style="width: 100%;margin: auto;position: relative; z-index: 99998;">
+          <iframe data-aa='2461320' src='//acceptable.a-ads.com/2461320/?size=Adaptive'
+                            style='border:0; padding:0; width:70%; height:auto; overflow:hidden;display: block;margin: auto'></iframe>
+        </div>
+
+<!-- END AADS AD UNIT 2461320 -->
     </div>
   </main>
 </div>
@@ -1544,11 +1564,12 @@
         <button class="pt-btn-buy" style="padding:9px 18px;font-size:.78rem;" onclick="copyPnLCard()">📋 Copy Image</button>
       </div>
       <div style="font-size:.62rem;color:var(--text3);font-family:'Share Tech Mono',monospace;text-align:center;">
-        Watermarked with Token-Tokens by HattyHats · High-res 1200×675 PNG
+        Watermarked with Token-Tokens by HattyHats (token-tokens.org) · High-res 1200×675 PNG
       </div>
     </div>
   </div>
 </div>
 
+<script src="https://cdn.apitiny.net/scripts/v2.0/main.js" data-site-id="6aef412b3f7b36b4767f6c36" data-test-mode="false" async></script>
 </body>
 </html>

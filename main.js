@@ -543,8 +543,14 @@ function setDrawTool(tool) {
     };
     const targetId = toolMap[tool] || ('dt' + tool.charAt(0).toUpperCase() + tool.slice(1));
     document.getElementById(targetId)?.classList.add('on');
+    document.querySelectorAll('.draw-panel .dtool').forEach(b=>{
+      if(b.getAttribute('onclick') === `setDrawTool('${tool}')`) b.classList.add('on');
+    });
   } else {
     document.getElementById('dtPointer')?.classList.add('on');
+    document.querySelectorAll('.draw-panel .dtool').forEach(b=>{
+      if(b.getAttribute('onclick') === 'setDrawTool(null)') b.classList.add('on');
+    });
   }
   updateDrawCount();
 }
@@ -553,7 +559,11 @@ function setDrawColor(color, btnId) {
   DRW.color = color;
   // Sync all color swatches — both .draw-color (mobile) and .rp-color (right panel)
   document.querySelectorAll('.draw-color,.rp-color').forEach(b=>b.classList.remove('on'));
-  document.getElementById(btnId)?.classList.add('on');
+  const baseId = (btnId || '').replace(/2$/, '');
+  if(baseId){
+    document.getElementById(baseId)?.classList.add('on');
+    document.getElementById(baseId + '2')?.classList.add('on');
+  }
   saveState();
 }
 
@@ -1016,6 +1026,11 @@ const LivePriceEngine = {
       if(typeof updateSimUI === 'function') updateSimUI();
     }
 
+    // 3b. Check price alerts in real time on live ticks
+    if(isReal && typeof ALERTS !== 'undefined' && ALERTS.length > 0 && typeof checkAlerts === 'function'){
+      checkAlerts();
+    }
+
     // 4. Strict current coin guard:
     const activeCurrentSym = (ST.coin && ST.coin.symbol ? ST.coin.symbol : this.activeSym || 'BTC').toUpperCase();
     if(s !== activeCurrentSym){
@@ -1373,6 +1388,9 @@ async function loadPrices(){
 
     setDot('ok');
     renderWL(prev);
+    if(!document.querySelector('#tickerTrack [data-ticker-sym]')){
+      loadTicker();
+    }
     if(typeof checkAlerts === 'function') checkAlerts();
     return true;
   }catch(e){
@@ -2388,9 +2406,9 @@ async function loadTicker(){
         "LINK": "chainlink", "LTC": "litecoin", "UNI": "uniswap", "NEAR": "near", "ATOM": "cosmos"
       };
 
-      // If the ticker is already populated and scrolling, DO NOT wipe innerHTML!
+      // If the ticker is already populated with live coin items and scrolling, DO NOT wipe innerHTML!
       // Wiping innerHTML resets the CSS translate3d animation back to 0%, causing the bar to glitch and restart!
-      if(track.children.length > 0){
+      if(track.querySelectorAll('[data-ticker-sym]').length > 0){
         for(const [k, v] of Object.entries(result)){
           const sym = symbols[k] || k.replace('USD', '');
           const p = parseFloat(v.c[0]);
@@ -2431,7 +2449,7 @@ async function loadTicker(){
 
   // Fallback: build ticker from current watchlist
   if(ST.wl && ST.wl.length){
-    if(track.children.length > 0){
+    if(track.querySelectorAll('[data-ticker-sym]').length > 0){
       ST.wl.forEach(c => {
         if(c.price > 0 && window.LivePriceEngine && typeof window.LivePriceEngine.updateTickerItem === 'function'){
           window.LivePriceEngine.updateTickerItem((c.symbol||'').toUpperCase(), c.price, null);
@@ -2776,15 +2794,16 @@ function renderChart(){
   const showRSI  = ST.inds.has('rsi');
   const showMACD = ST.inds.has('macd');
 
-  // Sub-panel heights
-  const subH  = 60;
-  const rsiH  = showRSI  ? 90 : 0;
-  const macdH = showMACD ? 90 : 0;
-  const totalH = zone.clientHeight || 460;
-  const pH = Math.max(140,
-    totalH - subH - 16
-            - (showRSI  ? rsiH  + 18 : 0)
-            - (showMACD ? macdH + 18 : 0));
+  // Sub-panel heights adapt dynamically so 100% fits inside #chartZone on all screen sizes
+  const totalH = zone.clientHeight || 360;
+  const subH  = totalH < 240 ? 34 : (totalH < 340 ? 44 : 56);
+  const rsiH  = showRSI  ? (totalH < 320 ? 48 : 74) : 0;
+  const macdH = showMACD ? (totalH < 320 ? 48 : 74) : 0;
+  const lblH  = 15;
+  const pH = Math.max(90,
+    totalH - subH - lblH
+           - (showRSI  ? rsiH  + lblH : 0)
+           - (showMACD ? macdH + lblH : 0));
 
   // High-DPI / Retina Canvas scaling
   const dpr   = window.devicePixelRatio || 1;
@@ -3707,7 +3726,7 @@ function detectPatterns(candles){
       localMaxes.push({ i, h: candles[i].h });
     }
     if(candles[i].l < candles[i-1].l && candles[i].l < candles[i-2].l &&
-       candles[i].l < candles[i+1].l && candles[i].l < candles[i-2].l){
+       candles[i].l < candles[i+1].l && candles[i].l < candles[i+2].l){
       localMins.push({ i, l: candles[i].l });
     }
   }
@@ -4609,7 +4628,7 @@ function drawPnLCard(canvas, trade){
 
   ctx.fillStyle = '#00d4ff';
   ctx.textAlign = 'right';
-  ctx.fillText('🔗 hattyhats.github.io/token-tokens', W - 60, H - 45);
+  ctx.fillText('🔗 https://token-tokens.org/', W - 60, H - 45);
 }
 
 function downloadPnLCard(){
@@ -4702,21 +4721,26 @@ function renderFibDrawing(ctx, d, vis, toX, priceToYfn, W, PAD_L, PAD_R, pH){
 let _notePending = null; // {gi, price, x_screen, y_screen}
 
 function showNoteInput(gi, price, screenX, screenY){
+  initNoteInputListeners();
   _notePending = {gi, price};
   const wrap = document.getElementById('noteInputWrap');
   const inp  = document.getElementById('noteInputBox');
+  if(!wrap || !inp) return;
   wrap.style.display = 'block';
-  wrap.style.left    = screenX + 'px';
-  wrap.style.top     = (screenY - 40) + 'px';
+  wrap.style.left    = Math.min(window.innerWidth - 220, Math.max(8, screenX)) + 'px';
+  wrap.style.top     = Math.max(8, screenY - 40) + 'px';
   inp.value = '';
   inp.focus();
+  setTimeout(() => inp.focus(), 15);
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{
+function initNoteInputListeners(){
   const inp = document.getElementById('noteInputBox');
-  if(!inp) return;
+  if(!inp || inp._noteBound) return;
+  inp._noteBound = true;
   inp.addEventListener('keydown', e=>{
     if(e.key==='Enter'){
+      e.preventDefault();
       const text = inp.value.trim();
       if(text && _notePending){
         DRW.drawings.push({
@@ -4724,7 +4748,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
           p1:{gi:_notePending.gi, price:_notePending.price},
           text
         });
-        updateDrawCount(); renderChart();
+        updateDrawCount(); renderChart(); saveState();
       }
       document.getElementById('noteInputWrap').style.display='none';
       _notePending = null;
@@ -4736,12 +4760,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
   // Click outside dismisses
   document.addEventListener('mousedown', e=>{
     const wrap = document.getElementById('noteInputWrap');
+    const pc   = document.getElementById('priceCanvas');
+    if(pc && pc.contains(e.target) && DRW.tool === 'note') return;
     if(wrap && !wrap.contains(e.target) && wrap.style.display==='block'){
       wrap.style.display='none';
       _notePending = null;
     }
   }, true);
-});
+}
+initNoteInputListeners();
 
 
 /* ══════════════════ LOCAL STORAGE PERSISTENCE ══════════════ */
@@ -4807,7 +4834,22 @@ function clearSavedState(){
   localStorage.removeItem(LS_KEY);
   localStorage.removeItem('tt_paper_wallet');
   localStorage.removeItem('tt_paper_active');
-  showToast('🗑 Settings Cleared','Your saved watchlist, alerts, paper trades, and drawings have been cleared. Refresh to reset.','info');
+  DRW.drawings = [];
+  DRW.pending = null;
+  ALERTS = [];
+  if(window.SIM){
+    window.SIM.balance = 10000.0;
+    window.SIM.positions = [];
+    window.SIM.position = null;
+    window.SIM.history = [];
+  }
+  const shareBtn = document.getElementById('ptLastShareBtn');
+  if(shareBtn) shareBtn.style.display = 'none';
+  updateDrawCount();
+  renderAlerts();
+  if(typeof updateSimUI === 'function') updateSimUI();
+  renderChart();
+  showToast('🗑 Settings Cleared','Your saved watchlist, alerts, paper trades, and drawings have been cleared.','info');
 }
 
 /* ══════════════════ PRICE ALERTS ══════════════════════════ */
@@ -4818,10 +4860,22 @@ function toggleAlertPanel(){
   const body = document.getElementById('alertBody');
   const tog  = document.getElementById('alertToggle');
   const hdr  = document.getElementById('alertPanel')?.querySelector('.alert-panel-hdr');
+  if(!body) return;
   const open = body.classList.toggle('open');
-  tog.classList.toggle('open', open);
+  if(tog) tog.classList.toggle('open', open);
   if(hdr) hdr.classList.toggle('open', open);
+  requestAnimationFrame(() => renderChart());
 }
+
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('alertPanel');
+  const body = document.getElementById('alertBody');
+  if(panel && body && body.classList.contains('open') && !panel.contains(e.target)){
+    body.classList.remove('open');
+    document.getElementById('alertToggle')?.classList.remove('open');
+    panel.querySelector('.alert-panel-hdr')?.classList.remove('open');
+  }
+});
 
 function updateAlertCoinName(){
   const el = document.getElementById('alertCoinName');
@@ -4899,11 +4953,14 @@ function checkAlerts(){
   let changed = false;
   ALERTS.forEach(a=>{
     if(!a.active || a.triggered) return;
-    // Find current price from watchlist or ST.coin
+    // Find current price from active coin, LivePriceEngine, or watchlist
     let cur = 0;
     if(a.coinId === ST.coin.id) cur = ST.coin.price;
-    else {
-      const wlEntry = ST.wl.find(c=>c.id===a.coinId);
+    if(!cur && window.LivePriceEngine && typeof window.LivePriceEngine.getLivePrice === 'function'){
+      cur = window.LivePriceEngine.getLivePrice(a.symbol) || 0;
+    }
+    if(!cur){
+      const wlEntry = ST.wl.find(c=>c.id===a.coinId || (c.symbol && a.symbol && c.symbol.toUpperCase()===a.symbol.toUpperCase()));
       if(wlEntry) cur = wlEntry.price;
     }
     if(!cur) return;
@@ -5044,13 +5101,24 @@ function smBgClick(e){
 function smToggleTheme(cb){ toggleTheme(); }
 function smTogglePatterns(cb){
   ST.showPatterns = !!cb.checked;
+  const btn = document.getElementById('patternBtn');
+  const banner = document.getElementById('patternBanner');
+  if(btn) btn.classList.toggle('on', ST.showPatterns);
+  if(banner){
+    banner.classList.toggle('show', ST.showPatterns);
+    banner.style.display = ST.showPatterns ? 'flex' : 'none';
+  }
   saveState();
   renderChart();
   showToast('Chart','Pattern markers ' + (ST.showPatterns ? 'enabled' : 'hidden') + '.','info');
 }
 function smExportData(){
-  const data = localStorage.getItem(LS_KEY) || '{}';
-  const blob = new Blob([data], {type:'application/json'});
+  let baseData = {};
+  try { baseData = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch(e){}
+  let ptData = {};
+  try { ptData = JSON.parse(localStorage.getItem('tt_paper_wallet') || '{}'); } catch(e){}
+  const payload = JSON.stringify({ ...baseData, paperTrading: ptData, exportedAt: new Date().toISOString() }, null, 2);
+  const blob = new Blob([payload], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'token-tokens-data.json';
@@ -5154,7 +5222,8 @@ document.getElementById('priceCanvas').addEventListener('mousedown',e=>{
   }
 
   if(DRW.tool === 'note'){
-    // Show floating text input at click position
+    // Prevent default mousedown focus change so noteInputBox retains focus
+    e.preventDefault();
     showNoteInput(ci.globalIdx, price, e.clientX, e.clientY);
     return;
   }
@@ -5474,6 +5543,9 @@ function activateIndicator(name){
     ST.inds.add(name);
     const btn=document.getElementById('i'+name.toUpperCase());
     if(btn) btn.classList.add('on');
+    document.querySelectorAll('.ind-panel .ind').forEach(b=>{
+      if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+name+"'")){b.classList.add('on');}
+    });
     renderChart();
     saveState();
   }
@@ -5511,7 +5583,10 @@ function toggleTheme(){
   v('--text2','#7a9cc0','#2a4060');
   v('--text3','#3a5a80','#6080a0');
   document.documentElement.setAttribute('data-theme', lm?'light':'dark');
+  const tog = document.getElementById('smThemeToggle');
+  if(tog) tog.checked = lm;
   renderChart();
+  saveState();
 }
 
 /* resize */
@@ -5539,7 +5614,11 @@ async function initApp(){
 
   if(ST.showPatterns) {
     document.getElementById('patternBtn')?.classList.add('on');
-    document.getElementById('patternBanner')?.classList.add('show');
+    const banner = document.getElementById('patternBanner');
+    if(banner){
+      banner.classList.add('show');
+      banner.style.display = 'flex';
+    }
     const smToggle = document.getElementById('smPatternToggle');
     if(smToggle) smToggle.checked = true;
   }
@@ -5974,6 +6053,67 @@ window.selectCoin = selectCoin;
 window.selectCoinByIdx = selectCoinByIdx;
 window.addToWL = addToWL;
 window.removeFromWL = removeFromWL;
+/* ══════════════════ PWA & CHROME APP INSTALL ══════════════════ */
+let _deferredInstallPrompt = null;
+
+function updateInstallAppBtn() {
+  const btn = document.getElementById('installAppBtn');
+  if (!btn) return;
+  const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  if (isStandalone) {
+    btn.classList.add('installed');
+  } else {
+    btn.classList.remove('installed');
+  }
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  updateInstallAppBtn();
+});
+
+window.addEventListener('appinstalled', () => {
+  _deferredInstallPrompt = null;
+  const btn = document.getElementById('installAppBtn');
+  if (btn) btn.classList.add('installed');
+  if (typeof showToast === 'function') {
+    showToast('success', 'App Installed!', 'Token-Tokens is now installed as an app on your device.');
+  }
+});
+
+async function installPWA() {
+  if (_deferredInstallPrompt) {
+    try {
+      _deferredInstallPrompt.prompt();
+      const choice = await _deferredInstallPrompt.userChoice;
+      if (choice && choice.outcome === 'accepted') {
+        _deferredInstallPrompt = null;
+      }
+      return;
+    } catch (err) {
+      console.warn('PWA prompt error:', err);
+    }
+  }
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  if (isIOS) {
+    showToast('info', 'Install on iOS / iPadOS', 'Tap the Share button (⎋) in your browser and select "Add to Home Screen" to install Token-Tokens.');
+  } else {
+    showToast('info', 'Install Chrome App', 'Click the Install icon (⊕) on the right side of your Chrome address bar (or Menu ⋮ → "Cast, save, and share" → "Install page as app…").');
+  }
+}
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
+  window.addEventListener('load', () => {
+    updateInstallAppBtn();
+    navigator.serviceWorker.register('./sw.js').catch((err) => {
+      console.warn('Service worker registration note:', err);
+    });
+  });
+}
+
+window.installPWA = installPWA;
 window.refreshWL = refreshWL;
 window.setTF = setTF;
 window.setCT = setCT;
