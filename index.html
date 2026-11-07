@@ -22,8 +22,8 @@
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=6.5">
-  <script defer src="./main.js?v=6.5"></script>
+  <link rel="stylesheet" href="./style.css?v=6.6">
+  <script defer src="./main.js?v=6.6"></script>
   <script>
     // Ensure iPhone / iOS Dynamic Island & status bar safe-area clearance on cold start & full-screen viewports
     (function() {
@@ -911,13 +911,17 @@
       <button class="dtool" onclick="setDrawTool('ray')">→ Ray</button>
       <button class="dtool" onclick="setDrawTool('rect')">▭ Zone</button>
       <button class="dtool" onclick="setDrawTool('fib')">🌀 Fib</button>
+      <button class="dtool" onclick="setDrawTool('note')">📝 Note</button>
       <button class="draw-divider"></button>
-      <div class="draw-color on" id="dcAqua2"  onclick="setDrawColor('#00d4ff','dcAqua')"   style="background:#00d4ff;"></div>
-      <div class="draw-color"    id="dcGreen2" onclick="setDrawColor('#00ff88','dcGreen')"  style="background:#00ff88;"></div>
-      <div class="draw-color"    id="dcRed2"   onclick="setDrawColor('#ff3366','dcRed')"    style="background:#ff3366;"></div>
+      <div class="draw-color on" id="dcAqua2"   onclick="setDrawColor('#00d4ff','dcAqua')"   style="background:#00d4ff;" title="Cyan"></div>
+      <div class="draw-color"    id="dcGreen2"  onclick="setDrawColor('#00ff88','dcGreen')"  style="background:#00ff88;" title="Green"></div>
+      <div class="draw-color"    id="dcRed2"    onclick="setDrawColor('#ff3366','dcRed')"    style="background:#ff3366;" title="Red"></div>
+      <div class="draw-color"    id="dcYellow2" onclick="setDrawColor('#ffc800','dcYellow')" style="background:#ffc800;" title="Yellow"></div>
+      <div class="draw-color"    id="dcPurple2" onclick="setDrawColor('#9664ff','dcPurple')" style="background:#9664ff;" title="Purple"></div>
       <button class="dtool" onclick="undoDraw()">↩ Undo</button>
       <button class="dtool danger" onclick="clearDrawings()">🗑 Clear</button>
-      <button class="dtool" onclick="setDrawTool(null)">↖ Pointer</button>
+      <button class="dtool on" onclick="setDrawTool(null)">↖ Pointer</button>
+      <span class="draw-count" id="drawCountMobile"></span>
     </div>
 
     <!-- COMPACT BOTTOM TOOLS ROW: PRICE ALERTS + TIME MACHINE -->
@@ -1429,7 +1433,9 @@
 
 <!-- NOTE INPUT OVERLAY -->
 <div class="note-input-wrap" id="noteInputWrap">
-  <input id="noteInputBox" type="text" placeholder="Type note, press Enter…" maxlength="60">
+  <input id="noteInputBox" type="text" placeholder="Type note…" maxlength="60">
+  <button type="button" id="noteAddBtn" class="note-add-btn">✓ Add</button>
+  <button type="button" id="noteCancelBtn" class="note-cancel-btn">✕</button>
 </div>
 
 <!-- TOKEN BROWSER MODAL -->

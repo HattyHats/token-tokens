@@ -462,11 +462,12 @@ window.ST = ST;
 
 // ── Drawing Tools State ──────────────────────────────────────────────────────
 const DRW = {
-  tool:   null,        // 'line'|'hline'|'ray'|'rect'|null
+  tool:   null,        // 'line'|'hline'|'ray'|'rect'|'fib'|'note'|null
   color:  '#00d4ff',   // active draw color
   drawings: [],        // completed drawings [{type,color,...price/candle coords}]
-  pending: null,       // drawing in progress {type,color,p1:{cx,price},p2:{cx,price}|null}
+  pending: null,       // drawing in progress {type,color,p1:{gi,price},p2:{gi,price}|null}
 };
+window.DRW = DRW;
 
 // Convert canvas pixel X → candle index (within visible range)
 function pxToCandleIdx(mx, canvasW) {
@@ -555,6 +556,7 @@ function setDrawTool(tool) {
     });
   }
   updateDrawCount();
+  renderChart();
 }
 
 function setDrawColor(color, btnId) {
@@ -586,8 +588,11 @@ function clearDrawings() {
 }
 
 function updateDrawCount() {
+  const txt = DRW.drawings.length ? DRW.drawings.length + (DRW.drawings.length === 1 ? ' drawing' : ' drawings') : '';
   const el = document.getElementById('drawCount');
-  if(el) el.textContent = DRW.drawings.length ? DRW.drawings.length+' drawings' : '';
+  if(el) el.textContent = txt;
+  const elMob = document.getElementById('drawCountMobile');
+  if(elMob) elMob.textContent = txt;
 }
 
 
@@ -3086,16 +3091,22 @@ function renderChart(){
       ctx.fillStyle=`rgba(${r2},${g2},${b2},0.08)`;
       ctx.fillRect(rx,ry,rw2,rh2);
       ctx.strokeRect(rx,ry,rw2,rh2);
+      // Anchor dots at corners so Point 1 is always visible on first tap
+      ctx.fillStyle=d.color;
+      ctx.beginPath(); ctx.arc(x1,y1,3.5,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x2,y2,3.5,0,Math.PI*2); ctx.fill();
       // Price labels top/bottom
       const hiP = d.p1.price > d.p2.price ? d.p1.price : d.p2.price;
       const loP = d.p1.price < d.p2.price ? d.p1.price : d.p2.price;
       ctx.font='bold 9px Share Tech Mono'; ctx.textAlign='left'; ctx.fillStyle=d.color;
       ctx.fillText('$'+fP(hiP), rx+4, ry+11);
-      ctx.fillText('$'+fP(loP), rx+4, ry+rh2-3);
+      if(rh2 > 14) ctx.fillText('$'+fP(loP), rx+4, ry+rh2-3);
       // % range
-      const rangePct = Math.abs((hiP-loP)/loP*100).toFixed(2);
-      ctx.textAlign='center';
-      ctx.fillText(rangePct+'% range', rx+rw2/2, ry+rh2/2+4);
+      if(rw2 > 20 || rh2 > 14){
+        const rangePct = Math.abs((hiP-loP)/loP*100).toFixed(2);
+        ctx.textAlign='center';
+        ctx.fillText(rangePct+'% range', rx+rw2/2, ry+rh2/2+4);
+      }
 
     } else if(d.type === 'fib' && d.p1 != null && d.p2 != null){
       renderFibDrawing(ctx, d, vis, toX, priceToY, W, PAD_L, PAD_R, pH);
@@ -4671,10 +4682,20 @@ function renderFibDrawing(ctx, d, vis, toX, priceToYfn, W, PAD_L, PAD_R, pH){
   const hiP = Math.max(d.p1.price, d.p2.price);
   const loP = Math.min(d.p1.price, d.p2.price);
   const range = hiP - loP;
-  if(range <= 0) return;
 
   const x1 = candleToX(d.p1.gi, W);
   const x2 = candleToX(d.p2.gi, W);
+  if(range <= 0){
+    const y1 = priceToYfn(d.p1.price, pH);
+    ctx.save();
+    ctx.fillStyle = d.color || 'rgba(150,100,255,.95)';
+    ctx.beginPath(); ctx.arc(x1, y1, 4, 0, Math.PI*2); ctx.fill();
+    ctx.font = 'bold 9px Share Tech Mono';
+    ctx.textAlign = 'left';
+    ctx.fillText('$' + fP(d.p1.price), x1 + 6, y1 - 4);
+    ctx.restore();
+    return;
+  }
   const xL  = Math.min(x1, x2, PAD_L);
   const xR  = Math.max(x1, x2, W-PAD_R);
 
@@ -4722,18 +4743,41 @@ function renderFibDrawing(ctx, d, vis, toX, priceToYfn, W, PAD_L, PAD_R, pH){
 /* ══════════════════ NOTE / LABEL TOOL ══════════════════ */
 let _notePending = null; // {gi, price, x_screen, y_screen}
 
+function commitNoteInput(){
+  const wrap = document.getElementById('noteInputWrap');
+  const inp  = document.getElementById('noteInputBox');
+  if(!wrap || !inp) return;
+  const text = inp.value.trim();
+  if(text && _notePending){
+    DRW.drawings.push({
+      type:'note', color:DRW.color,
+      p1:{gi:_notePending.gi, price:_notePending.price},
+      text
+    });
+    updateDrawCount(); renderChart(); saveState();
+  }
+  wrap.style.display = 'none';
+  _notePending = null;
+}
+
+function cancelNoteInput(){
+  const wrap = document.getElementById('noteInputWrap');
+  if(wrap) wrap.style.display = 'none';
+  _notePending = null;
+}
+
 function showNoteInput(gi, price, screenX, screenY){
   initNoteInputListeners();
   _notePending = {gi, price};
   const wrap = document.getElementById('noteInputWrap');
   const inp  = document.getElementById('noteInputBox');
   if(!wrap || !inp) return;
-  wrap.style.display = 'block';
-  wrap.style.left    = Math.min(window.innerWidth - 220, Math.max(8, screenX)) + 'px';
-  wrap.style.top     = Math.max(8, screenY - 40) + 'px';
+  wrap.style.display = 'flex';
+  wrap.style.left    = Math.min(window.innerWidth - 290, Math.max(8, screenX - 40)) + 'px';
+  wrap.style.top     = Math.max(8, Math.min(window.innerHeight - 60, screenY - 46)) + 'px';
   inp.value = '';
   inp.focus();
-  setTimeout(() => inp.focus(), 15);
+  setTimeout(() => inp.focus(), 20);
 }
 
 function initNoteInputListeners(){
@@ -4743,32 +4787,32 @@ function initNoteInputListeners(){
   inp.addEventListener('keydown', e=>{
     if(e.key==='Enter'){
       e.preventDefault();
-      const text = inp.value.trim();
-      if(text && _notePending){
-        DRW.drawings.push({
-          type:'note', color:DRW.color,
-          p1:{gi:_notePending.gi, price:_notePending.price},
-          text
-        });
-        updateDrawCount(); renderChart(); saveState();
-      }
-      document.getElementById('noteInputWrap').style.display='none';
-      _notePending = null;
+      commitNoteInput();
     } else if(e.key==='Escape'){
-      document.getElementById('noteInputWrap').style.display='none';
-      _notePending = null;
+      cancelNoteInput();
     }
   });
-  // Click outside dismisses
-  document.addEventListener('mousedown', e=>{
+  const addBtn = document.getElementById('noteAddBtn');
+  if(addBtn){
+    addBtn.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); commitNoteInput(); });
+    addBtn.addEventListener('touchend', e=>{ e.preventDefault(); e.stopPropagation(); commitNoteInput(); }, {passive:false});
+  }
+  const cancelBtn = document.getElementById('noteCancelBtn');
+  if(cancelBtn){
+    cancelBtn.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); cancelNoteInput(); });
+    cancelBtn.addEventListener('touchend', e=>{ e.preventDefault(); e.stopPropagation(); cancelNoteInput(); }, {passive:false});
+  }
+  // Click or touch outside dismisses
+  const dismissOutside = e=>{
     const wrap = document.getElementById('noteInputWrap');
     const pc   = document.getElementById('priceCanvas');
+    if(!wrap || wrap.style.display==='none') return;
+    if(wrap.contains(e.target)) return;
     if(pc && pc.contains(e.target) && DRW.tool === 'note') return;
-    if(wrap && !wrap.contains(e.target) && wrap.style.display==='block'){
-      wrap.style.display='none';
-      _notePending = null;
-    }
-  }, true);
+    cancelNoteInput();
+  };
+  document.addEventListener('mousedown', dismissOutside, true);
+  document.addEventListener('touchstart', dismissOutside, {capture:true, passive:true});
 }
 initNoteInputListeners();
 
@@ -5156,120 +5200,274 @@ document.getElementById('priceCanvas').addEventListener('wheel',e=>{
   renderChart();
 },{passive:false});
 
-/* ── Touch support for mobile (pinch-zoom + swipe-pan) ── */
+/* ── Unified Touch, Stylus & Mouse Interaction for #priceCanvas ──
+ * Supports:
+ * 1. When DRW.tool is active ('hline', 'note', 'line', 'ray', 'rect', 'fib'):
+ *    - Single-tap / click for 'hline' and 'note'
+ *    - Both Touch/Click-and-Drag AND Two-Tap / Two-Click for 2-point tools ('line', 'ray', 'rect', 'fib')
+ * 2. When DRW.tool is null (Pointer mode):
+ *    - 1-finger swipe / mouse drag to pan chart
+ *    - 2-finger pinch to zoom chart
+ */
 (()=>{
-  const pc=document.getElementById('priceCanvas');
-  let lastTouchX=0,lastTouchDist=0,touchPanStart=0;
-  pc.addEventListener('touchstart',e=>{
-    if(e.touches.length===1){
-      lastTouchX=e.touches[0].clientX;
-      touchPanStart=ST.zoom.s;
-    } else if(e.touches.length===2){
-      const dx=e.touches[0].clientX-e.touches[1].clientX;
-      const dy=e.touches[0].clientY-e.touches[1].clientY;
-      lastTouchDist=Math.sqrt(dx*dx+dy*dy);
+  const pc = document.getElementById('priceCanvas');
+  let lastTouchX = 0, lastTouchDist = 0, touchPanStart = 0;
+  let _lastTouchTs = 0;
+  let _lastPenTs = 0;
+  let _drawGesture = null; // {startX, startY, lastX, lastY, wasPendingBeforeDown, active}
+
+  function getCanvasCoords(clientX, clientY){
+    const rect = pc.getBoundingClientRect();
+    if(!rect.width || !rect.height) return null;
+    const mx = Math.max(0, Math.min(rect.width, clientX - rect.left));
+    const my = Math.max(0, Math.min(rect.height, clientY - rect.top));
+    const ci = pxToCandleIdx(mx, rect.width);
+    const price = pxToPrice(my, rect.height);
+    if(!ci || price == null) return null;
+    return { gi: ci.globalIdx, price, clientX, clientY };
+  }
+
+  function handleDrawStart(clientX, clientY, origEvent){
+    const pt = getCanvasCoords(clientX, clientY);
+    if(!pt) return;
+
+    if(DRW.tool === 'hline'){
+      DRW.drawings.push({type:'hline', color:DRW.color, p1:{gi:pt.gi, price:pt.price}});
+      DRW.pending = null;
+      _drawGesture = null;
+      updateDrawCount(); renderChart(); saveState();
+      return;
     }
-    e.preventDefault();
-  },{passive:false});
-  pc.addEventListener('touchmove',e=>{
-    e.preventDefault();
-    if(e.touches.length===1){
-      // Pan
-      const dx=e.touches[0].clientX-lastTouchX;
-      const cw=(pc.clientWidth-8-82)/ST.zoom.r;
-      const shift=Math.round(-dx/cw);
-      ST.zoom.s=Math.max(0,Math.min(ST.candles.length-ST.zoom.r,touchPanStart+shift));
+
+    if(DRW.tool === 'note'){
+      if(origEvent && origEvent.cancelable) origEvent.preventDefault();
+      showNoteInput(pt.gi, pt.price, clientX, clientY);
+      _drawGesture = null;
+      return;
+    }
+
+    const wasPending = !!DRW.pending;
+    if(!wasPending){
+      // First point (Tap 1 or start of Drag)
+      DRW.pending = {
+        type: DRW.tool,
+        color: DRW.color,
+        p1: {gi: pt.gi, price: pt.price},
+        p2: {gi: pt.gi, price: pt.price}
+      };
+    } else {
+      // Second tap/press — update p2 to this new location
+      DRW.pending.p2 = {gi: pt.gi, price: pt.price};
+    }
+    _drawGesture = {
+      startX: clientX,
+      startY: clientY,
+      lastX: clientX,
+      lastY: clientY,
+      wasPendingBeforeDown: wasPending,
+      active: true
+    };
+    renderChart();
+  }
+
+  function handleDrawMove(clientX, clientY){
+    if(!DRW.tool || !DRW.pending) return;
+    if(_drawGesture){
+      _drawGesture.lastX = clientX;
+      _drawGesture.lastY = clientY;
+    }
+    const pt = getCanvasCoords(clientX, clientY);
+    if(pt){
+      DRW.pending.p2 = {gi: pt.gi, price: pt.price};
       renderChart();
-    } else if(e.touches.length===2){
-      // Pinch zoom
-      const dx=e.touches[0].clientX-e.touches[1].clientX;
-      const dy=e.touches[0].clientY-e.touches[1].clientY;
-      const dist=Math.sqrt(dx*dx+dy*dy);
-      if(lastTouchDist>0){
-        const scale=lastTouchDist/dist;
-        ST.zoom.r=Math.min(ST.candles.length,Math.max(10,Math.round(ST.zoom.r*scale)));
-        ST.zoom.s=Math.max(0,ST.candles.length-ST.zoom.r);
-        lastTouchDist=dist;
+    }
+  }
+
+  function handleDrawEnd(clientX, clientY){
+    if(!DRW.tool || !DRW.pending || !_drawGesture || !_drawGesture.active){
+      _drawGesture = null;
+      return;
+    }
+    const endX = clientX != null ? clientX : _drawGesture.lastX;
+    const endY = clientY != null ? clientY : _drawGesture.lastY;
+    const pt = getCanvasCoords(endX, endY);
+    if(pt){
+      DRW.pending.p2 = {gi: pt.gi, price: pt.price};
+    }
+    const dist = Math.hypot(endX - _drawGesture.startX, endY - _drawGesture.startY);
+    // Complete drawing if user dragged (>= 8px) OR if this was the 2nd tap of a two-tap gesture
+    if(_drawGesture.wasPendingBeforeDown || dist >= 8){
+      DRW.drawings.push({
+        type: DRW.pending.type,
+        color: DRW.pending.color,
+        p1: {...DRW.pending.p1},
+        p2: {...DRW.pending.p2}
+      });
+      DRW.pending = null;
+      updateDrawCount();
+      renderChart();
+      saveState();
+    } else {
+      // Short first tap (< 8px): keep DRW.pending alive so user can tap Point 2
+      renderChart();
+    }
+    _drawGesture = null;
+  }
+
+  pc.addEventListener('touchstart', e=>{
+    if(Date.now() - _lastPenTs < 500) return;
+    _lastTouchTs = Date.now();
+    if(e.touches.length === 2){
+      // 2-finger pinch zoom always works (cancel any accidental 1-finger pending start from this gesture)
+      if(_drawGesture && !_drawGesture.wasPendingBeforeDown){
+        DRW.pending = null;
+        renderChart();
+      }
+      _drawGesture = null;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist = Math.sqrt(dx*dx + dy*dy);
+      if(e.cancelable) e.preventDefault();
+      return;
+    }
+    if(e.touches.length === 1){
+      const t = e.touches[0];
+      if(DRW.tool){
+        if(e.cancelable) e.preventDefault();
+        handleDrawStart(t.clientX, t.clientY, e);
+      } else {
+        lastTouchX = t.clientX;
+        touchPanStart = ST.zoom.s;
+        if(e.cancelable) e.preventDefault();
+      }
+    }
+  }, {passive:false});
+
+  pc.addEventListener('touchmove', e=>{
+    if(Date.now() - _lastPenTs < 500) return;
+    _lastTouchTs = Date.now();
+    if(e.cancelable) e.preventDefault();
+    if(e.touches.length === 2){
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if(lastTouchDist > 0){
+        const scale = lastTouchDist / dist;
+        ST.zoom.r = Math.min(ST.candles.length, Math.max(10, Math.round(ST.zoom.r * scale)));
+        ST.zoom.s = Math.max(0, ST.candles.length - ST.zoom.r);
+        lastTouchDist = dist;
+        renderChart();
+      }
+      return;
+    }
+    if(e.touches.length === 1){
+      const t = e.touches[0];
+      if(DRW.tool){
+        handleDrawMove(t.clientX, t.clientY);
+      } else {
+        const dx = t.clientX - lastTouchX;
+        const cw = (pc.clientWidth - 8 - 82) / ST.zoom.r;
+        const shift = Math.round(-dx / cw);
+        ST.zoom.s = Math.max(0, Math.min(ST.candles.length - ST.zoom.r, touchPanStart + shift));
         renderChart();
       }
     }
-  },{passive:false});
-  pc.addEventListener('touchend',e=>{
-    if(e.touches.length===0){
-      lastTouchDist=0;
+  }, {passive:false});
+
+  pc.addEventListener('touchend', e=>{
+    if(Date.now() - _lastPenTs < 500) return;
+    _lastTouchTs = Date.now();
+    if(DRW.tool && _drawGesture && _drawGesture.active){
+      const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+      handleDrawEnd(t ? t.clientX : null, t ? t.clientY : null);
     }
-  },{passive:false});
-})();
+    if(e.touches.length === 0){
+      lastTouchDist = 0;
+    }
+  }, {passive:false});
 
-document.getElementById('priceCanvas').addEventListener('mousedown',e=>{
-  const pc  = document.getElementById('priceCanvas');
-  const rect= pc.getBoundingClientRect();
-  const mx  = e.clientX - rect.left;
-  const my  = e.clientY - rect.top;
+  pc.addEventListener('touchcancel', ()=>{
+    _drawGesture = null;
+    lastTouchDist = 0;
+  }, {passive:true});
 
-  if(!DRW.tool){
-    // Normal pan mode
-    ST.drag={on:true,x:e.clientX,s:ST.zoom.s};
-    return;
-  }
+  // Stylus / Apple Pencil / S-Pen support via Pointer Events
+  pc.addEventListener('pointerdown', e=>{
+    if(e.pointerType !== 'pen') return;
+    _lastPenTs = Date.now();
+    if(e.cancelable) e.preventDefault();
+    try { pc.setPointerCapture(e.pointerId); } catch(_){}
+    if(!DRW.tool){
+      ST.drag = {on:true, x:e.clientX, s:ST.zoom.s};
+      return;
+    }
+    handleDrawStart(e.clientX, e.clientY, e);
+  });
 
-  const ci    = pxToCandleIdx(mx, rect.width);
-  const price = pxToPrice(my, rect.height);
-  if(!ci || price == null) return;
-
-  if(DRW.tool === 'hline'){
-    DRW.drawings.push({type:'hline', color:DRW.color, p1:{gi:ci.globalIdx, price}});
-    DRW.pending = null;
-    updateDrawCount(); renderChart(); saveState(); return;
-  }
-
-  if(DRW.tool === 'note'){
-    // Prevent default mousedown focus change so noteInputBox retains focus
-    e.preventDefault();
-    showNoteInput(ci.globalIdx, price, e.clientX, e.clientY);
-    return;
-  }
-
-  if(!DRW.pending){
-    // First click — start the shape
-    DRW.pending = {type:DRW.tool, color:DRW.color, p1:{gi:ci.globalIdx, price}, p2:{gi:ci.globalIdx, price}};
-  } else {
-    // Second click — finish the shape
-    DRW.pending.p2 = {gi:ci.globalIdx, price};
-    DRW.drawings.push({...DRW.pending});
-    DRW.pending = null;
-    updateDrawCount(); renderChart(); saveState();
-  }
-});
-
-document.addEventListener('mousemove',e=>{
-  const pc = document.getElementById('priceCanvas');
-  if(!pc) return;
-
-  if(!DRW.tool && ST.drag.on){
-    // Pan mode
-    const rect = pc.getBoundingClientRect();
-    const PAD_L = 8, PAD_R = 82;
-    const cw = (rect.width - PAD_L - PAD_R) / ST.zoom.r;
-    const sh = Math.round(-(e.clientX - ST.drag.x) / cw);
-    ST.zoom.s = Math.max(0, Math.min(ST.candles.length - ST.zoom.r, ST.drag.s + sh));
-    renderChart(); return;
-  }
-
-  if(DRW.tool && DRW.pending){
-    // Update pending drawing's p2 to follow mouse
-    const rect = pc.getBoundingClientRect();
-    const mx   = e.clientX - rect.left;
-    const my   = e.clientY - rect.top;
-    const ci   = pxToCandleIdx(mx, rect.width);
-    const price= pxToPrice(my, rect.height);
-    if(ci && price != null){
-      DRW.pending.p2 = {gi:ci.globalIdx, price};
+  pc.addEventListener('pointermove', e=>{
+    if(e.pointerType !== 'pen') return;
+    _lastPenTs = Date.now();
+    if(!DRW.tool && ST.drag.on){
+      const rect = pc.getBoundingClientRect();
+      const cw = (rect.width - 8 - 82) / ST.zoom.r;
+      const sh = Math.round(-(e.clientX - ST.drag.x) / cw);
+      ST.zoom.s = Math.max(0, Math.min(ST.candles.length - ST.zoom.r, ST.drag.s + sh));
       renderChart();
+      return;
     }
-  }
-});
-document.addEventListener('mouseup',()=>{ST.drag.on=false;});
+    if(DRW.tool && DRW.pending){
+      handleDrawMove(e.clientX, e.clientY);
+    }
+  });
+
+  pc.addEventListener('pointerup', e=>{
+    if(e.pointerType !== 'pen') return;
+    _lastPenTs = Date.now();
+    ST.drag.on = false;
+    if(DRW.tool && _drawGesture && _drawGesture.active){
+      handleDrawEnd(e.clientX, e.clientY);
+    }
+  });
+
+  pc.addEventListener('mousedown', e=>{
+    // Ignore synthetic mouse events fired immediately after touch or pen on mobile/tablets
+    if(Date.now() - _lastTouchTs < 650 || Date.now() - _lastPenTs < 650) return;
+    if(e.button !== 0) return;
+
+    if(!DRW.tool){
+      ST.drag = {on:true, x:e.clientX, s:ST.zoom.s};
+      return;
+    }
+    handleDrawStart(e.clientX, e.clientY, e);
+  });
+
+  document.addEventListener('mousemove', e=>{
+    if(Date.now() - _lastTouchTs < 650 || Date.now() - _lastPenTs < 650) return;
+    if(!pc) return;
+
+    if(!DRW.tool && ST.drag.on){
+      const rect = pc.getBoundingClientRect();
+      const PAD_L = 8, PAD_R = 82;
+      const cw = (rect.width - PAD_L - PAD_R) / ST.zoom.r;
+      const sh = Math.round(-(e.clientX - ST.drag.x) / cw);
+      ST.zoom.s = Math.max(0, Math.min(ST.candles.length - ST.zoom.r, ST.drag.s + sh));
+      renderChart();
+      return;
+    }
+
+    if(DRW.tool && DRW.pending){
+      handleDrawMove(e.clientX, e.clientY);
+    }
+  });
+
+  document.addEventListener('mouseup', e=>{
+    if(Date.now() - _lastTouchTs < 650 || Date.now() - _lastPenTs < 650) return;
+    ST.drag.on = false;
+    if(DRW.tool && _drawGesture && _drawGesture.active){
+      handleDrawEnd(e.clientX, e.clientY);
+    }
+  });
+})();
 
 // Right-click on chart to cancel pending drawing
 document.getElementById('priceCanvas').addEventListener('contextmenu',e=>{

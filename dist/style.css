@@ -504,10 +504,10 @@ button{cursor:pointer;font-family:inherit;}
 .ohlc{display:flex;gap:12px;padding:3px 14px;background:var(--bg2);border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:.68rem;overflow-x:auto;flex-shrink:0;}
 .ohlc .lbl{color:var(--text3);margin-right:3px;}
 .chart-zone{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
-#priceCanvas{display:block;width:100%;}
-#volCanvas{display:block;width:100%;}
-#rsiCanvas{display:block;width:100%;}
-#macdCanvas{display:block;width:100%;}
+#priceCanvas{display:block;width:100%;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+#volCanvas{display:block;width:100%;touch-action:none;}
+#rsiCanvas{display:block;width:100%;touch-action:none;}
+#macdCanvas{display:block;width:100%;touch-action:none;}
 .sub-lbl{font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text3);padding:3px 12px;background:var(--bg2);border-top:1px solid var(--border);letter-spacing:.1em;flex-shrink:0;}
 .c-tip{position:absolute;background:rgba(5,8,16,.97);border:1px solid var(--border);border-radius:5px;padding:9px 12px;font-family:'Share Tech Mono',monospace;font-size:.71rem;pointer-events:none;opacity:0;z-index:50;min-width:158px;transition:opacity .1s;box-shadow:0 8px 20px rgba(0,0,0,.5);}
 .tr{display:flex;justify-content:space-between;gap:12px;line-height:1.85;}
@@ -725,18 +725,23 @@ button{cursor:pointer;font-family:inherit;}
 .pat-badge{position:absolute;font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:2px 5px;border-radius:3px;pointer-events:none;white-space:nowrap;z-index:20;opacity:.92;}
 
 /* ── NOTE LABEL INPUT ────────────────────────────────── */
-.note-input-wrap{position:fixed;z-index:999;display:none;}
-.note-input-wrap input{font-family:'Share Tech Mono',monospace;font-size:.8rem;background:rgba(10,16,32,.97);border:1px solid var(--accent2);color:var(--text);padding:5px 10px;border-radius:4px;outline:none;width:200px;box-shadow:0 4px 20px rgba(0,0,0,.5);}
+.note-input-wrap{position:fixed;z-index:999;display:none;align-items:center;gap:5px;background:rgba(10,16,32,.98);border:1.5px solid var(--accent2);padding:5px 7px;border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.75);}
+.note-input-wrap input{font-family:'Share Tech Mono',monospace;font-size:.82rem;background:rgba(5,8,16,.9);border:1px solid var(--border);color:var(--text);padding:5px 9px;border-radius:4px;outline:none;width:175px;}
+.note-input-wrap input:focus{border-color:var(--accent);}
+.note-add-btn{font-family:'Share Tech Mono',monospace;font-size:.74rem;font-weight:700;background:var(--accent2);color:#fff;border:1px solid var(--accent2);padding:5px 10px;border-radius:4px;cursor:pointer;touch-action:manipulation;white-space:nowrap;}
+.note-add-btn:hover{filter:brightness(1.15);}
+.note-cancel-btn{font-family:'Share Tech Mono',monospace;font-size:.74rem;background:transparent;color:var(--text2);border:1px solid var(--border);padding:5px 8px;border-radius:4px;cursor:pointer;touch-action:manipulation;}
+.note-cancel-btn:hover{border-color:var(--red);color:var(--red);}
 
 /* ── DRAWING TOOLS PANEL ──────────────────────────────── */
 .draw-panel{border-top:1px solid var(--border);background:var(--surface);padding:7px 16px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex-shrink:0;}
 .draw-lbl{font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text3);margin-right:2px;letter-spacing:.1em;}
-.dtool{font-family:'Share Tech Mono',monospace;font-size:.7rem;padding:4px 11px;border-radius:4px;border:1px solid var(--border);color:var(--text2);background:transparent;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.dtool{font-family:'Share Tech Mono',monospace;font-size:.7rem;padding:4px 11px;border-radius:4px;border:1px solid var(--border);color:var(--text2);background:transparent;transition:all .2s;display:flex;align-items:center;gap:5px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
 .dtool:hover{border-color:var(--accent2);color:var(--accent2);background:rgba(123,47,255,.07);}
 .dtool.on{border-color:var(--accent2);color:var(--accent2);background:rgba(123,47,255,.14);box-shadow:0 0 8px rgba(123,47,255,.25);}
 .dtool.danger:hover{border-color:var(--red);color:var(--red);}
 .draw-divider{width:1px;height:20px;background:var(--border);margin:0 2px;flex-shrink:0;}
-.draw-color{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);cursor:pointer;flex-shrink:0;transition:transform .15s;}
+.draw-color{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);cursor:pointer;flex-shrink:0;transition:transform .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 .draw-color:hover,.draw-color.on{transform:scale(1.25);border-color:white;}
 .draw-count{font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--text3);margin-left:2px;}
 /* Cursor changes by drawing mode */
@@ -893,6 +898,10 @@ button{cursor:pointer;font-family:inherit;}
   justify-content:flex-start;
   min-width:0;
   overflow:hidden;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+  -webkit-user-select:none;
 }
 .rp-ind-icon{
   font-size:.78rem;
@@ -947,6 +956,10 @@ button{cursor:pointer;font-family:inherit;}
   justify-content:flex-start;
   min-width:0;
   overflow:hidden;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+  -webkit-user-select:none;
 }
 .rp-dtool:hover{
   border-color:var(--accent2);
@@ -987,6 +1000,8 @@ button{cursor:pointer;font-family:inherit;}
   cursor:pointer;
   flex-shrink:0;
   transition:all .18s ease;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 .rp-color:hover{
   transform:scale(1.2);
@@ -1007,8 +1022,10 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── TABLET & COMPACT LAPTOP ── */
 @media(max-width:1024px){
-  .layout{grid-template-columns:230px 1fr;}
-  .right-panel{width:170px;min-width:170px;}
+  .layout{grid-template-columns:210px 1fr;}
+  .right-panel{width:184px;min-width:184px;padding:6px 5px;gap:4px;}
+  .rp-ind,.rp-dtool{padding:5px 5px;gap:3px;}
+  .rp-label{font-size:.61rem;}
 }
 
 /* ── MOBILE: compact full-screen dashboard so everything fits on screen ── */
@@ -1265,7 +1282,7 @@ button{cursor:pointer;font-family:inherit;}
 
   /* Chart zone fills chart-col via absolute positioning */
   .chart-zone{position:absolute;inset:0;min-height:0;height:auto;max-height:none;}
-  #priceCanvas{touch-action:pan-y;}
+  #priceCanvas{touch-action:none;}
 
   /* Compact bottom tools row (Price Alerts + Time Machine) on mobile */
   .bottom-tools-row{flex-wrap:nowrap;overflow:visible;}
