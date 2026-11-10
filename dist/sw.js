@@ -1,5 +1,5 @@
 // Token-Tokens Progressive Web App Service Worker
-const CACHE_NAME = 'token-tokens-v5';
+const CACHE_NAME = 'token-tokens-v6';
 const CORE_ASSETS = [
   './',
   './index.html',

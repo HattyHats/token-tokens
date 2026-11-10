@@ -1856,26 +1856,135 @@ button{cursor:pointer;font-family:inherit;}
   background:#050810;
 }
 
-/* ── SPONSORED AD UNIT (AADS) ISOLATED CONTAINER ────── */
-.aads-unit-wrap{
+/* ── SPONSORED AD UNIT (AFFIZY) ISOLATED CONTAINER ────── */
+.affizy-unit-wrap{
   isolation:isolate;
   position:relative;
   z-index:5;
   width:100%;
-  padding:2px 10px;
+  padding:4px 8px;
   background:var(--bg2);
   border-top:1px solid var(--border);
   flex-shrink:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:0;
   overflow:hidden;
 }
-.aads-unit-wrap #frame{
-  max-width:960px;
+.affizy-unit-wrap .affizy-ad{
+  display:inline-flex !important;
+  justify-content:center;
+  align-items:center;
+  max-width:100% !important;
+  margin:0 auto;
 }
-.aads-unit-wrap #frame iframe{
-  height:56px !important;
-  max-height:60px !important;
+.affizy-unit-wrap .affizy-ad img,
+.affizy-unit-wrap .affizy-ad iframe{
+  max-width:100% !important;
+  height:auto !important;
+  display:block;
+  margin:0 auto;
+}
+
+/* Fallback banner when Zone 1016 is awaiting campaigns */
+.affizy-fallback-banner{
+  width:100%;
+  max-width:728px;
+  margin:0 auto;
+}
+.affizy-unit-wrap:has(.affizy-ad[data-affizy-loaded="1"]:not([style*="display: none"]):not([style*="display:none"])) .affizy-fallback-banner{
+  display:none !important;
+}
+.affizy-fb-link{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:6px 14px;
+  background:linear-gradient(90deg, rgba(0, 212, 255, 0.10), rgba(123, 47, 255, 0.16));
+  border:1px dashed rgba(0, 212, 255, 0.45);
+  border-radius:6px;
+  text-decoration:none;
+  color:#fff;
+  transition:all .2s;
+  box-sizing:border-box;
+}
+.affizy-fb-link:hover{
+  border-color:var(--accent);
+  background:linear-gradient(90deg, rgba(0, 212, 255, 0.18), rgba(123, 47, 255, 0.25));
+  box-shadow:0 0 16px rgba(0, 212, 255, 0.25);
+}
+.affizy-fb-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.affizy-fb-badge{
+  font-family:'Share Tech Mono',monospace;
+  font-size:.62rem;
+  font-weight:700;
+  letter-spacing:.08em;
+  color:var(--accent);
+  background:rgba(0, 212, 255, 0.15);
+  border:1px solid rgba(0, 212, 255, 0.4);
+  padding:2px 7px;
+  border-radius:4px;
+  white-space:nowrap;
+}
+.affizy-fb-text{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  min-width:0;
+}
+.affizy-fb-title{
+  font-family:'Rajdhani',sans-serif;
+  font-size:.92rem;
+  font-weight:700;
+  color:var(--text);
+  letter-spacing:.02em;
+  white-space:nowrap;
+}
+.affizy-fb-sub{
+  font-family:'Share Tech Mono',monospace;
+  font-size:.60rem;
+  color:var(--text2);
+  white-space:nowrap;
+}
+.affizy-fb-btn{
+  font-family:'Share Tech Mono',monospace;
+  font-size:.70rem;
+  font-weight:700;
+  color:#050810;
+  background:var(--accent);
+  padding:5px 12px;
+  border-radius:4px;
+  white-space:nowrap;
+  letter-spacing:.03em;
+  box-shadow:0 0 10px rgba(0, 212, 255, 0.35);
+  transition:transform .15s;
+}
+.affizy-fb-link:hover .affizy-fb-btn{
+  transform:scale(1.04);
 }
 @media(max-width:768px){
-  .aads-unit-wrap{padding:2px 4px;}
-  .aads-unit-wrap #frame iframe{width:98% !important;max-width:100% !important;height:44px !important;max-height:48px !important;}
+  .affizy-unit-wrap{
+    padding:2px 4px;
+  }
+  .affizy-fb-link{
+    padding:4px 8px;
+    gap:6px;
+  }
+  .affizy-fb-title{
+    font-size:.76rem;
+  }
+  .affizy-fb-sub{
+    display:none;
+  }
+  .affizy-fb-btn{
+    font-size:.58rem;
+    padding:4px 8px;
+  }
 }
