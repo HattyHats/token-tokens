@@ -1515,8 +1515,7 @@ button{cursor:pointer;font-family:inherit;}
   font-size:.66rem !important;
   animation:mIn .2s ease;
   flex-wrap:nowrap !important;
-  overflow-x:auto !important;
-  scrollbar-width:none !important;
+  overflow:hidden !important;
   white-space:nowrap !important;
   position:relative;
   z-index:10;
@@ -1550,6 +1549,7 @@ button{cursor:pointer;font-family:inherit;}
   gap:6px;
   flex-wrap:nowrap;
   white-space:nowrap;
+  margin-left:auto;
   flex-shrink:0;
 }
 .pat-pill{
@@ -1566,7 +1566,7 @@ button{cursor:pointer;font-family:inherit;}
 #patRationale{
   color:var(--text2);
   font-size:.62rem;
-  max-width:520px;
+  max-width:260px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -1601,26 +1601,56 @@ button{cursor:pointer;font-family:inherit;}
 
 /* ── COMPACT REFINED CHEAT SHEET BUTTON ─────────────────── */
 .pat-guide-pill{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  background:linear-gradient(135deg,rgba(123,47,255,.28) 0%,rgba(0,212,255,.2) 100%);
-  border:1px solid rgba(0,229,255,.45);
-  color:#ffffff;
-  padding:2px 7px;
-  height:19px;
-  border-radius:10px;
-  cursor:pointer;
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:4px !important;
+  background:linear-gradient(135deg,rgba(123,47,255,.32) 0%,rgba(0,212,255,.24) 100%) !important;
+  border:1px solid rgba(0,229,255,.55) !important;
+  color:#ffffff !important;
+  padding:2px 8px !important;
+  height:20px !important;
+  border-radius:10px !important;
+  cursor:pointer !important;
+  font-family:'Rajdhani',sans-serif !important;
+  font-size:.66rem !important;
+  font-weight:700 !important;
+  letter-spacing:.04em !important;
+  text-transform:uppercase !important;
+  white-space:nowrap !important;
+  flex-shrink:0 !important;
+  box-shadow:0 0 8px rgba(0,212,255,.2), inset 0 1px 0 rgba(255,255,255,.18) !important;
+  transition:all .15s ease !important;
+  line-height:1 !important;
+}
+.pat-guide-pill:hover{
+  background:linear-gradient(135deg,rgba(123,47,255,.55) 0%,rgba(0,212,255,.45) 100%) !important;
+  border-color:#00e5ff !important;
+  box-shadow:0 0 12px rgba(0,229,255,.45), inset 0 1px 0 rgba(255,255,255,.3) !important;
+  transform:scale(1.04);
+}
+
+/* ── CHART TOOLBAR CHEAT SHEET BUTTON ───────────────────── */
+#chartCheatSheetBtn{
   font-family:'Rajdhani',sans-serif;
-  font-size:.66rem;
+  font-size:.72rem;
   font-weight:700;
-  letter-spacing:.04em;
-  text-transform:uppercase;
-  white-space:nowrap;
-  flex-shrink:0;
-  box-shadow:0 0 6px rgba(0,212,255,.18), inset 0 1px 0 rgba(255,255,255,.15);
-  transition:all .15s ease;
-  line-height:1;
+  letter-spacing:.03em;
+  border-color:rgba(0,212,255,.45) !important;
+  color:#00d4ff !important;
+  background:rgba(0,212,255,.08) !important;
+  box-shadow:0 0 8px rgba(0,212,255,.15) !important;
+  padding:3px 9px;
+  border-radius:4px;
+  cursor:pointer !important;
+  transition:all .2s;
+  white-space:nowrap !important;
+}
+#chartCheatSheetBtn:hover{
+  background:rgba(0,212,255,.22) !important;
+  border-color:#00e5ff !important;
+  color:#ffffff !important;
+  box-shadow:0 0 12px rgba(0,212,255,.4) !important;
+  transform:scale(1.03);
 }
 .pat-guide-pill:hover{
   background:linear-gradient(135deg,#7b2fff 0%,#00e5ff 100%);

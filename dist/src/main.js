@@ -2529,35 +2529,10 @@ async function loadChart(id, days) {
     const sym = (CC_SYM[id] || (ST.wl.find(c => c.id === id)?.symbol) || (ST.coin && ST.coin.id === id ? ST.coin.symbol : '') || id).toUpperCase().split('-')[0];
     let candles = [];
 
-    // 1. Primary: Coinbase Exchange Candles (100% open, keyless, CORS-enabled)
-    try {
-      const gran = CB_GRANULARITY[days] || 86400;
-      const cbUrl = `https://api.exchange.coinbase.com/products/${sym}-USD/candles?granularity=${gran}`;
-      const res = await fetch(cbUrl);
-      if(res.ok){
-        const raw = await res.json();
-        if(Array.isArray(raw) && raw.length > 0){
-          // Coinbase returns [ time(sec), low, high, open, close, volume ] in descending order
-          candles = raw.map(c => ({
-            t: c[0] * 1000,
-            l: parseFloat(c[1]),
-            h: parseFloat(c[2]),
-            o: parseFloat(c[3]),
-            c: parseFloat(c[4]),
-            v: parseFloat(c[5]) || 0
-          })).filter(c => c.c > 0);
-          candles.sort((a, b) => a.t - b.t);
-        }
-      }
-    } catch(cbErr) {
-      console.warn('Coinbase candle fetch notice:', cbErr);
-    }
-
-    // 2. Secondary fallback: Kraken OHLC endpoint
-    if(!candles || !candles.length){
+    // Helper: Kraken OHLC fetch (supports weekly interval=10080 for multi-decade historical data)
+    const fetchKraken = async (interval) => {
       try {
-        const kPair = KRAKEN_PAIRS[sym] || (sym + 'USD');
-        const interval = KRAKEN_INTERVAL[days] || 1440;
+        const kPair = KRAKEN_PAIRS[sym] || (sym === 'DOGE' ? 'XDGUSD' : (sym === 'BTC' ? 'XXBTZUSD' : sym + 'USD'));
         const kUrl = `https://api.kraken.com/0/public/OHLC?pair=${kPair}&interval=${interval}`;
         const res = await fetch(kUrl);
         if(res.ok){
@@ -2566,20 +2541,120 @@ async function loadChart(id, days) {
           const key = Object.keys(result).find(k => k !== 'last');
           const raw = result[key];
           if(Array.isArray(raw) && raw.length > 0){
-            // Kraken returns [ time(sec), open, high, low, close, vwap, volume, count ]
-            candles = raw.map(c => ({
+            return raw.map(c => ({
               t: c[0] * 1000,
               o: parseFloat(c[1]),
               h: parseFloat(c[2]),
               l: parseFloat(c[3]),
               c: parseFloat(c[4]),
               v: parseFloat(c[6]) || 0
+            })).filter(c => c.c > 0).sort((a, b) => a.t - b.t);
+          }
+        }
+      } catch(kErr) {
+        console.warn('Kraken OHLC fetch notice:', kErr);
+      }
+      return [];
+    };
+
+    // Helper: Coinbase multi-batch parallel fetch for deep multi-year history
+    const fetchCoinbaseBatches = async (numBatches, gran = 86400) => {
+      try {
+        const batchSize = 300;
+        const nowSec = Math.floor(Date.now() / 1000);
+        const spanSec = batchSize * gran;
+        const promises = [];
+        for (let b = 0; b < numBatches; b++) {
+          const endSec = nowSec - b * spanSec;
+          const startSec = Math.max(0, endSec - spanSec);
+          const startIso = new Date(startSec * 1000).toISOString();
+          const endIso = new Date(endSec * 1000).toISOString();
+          const url = `https://api.exchange.coinbase.com/products/${sym}-USD/candles?granularity=${gran}&start=${startIso}&end=${endIso}`;
+          promises.push(
+            fetch(url)
+              .then(r => r.ok ? r.json() : [])
+              .catch(() => [])
+          );
+        }
+        const batchResults = await Promise.all(promises);
+        const all = batchResults.flat().filter(c => Array.isArray(c) && c.length >= 5 && c[4] > 0);
+        const seen = new Set();
+        const result = [];
+        for (const c of all) {
+          if (!seen.has(c[0])) {
+            seen.add(c[0]);
+            result.push({
+              t: c[0] * 1000,
+              l: parseFloat(c[1]),
+              h: parseFloat(c[2]),
+              o: parseFloat(c[3]),
+              c: parseFloat(c[4]),
+              v: parseFloat(c[5]) || 0
+            });
+          }
+        }
+        result.sort((a, b) => a.t - b.t);
+        return result;
+      } catch(e) {
+        console.warn('Coinbase multi-batch notice:', e);
+        return [];
+      }
+    };
+
+    // ── MULTI-YEAR & ALL-TIME ROUTING ENGINE ─────────────────
+    if (days === 'max') {
+      // MAX: Kraken weekly OHLC (interval 10080) delivers all-time history back to 2013 (13+ years for BTC)
+      candles = await fetchKraken(10080);
+      if (!candles || !candles.length) {
+        // Fallback: Coinbase 10 parallel batches (3,000 daily candles = ~8.2 years)
+        candles = await fetchCoinbaseBatches(10, 86400);
+      }
+    } else if (days === '1825') {
+      // 5y: Coinbase 7 parallel batches of 300 daily candles (2,100 days = 5.7 full years)
+      candles = await fetchCoinbaseBatches(7, 86400);
+      if (!candles || candles.length < 300) {
+        // Fallback to Kraken weekly
+        const kCandles = await fetchKraken(10080);
+        if (kCandles.length) candles = kCandles;
+      }
+    } else if (days === '365') {
+      // 1y: Coinbase 2 parallel batches (600 days, trimmed to 365)
+      const batches = await fetchCoinbaseBatches(2, 86400);
+      if (batches && batches.length) {
+        const cutoff = Date.now() - 365 * 86400 * 1000;
+        candles = batches.filter(c => c.t >= cutoff);
+        if (candles.length < 50) candles = batches;
+      }
+      if (!candles || !candles.length) {
+        candles = await fetchKraken(1440);
+      }
+    } else {
+      // 1d, 7d, 30d, 90d: standard single Coinbase request
+      const gran = CB_GRANULARITY[days] || 86400;
+      try {
+        const cbUrl = `https://api.exchange.coinbase.com/products/${sym}-USD/candles?granularity=${gran}`;
+        const res = await fetch(cbUrl);
+        if(res.ok){
+          const raw = await res.json();
+          if(Array.isArray(raw) && raw.length > 0){
+            candles = raw.map(c => ({
+              t: c[0] * 1000,
+              l: parseFloat(c[1]),
+              h: parseFloat(c[2]),
+              o: parseFloat(c[3]),
+              c: parseFloat(c[4]),
+              v: parseFloat(c[5]) || 0
             })).filter(c => c.c > 0);
             candles.sort((a, b) => a.t - b.t);
           }
         }
-      } catch(kErr) {
-        console.warn('Kraken candle fetch notice:', kErr);
+      } catch(cbErr) {
+        console.warn('Coinbase candle fetch notice:', cbErr);
+      }
+
+      if (!candles || !candles.length) {
+        const interval = KRAKEN_INTERVAL[days] || 1440;
+        candles = await fetchKraken(interval);
       }
     }
 
@@ -2600,9 +2675,8 @@ async function loadChart(id, days) {
       loadMiniCharts(id, sym);
     }
 
-    // Show appropriate zoom window; user can drag/scroll back
-    const view = Math.min(100, ST.candles.length);
-    ST.zoom = { s: Math.max(0, ST.candles.length - view), r: view };
+    // Display the entire loaded timeframe span across the canvas
+    ST.zoom = { s: 0, r: ST.candles.length };
     renderChart();
   } catch(err) {
     console.warn('loadChart graceful fallback to synthCandles:', err);
@@ -4948,9 +5022,7 @@ function renderPatterns(ctx, vis, toX, toY, pH, PAD_L, PAD_R, W){
           : 'Target: Open Range';
       }
       if(ratEl){
-        const neckStr = active.neckline ? `Neckline: $${fP(active.neckline)} · ` : '';
-        const stopStr = active.stop ? `Stop: $${fP(active.stop)} (${pStopPct >= 0 ? '+' : ''}${pStopPct.toFixed(1)}%) · ` : '';
-        ratEl.textContent = `${neckStr}${stopStr}R:R ${rrRatio}:1 · ${active.desc}`;
+        ratEl.textContent = active.desc || 'Pattern confirmed at key swing structure';
       }
     } else {
       if(nameEl){
@@ -4959,7 +5031,7 @@ function renderPatterns(ctx, vis, toX, toY, pH, PAD_L, PAD_R, W){
       }
       if(confEl) confEl.textContent = `${ST.tf || '30d'}`;
       if(targEl) targEl.textContent = `Live: $${fP(curPrice)}`;
-      if(ratEl)  ratEl.textContent = 'Monitoring institutional swings & neckline formations…';
+      if(ratEl)  ratEl.textContent = 'Monitoring institutional swings & structure…';
     }
 
     if(sigEl){
