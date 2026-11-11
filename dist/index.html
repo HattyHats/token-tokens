@@ -22,8 +22,8 @@
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=6.7">
-  <script defer src="./main.js?v=6.7"></script>
+  <link rel="stylesheet" href="./style.css?v=7.5">
+  <script defer src="./main.js?v=7.5"></script>
   <script>
     // Ensure iPhone / iOS Dynamic Island & status bar safe-area clearance on cold start & full-screen viewports
     (function() {
@@ -597,6 +597,7 @@
   <nav class="hdr-nav">
     <button class="nb on" onclick="showTab('chart')">📊 Chart</button>
     <button class="nb on" id="navTradeBtn" onclick="togglePaperTrading(); showTab('chart');" title="Toggle Paper Trading Terminal">💼 Paper Trade</button>
+    <button class="nb" id="navGameBtn" onclick="openTimeTravelGame()" title="Play Time Travel Trader Challenge Game">🎮 Challenge</button>
     <button class="nb" onclick="showTab('learn')">📚 Learn</button>
     <div class="hatty-drop-wrap" id="hattyDropWrap">
       <button class="nb hatty-drop-btn" onclick="toggleHattyDrop(event)">
@@ -727,14 +728,18 @@
 
     <!-- AI PATTERN SCANNER & CONFLUENCE BANNER -->
     <div class="pattern-banner" id="patternBanner" style="display:none;">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:nowrap;">
-        <span class="pat-tag bullish" id="patName">🎯 SCANNING PATTERNS…</span>
-        <span class="pat-pill" id="patConfidence">Confidence: —</span>
+      <div class="pat-left">
+        <span class="pat-tag bullish" id="patName" onclick="openPatternGuideModal(this.textContent)" style="cursor:pointer;" title="Click to view pattern explanation">🎯 SCANNING…</span>
+        <span class="pat-pill" id="patConfidence">—</span>
         <span class="pat-pill" id="patTarget">Target: —</span>
       </div>
       <div class="pat-meta">
-        <span style="color:var(--text3);font-size:.68rem;" id="patRationale">Analyzing swing structure…</span>
+        <span id="patRationale">Analyzing swing structure…</span>
         <span class="pat-signal neutral" id="patSignal">CONFLUENCE: —</span>
+        <button type="button" class="pat-guide-pill" onclick="openPatternGuideModal()" title="Open Chart Pattern Cheat Sheet">
+          <span class="pgp-icon">📖</span>
+          <span class="pgp-title">Cheat Sheet</span>
+        </button>
       </div>
     </div>
 
@@ -999,6 +1004,33 @@
       <a class="ls-tag" href="#sec-patterns" onclick="scrollLearn('sec-patterns')">Patterns</a>
       <a class="ls-tag" href="#sec-fib"      onclick="scrollLearn('sec-fib')">Fibonacci</a>
       <a class="ls-tag" href="#sec-checklist" onclick="scrollLearn('sec-checklist')">Checklist</a>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE PLAY & STUDY LAUNCHPAD -->
+  <div class="ls-launchpad">
+    <div class="ls-launch-card game" onclick="openTimeTravelGame()">
+      <div class="ls-launch-top">
+        <span class="ls-launch-badge flame">🎮 INTERACTIVE GAME</span>
+        <span class="ls-launch-pill">8 Blind Scenarios</span>
+      </div>
+      <div class="ls-launch-title">Time Travel Trader Challenge</div>
+      <div class="ls-launch-desc">Trade blind historical crypto setups with masked tickers and dates. Pick Long or Short, reveal future candles, build your win streak, and flex your PnL cards!</div>
+      <button class="ls-launch-btn" type="button">Play Challenge &rarr;</button>
+    </div>
+    <div class="ls-launch-card guide" onclick="openPatternGuideModal()">
+      <div class="ls-launch-top">
+        <span class="ls-launch-badge book">📖 TRADING BIBLE</span>
+        <span class="ls-launch-pill">12 Major Patterns</span>
+      </div>
+      <div class="ls-launch-title">Crypto Chart Pattern Cheat Sheet</div>
+      <div class="ls-launch-desc">Complete visual reference for Bull/Bear Flags, Golden Crosses, Head &amp; Shoulders, Wedges, and Divergences with historical win-rates, psychology, and entry/stop/target rules.</div>
+      <button class="pat-guide-pill" type="button" style="align-self:flex-start;margin-top:6px;">
+        <span class="pgp-icon">📖</span>
+        <span class="pgp-title">Open Cheat Sheet</span>
+        <span class="pgp-badge">12 PRO</span>
+        <span class="pgp-arrow">&rarr;</span>
+      </button>
     </div>
   </div>
 
@@ -1286,10 +1318,18 @@
 
   <!-- ── PATTERNS ────────────────────────────────────────── -->
   <div class="ls-sec" id="sec-patterns">
-    <div class="ls-sec-hdr">
-      <span class="ls-sec-num">07</span>
-      <div><div class="ls-sec-title">Chart Patterns</div>
-      <div class="ls-sec-sub">Recurring shapes that traders use to anticipate the next move</div></div>
+    <div class="ls-sec-hdr" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="ls-sec-num">07</span>
+        <div><div class="ls-sec-title">Chart Patterns</div>
+        <div class="ls-sec-sub">Recurring shapes that traders use to anticipate the next move</div></div>
+      </div>
+      <button type="button" class="pat-guide-pill" onclick="openPatternGuideModal()" title="Open 12-Pattern Interactive Bible">
+        <span class="pgp-icon">📖</span>
+        <span class="pgp-title">Open 12-Pattern Bible</span>
+        <span class="pgp-badge">Interactive</span>
+        <span class="pgp-arrow">&rarr;</span>
+      </button>
     </div>
     <div class="ls-pattern-grid">
       <div class="ls-pat-card">
@@ -1600,13 +1640,143 @@
       <!-- Past 3 Cards Switcher Tabs -->
       <div class="pnl-tabs-bar" id="pnlTabsBar" style="display:none;"></div>
       <canvas id="pnlCardCanvas" width="1200" height="675" class="pnl-card-preview" style="max-width:100%;height:auto;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.8);"></canvas>
-      <div style="display:flex;gap:12px;width:100%;justify-content:center;flex-wrap:wrap;">
-        <button class="pt-btn-share" style="padding:9px 18px;font-size:.78rem;" onclick="downloadPnLCard()">💾 Download PNG</button>
-        <button class="pt-btn-buy" style="padding:9px 18px;font-size:.78rem;" onclick="copyPnLCard()">📋 Copy Image</button>
+      <div class="pnl-action-btns" style="display:flex;gap:10px;width:100%;justify-content:center;flex-wrap:wrap;">
+        <button id="pnlTwitterBtn" class="pnl-btn-x" onclick="sharePnLToTwitter()" title="Post Flex Card to 𝕏">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Share on 𝕏
+        </button>
+        <button id="pnlNativeShareBtn" class="pnl-btn-share" onclick="nativeSharePnLCard()" title="Share with Friends / Mobile">
+          📲 Share Card
+        </button>
+        <button class="pt-btn-share" style="padding:9px 16px;font-size:.78rem;" onclick="downloadPnLCard()">
+          💾 Download PNG
+        </button>
+        <button class="pt-btn-buy" style="padding:9px 16px;font-size:.78rem;" onclick="copyPnLCard()">
+          📋 Copy Image
+        </button>
       </div>
       <div style="font-size:.62rem;color:var(--text3);font-family:'Share Tech Mono',monospace;text-align:center;">
         Watermarked with Token-Tokens by HattyHats (token-tokens.org) · High-res 1200×675 PNG
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- TIME TRAVEL TRADER CHALLENGE MODAL -->
+<div id="timeTravelModal" class="m-bg hide" onclick="if(event.target===this)closeTimeTravelGame()">
+  <div class="tt-modal-box">
+    <div class="sm-hdr">
+      <div class="sm-title">🎮 TIME TRAVEL TRADER CHALLENGE</div>
+      <button class="sm-close" onclick="closeTimeTravelGame()">✕</button>
+    </div>
+
+    <!-- Gamified Stats Bar -->
+    <div class="tt-stats-bar">
+      <div class="tt-stat-item">
+        <span class="tt-stat-lbl">💰 BANKROLL</span>
+        <span class="tt-stat-val hl-cyan" id="ttBankroll">$10,000</span>
+      </div>
+      <div class="tt-stat-item">
+        <span class="tt-stat-lbl">🔥 WIN STREAK</span>
+        <span class="tt-stat-val hl-yellow" id="ttStreak">0</span>
+      </div>
+      <div class="tt-stat-item">
+        <span class="tt-stat-lbl">🏆 RANK</span>
+        <span class="tt-stat-val" id="ttRank">Novice Trader</span>
+      </div>
+      <div class="tt-stat-item">
+        <span class="tt-stat-lbl">⭐ XP SCORE</span>
+        <span class="tt-stat-val hl-purple" id="ttXP">0 XP</span>
+      </div>
+      <button class="tt-stat-reset" onclick="resetTTGameStats()" title="Reset Challenge Bankroll &amp; Stats">↺ Reset</button>
+    </div>
+
+    <!-- Scenario Header -->
+    <div class="tt-scenario-box">
+      <div class="tt-scenario-meta">
+        <span class="tt-sc-badge" id="ttScenarioBadge">🔒 MYSTERY MARKET #1 OF 8</span>
+        <span class="tt-sc-tf">Timeframe: Daily Candles</span>
+        <span class="tt-sc-state" id="ttScenarioState">Decision Pending</span>
+      </div>
+      <div class="tt-scenario-title" id="ttScenarioTitle">Analyzing Market Setup…</div>
+      <div class="tt-scenario-desc" id="ttScenarioDesc">Study the price action, support &amp; resistance, and volume below. Decide whether to go LONG or SHORT before revealing the next 10 days!</div>
+    </div>
+
+    <!-- Game Canvas Container -->
+    <div class="tt-canvas-wrap">
+      <canvas id="ttGameCanvas" width="900" height="380"></canvas>
+      <div class="tt-live-pnl-pill" id="ttLivePnLPill" style="display:none;"></div>
+    </div>
+
+    <!-- Action Controls Deck -->
+    <div class="tt-controls-deck" id="ttControlsDeck">
+      <div class="tt-side-picker">
+        <button id="ttBtnLong" class="tt-side-btn long selected" onclick="setTTGameSide('long')">
+          ▲ GO LONG (BUY)
+        </button>
+        <button id="ttBtnShort" class="tt-side-btn short" onclick="setTTGameSide('short')">
+          ▼ GO SHORT (SELL)
+        </button>
+      </div>
+
+      <div class="tt-bet-picker">
+        <span class="tt-bet-lbl">BET SIZE:</span>
+        <div class="tt-bet-btns">
+          <button class="tt-bet-btn" onclick="setTTGameBet(500, this)">$500</button>
+          <button class="tt-bet-btn active" onclick="setTTGameBet(1000, this)">$1,000</button>
+          <button class="tt-bet-btn" onclick="setTTGameBet(2500, this)">$2,500</button>
+          <button class="tt-bet-btn" onclick="setTTGameBet(5000, this)">$5,000</button>
+          <button class="tt-bet-btn" onclick="setTTGameBet('max', this)">ALL-IN</button>
+        </div>
+      </div>
+
+      <button id="ttRevealBtn" class="tt-reveal-btn" onclick="runTTGameReveal()">
+        ⏩ REVEAL NEXT 10 DAYS
+      </button>
+    </div>
+
+    <!-- Outcome Box (Revealed after candles play) -->
+    <div class="tt-outcome-box" id="ttOutcomeBox" style="display:none;">
+      <div class="tt-outcome-hdr">
+        <span class="tt-outcome-badge" id="ttOutcomeBadge">🎉 WINNER! +24.8%</span>
+        <span class="tt-outcome-pnl" id="ttOutcomePnL">+$248.00 USD</span>
+      </div>
+      <div class="tt-unmask-box">
+        <div class="tt-unmask-title" id="ttUnmaskTitle">🚀 Unmasked Asset: Bitcoin (BTC) — Oct 2020</div>
+        <div class="tt-takeaway-body" id="ttTakeawayBody">
+          <b>Trader Lesson:</b> Breakouts from multi-month consolidation after a block halving often spark aggressive continuation rallies.
+        </div>
+      </div>
+      <div class="tt-outcome-actions">
+        <button class="tt-next-btn" onclick="nextTTGameScenario()">🔄 Next Challenge Scenario &rarr;</button>
+        <button class="tt-flex-btn" onclick="shareTTGamePnL()">📸 Flex Result on 𝕏</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PATTERN CHEAT SHEET & BIBLE MODAL -->
+<div id="patternGuideModal" class="m-bg hide" onclick="if(event.target===this)closePatternGuideModal()">
+  <div class="pat-guide-modal-box">
+    <div class="sm-hdr">
+      <div class="sm-title">📖 CRYPTO CHART PATTERN CHEAT SHEET</div>
+      <button class="sm-close" onclick="closePatternGuideModal()">✕</button>
+    </div>
+
+    <div class="pat-guide-subbar">
+      <input type="text" id="patGuideSearch" class="pat-search-input" placeholder="🔍 Search patterns (Flag, Cross, Divergence, Triangle, Double Bottom)…" oninput="filterPatternGuide()">
+      <div class="pat-filter-pills" id="patFilterPills">
+        <button class="pat-filter-pill active" onclick="setPatternGuideFilter('all', this)">All (12)</button>
+        <button class="pat-filter-pill" onclick="setPatternGuideFilter('bullish', this)">Bullish 🚀</button>
+        <button class="pat-filter-pill" onclick="setPatternGuideFilter('bearish', this)">Bearish 🩸</button>
+        <button class="pat-filter-pill" onclick="setPatternGuideFilter('reversal', this)">Reversals 🔄</button>
+        <button class="pat-filter-pill" onclick="setPatternGuideFilter('continuation', this)">Continuations ⏩</button>
+        <button class="pat-filter-pill" onclick="setPatternGuideFilter('cross', this)">Crosses ⚡</button>
+      </div>
+    </div>
+
+    <div class="pat-guide-grid" id="patGuideGrid">
+      <!-- Populated dynamically by renderPatternGuide() -->
     </div>
   </div>
 </div>
