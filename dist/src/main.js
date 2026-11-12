@@ -3264,6 +3264,11 @@ async function selectCoin(id, name, sym, img, knownPrice, knownMcap){
   updateAlertCoinName();
   renderWL({});
 
+  // On mobile portrait, selecting a coin switches from market list to full chart view
+  if(window.innerWidth <= 768 && typeof window.showMobileChartView === 'function'){
+    window.showMobileChartView();
+  }
+
   // Background fetch fresh price if needed
   try{
     const p = await fetchCCPrice(ccSym, id);
@@ -3583,7 +3588,11 @@ function openModal(){
   ST.mb.q=''; ST.mb.page=1;
   fetchModal();
 }
-function closeModal(){ document.getElementById('modalBg').classList.add('hide'); }
+function closeModal(){
+  document.getElementById('modalBg').classList.add('hide');
+  document.querySelectorAll('.sector-chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('.sector-chip[onclick*="all"]')?.classList.add('active');
+}
 function mBgClick(e){ if(e.target===document.getElementById('modalBg'))closeModal(); }
 
 function setMCat(btn,cat){
@@ -3863,6 +3872,28 @@ function mPage(p){if(p<1)return;ST.mb.page=p;fetchModal();document.querySelector
 
 
 /* ══════════════════ CHART RENDERING ══════════════════ */
+function updateOHLCBar(c) {
+  if(!c) return;
+  const oEl = document.getElementById('oO');
+  const hEl = document.getElementById('oH');
+  const lEl = document.getElementById('oL');
+  const cEl = document.getElementById('oC');
+  const vEl = document.getElementById('oV');
+  const dEl = document.getElementById('oDate');
+  if(oEl) oEl.textContent = '$' + fP(c.o);
+  if(hEl) hEl.textContent = '$' + fP(c.h);
+  if(lEl) lEl.textContent = '$' + fP(c.l);
+  if(cEl){
+    cEl.textContent = '$' + fP(c.c);
+    cEl.className = c.c >= c.o ? 'pos' : 'neg';
+  }
+  if(vEl) vEl.textContent = fL(c.v || 0);
+  if(dEl && c.t) {
+    const dt = new Date(c.t);
+    dEl.textContent = (dt.getMonth()+1) + '/' + dt.getDate() + '/' + dt.getFullYear();
+  }
+}
+
 function renderChart(){
   if(typeof updateSimUI === 'function') updateSimUI();
   const zone = document.getElementById('chartZone');
@@ -3919,6 +3950,10 @@ function renderChart(){
   const vis = ST.candles.slice(Math.max(0,s), Math.min(ST.candles.length,s+r));
   if(!vis.length) return;
 
+  if(!window._hoverCursor && vis.length > 0){
+    updateOHLCBar(vis[vis.length - 1]);
+  }
+
   // Layout constants
   const PAD_T=18, PAD_B=22, PAD_L=8, PAD_R=82;
   const cW = W - PAD_L - PAD_R;
@@ -3944,10 +3979,15 @@ function renderChart(){
     ctx.fillText('$'+fP(p), W-PAD_R+5, y+3.5);
   }
   // Vertical grid
-  const vgStep = Math.max(1,Math.floor(vis.length/6));
+  const isCompactW = W < 520;
+  const maxTicks = isCompactW ? (W < 360 ? 3 : 4) : 6;
+  const vgStep = Math.max(1,Math.floor(vis.length/maxTicks));
   ctx.strokeStyle='rgba(26,45,74,.09)'; ctx.lineWidth=.5;
   for(let i=0;i<vis.length;i+=vgStep){
-    ctx.beginPath(); ctx.moveTo(toX(i),PAD_T); ctx.lineTo(toX(i),PAD_T+cH); ctx.stroke();
+    const xPos = toX(i);
+    if(xPos >= PAD_L && xPos <= W - PAD_R){
+      ctx.beginPath(); ctx.moveTo(xPos,PAD_T); ctx.lineTo(xPos,PAD_T+cH); ctx.stroke();
+    }
   }
 
   // ── Bollinger Bands ──
@@ -4223,16 +4263,28 @@ function renderChart(){
   const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const spanMs2  = vis.length>1?vis[vis.length-1].t-vis[0].t:0;
   const spanDays2= spanMs2/86400000;
-  const tStep    = Math.max(1,Math.floor(vis.length/7));
-  ctx.fillStyle='rgba(122,156,192,.5)'; ctx.font='9px Share Tech Mono'; ctx.textAlign='center';
+  const isCompactW2 = W < 520;
+  const maxTicks2 = isCompactW2 ? (W < 360 ? 3 : 4) : 7;
+  const tStep    = Math.max(1,Math.floor(vis.length/maxTicks2));
+  ctx.fillStyle='rgba(122,156,192,.65)'; ctx.font=(isCompactW2?'8px':'9px')+' Share Tech Mono'; ctx.textAlign='center';
   ctx.setLineDash([]);
   for(let i=0;i<vis.length;i+=tStep){
     const t=new Date(vis[i].t); let lbl;
-    if(spanDays2>365*2)      lbl=MON[t.getUTCMonth()]+' '+t.getUTCFullYear();
-    else if(spanDays2>60)    lbl=MON[t.getUTCMonth()]+' '+t.getUTCDate()+' '+t.getUTCFullYear();
-    else if(spanDays2>2)     lbl=(t.getUTCMonth()+1)+'/'+t.getUTCDate()+'/'+(String(t.getUTCFullYear()).slice(2));
-    else                     lbl=String(t.getUTCHours()).padStart(2,'0')+':'+String(t.getUTCMinutes()).padStart(2,'0');
-    ctx.fillText(lbl, toX(i), pH-5);
+    if(isCompactW2){
+      if(spanDays2>365*2)      lbl=MON[t.getUTCMonth()]+" '"+String(t.getUTCFullYear()).slice(2);
+      else if(spanDays2>60)    lbl=MON[t.getUTCMonth()]+' '+t.getUTCDate();
+      else if(spanDays2>2)     lbl=(t.getUTCMonth()+1)+'/'+t.getUTCDate();
+      else                     lbl=String(t.getUTCHours()).padStart(2,'0')+':'+String(t.getUTCMinutes()).padStart(2,'0');
+    } else {
+      if(spanDays2>365*2)      lbl=MON[t.getUTCMonth()]+' '+t.getUTCFullYear();
+      else if(spanDays2>60)    lbl=MON[t.getUTCMonth()]+' '+t.getUTCDate()+' '+t.getUTCFullYear();
+      else if(spanDays2>2)     lbl=(t.getUTCMonth()+1)+'/'+t.getUTCDate()+'/'+(String(t.getUTCFullYear()).slice(2));
+      else                     lbl=String(t.getUTCHours()).padStart(2,'0')+':'+String(t.getUTCMinutes()).padStart(2,'0');
+    }
+    const xPos = toX(i);
+    if(xPos >= PAD_L + 12 && xPos <= W - PAD_R - 12){
+      ctx.fillText(lbl, xPos, pH-5);
+    }
   }
 
   // ── Interactive Crosshair Overlay ──
@@ -5483,6 +5535,7 @@ function initPaperTrading(){
   if(bar){
     bar.classList.toggle('hidden', !SIM.active);
     bar.classList.toggle('show', SIM.active);
+    bar.classList.toggle('mobile-open', SIM.active);
     bar.style.display = SIM.active ? 'flex' : 'none';
   }
   if(btn) btn.classList.toggle('on', SIM.active);
@@ -5532,6 +5585,7 @@ function togglePaperTrading(){
   if(bar){
     bar.classList.toggle('hidden', !SIM.active);
     bar.classList.toggle('show', SIM.active);
+    bar.classList.toggle('mobile-open', SIM.active);
     bar.style.display = SIM.active ? 'flex' : 'none';
   }
   if(btn) btn.classList.toggle('on', SIM.active);
@@ -5712,9 +5766,66 @@ function resetSimWallet(){
   showToast('↺ Wallet Reset', 'Simulated balance restored to $10,000.00.', 'info', 2500);
 }
 
+function getDailyStreak() {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const lastDay = localStorage.getItem('tt_last_streak_day');
+    let streak = parseInt(localStorage.getItem('tt_streak_count') || '1', 10);
+    if (!lastDay) {
+      localStorage.setItem('tt_last_streak_day', todayStr);
+      localStorage.setItem('tt_streak_count', '1');
+      return 1;
+    }
+    if (lastDay === todayStr) {
+      return streak;
+    }
+    const lastDate = new Date(lastDay);
+    const todayDate = new Date(todayStr);
+    const diffDays = Math.round((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) {
+      streak += 1;
+      localStorage.setItem('tt_streak_count', String(streak));
+      localStorage.setItem('tt_last_streak_day', todayStr);
+    } else if (diffDays > 1) {
+      streak = 1;
+      localStorage.setItem('tt_streak_count', '1');
+      localStorage.setItem('tt_last_streak_day', todayStr);
+    }
+    return streak;
+  } catch(e) {
+    return 1;
+  }
+}
+
+function filterWatchlistSector(btn, sector) {
+  document.querySelectorAll('.sector-chip').forEach(c => c.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const catMap = {
+    'all': '',
+    'ai': 'artificial-intelligence',
+    'meme': 'meme-token',
+    'solana': 'solana-ecosystem',
+    'l1': 'layer-1',
+    'defi': 'decentralized-finance-defi'
+  };
+  if(sector === 'all') {
+    return;
+  }
+  const cat = catMap[sector] || '';
+  if(typeof openModal === 'function') openModal();
+  const catBtn = Array.from(document.querySelectorAll('.m-cats .mc')).find(b => b.getAttribute('onclick')?.includes(cat));
+  if(catBtn && typeof setMCat === 'function') setMCat(catBtn, cat);
+}
+
 function updateSimUI(){
   const balEl = document.getElementById('ptBalance');
   if(balEl) balEl.textContent = '$' + fP(SIM.balance);
+
+  const streakEl = document.getElementById('ptStreakVal');
+  if(streakEl){
+    const s = getDailyStreak();
+    streakEl.textContent = s > 1 ? `${s}-Day Streak` : '1-Day Streak';
+  }
 
   const activeSym = (ST.coin && ST.coin.symbol) ? ST.coin.symbol.toUpperCase() : 'BTC';
   const ptLiveEl = document.getElementById('ptLivePrice');
@@ -7176,6 +7287,10 @@ document.getElementById('priceCanvas').addEventListener('mousemove',function(e){
 document.getElementById('priceCanvas').addEventListener('mouseleave',()=>{
   document.getElementById('cTip').style.opacity=0;
   window._hoverCursor = null;
+  if(ST.candles && ST.candles.length > 0){
+    const vis = ST.candles.slice(Math.max(0,ST.zoom.s), Math.min(ST.candles.length,ST.zoom.s+ST.zoom.r));
+    if(vis.length) updateOHLCBar(vis[vis.length - 1]);
+  }
   if(!DRW.tool) renderChart();
 });
 
@@ -7420,6 +7535,37 @@ function activateIndicator(name){
 }
 
 /* ══════════════════ TABS / THEME / CHECKLIST ══════════════════ */
+function showMobileMarketView(){
+  showTab('chart');
+  const layout = document.querySelector('.layout');
+  if(layout){
+    layout.classList.add('mobile-view-market');
+    layout.classList.remove('mobile-view-chart');
+  }
+  const mktBtn = document.getElementById('navMarketBtn');
+  const chartBtn = document.getElementById('navChartBtn');
+  if(mktBtn) mktBtn.classList.add('on');
+  if(chartBtn) chartBtn.classList.remove('on');
+}
+window.showMobileMarketView = showMobileMarketView;
+
+function showMobileChartView(){
+  showTab('chart');
+  const layout = document.querySelector('.layout');
+  if(layout){
+    layout.classList.remove('mobile-view-market');
+    layout.classList.add('mobile-view-chart');
+  }
+  const mktBtn = document.getElementById('navMarketBtn');
+  const chartBtn = document.getElementById('navChartBtn');
+  if(mktBtn) mktBtn.classList.remove('on');
+  if(chartBtn) chartBtn.classList.add('on');
+  setTimeout(()=>{
+    if(typeof renderChart === 'function') renderChart();
+  }, 60);
+}
+window.showMobileChartView = showMobileChartView;
+
 function showTab(n){
   document.getElementById('chartTab').style.display = n==='chart'?'flex':'none';
   document.getElementById('learnSec').style.display = n==='learn'?'flex':'none';
@@ -7427,8 +7573,8 @@ function showTab(n){
   // Sync nav buttons by text content
   document.querySelectorAll('.hdr-nav .nb').forEach(b=>{
     const txt=b.textContent||'';
+    if(b.id === 'navMarketBtn' || b.id === 'navChartBtn') return;
     b.classList.toggle('on',
-      (n==='chart'&&txt.includes('Chart'))||
       (n==='learn'&&txt.includes('Learn'))||
       (n==='news' &&txt.includes('News'))
     );
@@ -7457,8 +7603,18 @@ function toggleTheme(){
   saveState();
 }
 
-/* resize */
+/* resize & orientation */
 new ResizeObserver(()=>renderChart()).observe(document.getElementById('chartZone'));
+window.addEventListener('orientationchange', () => setTimeout(renderChart, 150));
+window.addEventListener('resize', () => {
+  if(window.innerWidth > 768){
+    const layout = document.querySelector('.layout');
+    if(layout){
+      layout.classList.remove('mobile-view-market');
+      layout.classList.remove('mobile-view-chart');
+    }
+  }
+});
 
 /* ══════════════════ INIT APP ══════════════════ */
 async function initApp(){
@@ -7472,6 +7628,11 @@ async function initApp(){
 
   // Show chart tab by default
   showTab('chart');
+
+  // On mobile portrait, start in clean Market Watchlist view
+  if(window.innerWidth <= 768 && window.innerHeight > window.innerWidth){
+    showMobileMarketView();
+  }
 
   setupSearch();
   setupModalSearch();
@@ -8035,4 +8196,8 @@ window.getCoinSupply = getCoinSupply;
 window.getCoinMcap = getCoinMcap;
 window.zoomChartAtPoint = zoomChartAtPoint;
 window.detectPatterns = detectPatterns;
+window.filterWatchlistSector = filterWatchlistSector;
+window.getDailyStreak = getDailyStreak;
+window.showMobileMarketView = showMobileMarketView;
+window.showMobileChartView = showMobileChartView;
 

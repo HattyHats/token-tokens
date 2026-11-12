@@ -22,8 +22,8 @@
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=7.6">
-  <script defer src="./main.js?v=7.6"></script>
+  <link rel="stylesheet" href="./style.css?v=8.0">
+  <script defer src="./main.js?v=8.0"></script>
   <script>
     // Ensure iPhone / iOS Dynamic Island & status bar safe-area clearance on cold start & full-screen viewports
     (function() {
@@ -487,7 +487,7 @@
     .tf, .ct { cursor: pointer !important; touch-action: manipulation; }
     #tradeBtn.on, #navTradeBtn.on { background: rgba(0,212,255,.16) !important; border-color: #00d4ff !important; color: #00d4ff !important; box-shadow: 0 0 10px rgba(0,212,255,.35) !important; }
     .paper-trade-bar {
-      display: flex !important;
+      display: none;
       background: linear-gradient(90deg,#0a1020 0%,#0d1628 50%,#0a1020 100%) !important;
       border-bottom: 1px solid rgba(0,212,255,.3) !important;
       padding: 8px 16px !important;
@@ -600,9 +600,10 @@
     <span class="hdr-logo-text">Token-Tokens</span>
   </div>
   <nav class="hdr-nav">
-    <button class="nb on" onclick="showTab('chart')">📊 Chart</button>
-    <button class="nb on" id="navTradeBtn" onclick="togglePaperTrading(); showTab('chart');" title="Toggle Paper Trading Terminal">💼 Paper Trade</button>
-    <button class="nb" id="navGameBtn" onclick="openTimeTravelGame()" title="Play Time Travel Trader Challenge Game">🎮 Challenge</button>
+    <button class="nb" id="navMarketBtn" onclick="showMobileMarketView()" title="View All Token Prices">◈ Market</button>
+    <button class="nb on" id="navChartBtn" onclick="showMobileChartView(); showTab('chart');">📊 Chart</button>
+    <button class="nb on" id="navTradeBtn" onclick="togglePaperTrading(); showTab('chart');" title="Toggle Paper Trading Terminal">💼 <span class="nav-lbl-long">Paper </span>Trade</button>
+    <button class="nb" id="navGameBtn" onclick="openTimeTravelGame()" title="Play Time Travel Trader Challenge Game">🎮 <span class="nav-lbl-long">Challenge</span><span class="nav-lbl-short">Game</span></button>
     <button class="nb" onclick="showTab('learn')">📚 Learn</button>
     <div class="hatty-drop-wrap" id="hattyDropWrap">
       <button class="nb hatty-drop-btn" onclick="toggleHattyDrop(event)">
@@ -667,6 +668,14 @@
       </div>
       <div class="sb-drop" id="sbDrop"></div>
       <button class="browse-btn" onclick="openModal()">⊞ &nbsp;BROWSE ALL 18,000+ TOKENS</button>
+      <div class="sidebar-sectors" id="sidebarSectors">
+        <button type="button" class="sector-chip active" onclick="filterWatchlistSector(this, 'all')">🔥 All</button>
+        <button type="button" class="sector-chip" onclick="filterWatchlistSector(this, 'ai')">🧠 AI</button>
+        <button type="button" class="sector-chip" onclick="filterWatchlistSector(this, 'meme')">🐶 Meme</button>
+        <button type="button" class="sector-chip" onclick="filterWatchlistSector(this, 'solana')">⚡ Solana</button>
+        <button type="button" class="sector-chip" onclick="filterWatchlistSector(this, 'l1')">⛓ L1/L2</button>
+        <button type="button" class="sector-chip" onclick="filterWatchlistSector(this, 'defi')">🏦 DeFi</button>
+      </div>
     </div>
     <div class="wl-hdr">◈ My Watchlist <button class="wl-ref" onclick="refreshWL()" title="Refresh prices">↻</button></div>
     <div class="wl-list" id="wlList"><div style="padding:20px;text-align:center;color:var(--text3);font-family:'Share Tech Mono',monospace;font-size:.75rem;"><div class="spin" style="margin:0 auto 10px;"></div>Loading…</div></div>
@@ -705,6 +714,7 @@
   <main class="main">
     <div class="ch-hdr">
       <div class="ch-coin">
+        <button class="mobile-back-btn" id="mobileBackBtn" onclick="showMobileMarketView()" title="Back to All Token Prices">‹ All Tokens</button>
         <img class="ch-img" id="chImg" src="" alt="" style="display:none" onerror="this.style.display='none'">
         <div><div class="ch-sub" id="chSub">BTC/USD</div><div class="ch-title" id="chTitle">Bitcoin</div></div>
         <div class="ch-price" id="chPrice">$—</div>
@@ -713,21 +723,22 @@
         <div class="ch-meta"><span id="chMcap">MCap: —</span><span id="chVol">Vol 24h: —</span><span id="chATH" style="color:var(--accent3);font-size:.62rem;"></span></div>
       </div>
       <div class="ch-tools">
-        <button class="tf" onclick="setTF(this,'1')">1d</button>
-        <button class="tf" onclick="setTF(this,'7')">7d</button>
-        <button class="tf on" onclick="setTF(this,'30')">30d</button>
-        <button class="tf" onclick="setTF(this,'90')">90d</button>
-        <button class="tf" onclick="setTF(this,'365')">1y</button>
-        <button class="tf" onclick="setTF(this,'1825')">5y</button>
-        <button class="tf" onclick="setTF(this,'max')">MAX</button>
-        <div class="dv"></div>
-        <button class="ct on" id="candleBtn" onclick="setCT('candle')">Candle</button>
-        <button class="ct" id="lineBtn" onclick="setCT('line')">Line</button>
-        <div class="dv"></div>
-        <button class="ct" id="patternBtn" onclick="togglePatternScanner()" title="Toggle AI Chart Pattern Scanner">🎯 Patterns</button>
-        <button class="ct" id="chartCheatSheetBtn" onclick="openPatternGuideModal()" title="Open Chart Pattern Cheat Sheet & Bible">📖 Cheat Sheet</button>
-        <div class="dv"></div>
-        <button class="live-btn" onclick="doRefresh()"><span class="ldot"></span>LIVE</button>
+        <div class="ch-tools-tf">
+          <button class="tf" onclick="setTF(this,'1')">1d</button>
+          <button class="tf" onclick="setTF(this,'7')">7d</button>
+          <button class="tf on" onclick="setTF(this,'30')">30d</button>
+          <button class="tf" onclick="setTF(this,'90')">90d</button>
+          <button class="tf" onclick="setTF(this,'365')">1y</button>
+          <button class="tf" onclick="setTF(this,'1825')">5y</button>
+          <button class="tf" onclick="setTF(this,'max')">MAX</button>
+        </div>
+        <div class="ch-tools-actions">
+          <button class="ct on" id="candleBtn" onclick="setCT('candle')">Candle</button>
+          <button class="ct" id="lineBtn" onclick="setCT('line')">Line</button>
+          <button class="ct" id="patternBtn" onclick="togglePatternScanner()" title="Toggle AI Chart Pattern Scanner">🎯 Patterns</button>
+          <button class="ct" id="chartCheatSheetBtn" onclick="openPatternGuideModal()" title="Open Chart Pattern Cheat Sheet & Bible">📖 Cheat Sheet</button>
+          <button class="live-btn" onclick="doRefresh()"><span class="ldot"></span>LIVE</button>
+        </div>
       </div>
     </div>
 
@@ -756,6 +767,10 @@
           <div class="pt-bal-lbl">Simulated Wallet</div>
           <div class="pt-bal-val" id="ptBalance">$10,000.00</div>
         </div>
+      </div>
+      <div class="pt-streak-pill" id="ptStreakPill" title="Daily Trading Streak — Trade daily to build your streak!">
+        <span class="pt-streak-fire">🔥</span>
+        <span class="pt-streak-text" id="ptStreakVal">1-Day Streak</span>
       </div>
       <div class="pt-live-ticker" id="ptLiveTicker" title="Real-Time Market Price Feed">
         <div class="pt-live-lbl"><span class="ch-live-dot"></span> LIVE <span id="ptLiveSym">BTC</span></div>
@@ -802,17 +817,18 @@
         <canvas class="mc-canvas" id="mc365dCanvas"></canvas>
       </div>
     </div>
-    <div class="ohlc">
-      <span class="lbl">O</span><span id="oO">—</span>
-      <span class="lbl" style="margin-left:8px">H</span><span id="oH" class="pos">—</span>
-      <span class="lbl" style="margin-left:8px">L</span><span id="oL" class="neg">—</span>
-      <span class="lbl" style="margin-left:8px">C</span><span id="oC">—</span>
-      <span class="lbl" style="margin-left:auto">Vol</span><span id="oV">—</span>
-      <span id="oDate" style="margin-left:14px;color:var(--text3);font-size:.68rem;align-self:center;"></span>
-    </div>
     <!-- chart + right panel wrapper -->
     <div class="chart-and-right">
       <div class="chart-col">
+        <!-- Floating TradingView-Style On-Canvas Crosshair HUD -->
+        <div class="ohlc" id="ohlcBar">
+          <span class="lbl">O</span><span id="oO">—</span>
+          <span class="lbl">H</span><span id="oH" class="pos">—</span>
+          <span class="lbl">L</span><span id="oL" class="neg">—</span>
+          <span class="lbl">C</span><span id="oC">—</span>
+          <span class="lbl">Vol</span><span id="oV">—</span>
+          <span id="oDate" style="color:var(--text3);font-size:.65rem;align-self:center;"></span>
+        </div>
         <div class="chart-zone" id="chartZone">
           <canvas id="priceCanvas"></canvas>
           <div class="sub-lbl" id="volLbl" style="display:none">VOLUME</div>
@@ -904,34 +920,36 @@
     </div><!-- /chart-and-right -->
     <div class="measure-tip" id="measureTip"></div>
 
-    <!-- OLD PANELS — hidden on desktop, shown on mobile via CSS -->
-    <div class="ind-panel">
-      <span class="ind-lbl">INDICATORS</span>
-      <button class="ind ma" onclick="toggleInd('ma')">MA(20)</button>
-      <button class="ind ema" onclick="toggleInd('ema')">EMA(50)</button>
-      <button class="ind bb" onclick="toggleInd('bb')">Bollinger</button>
-      <button class="ind vwap" onclick="toggleInd('vwap')">VWAP</button>
-      <button class="ind rsi" onclick="toggleInd('rsi')">RSI(14)</button>
-      <button class="ind macd" onclick="toggleInd('macd')">MACD</button>
-    </div>
-    <div class="draw-panel" id="drawPanel">
-      <span class="draw-lbl">DRAW</span>
-      <button class="dtool" onclick="setDrawTool('line')">📏 Line</button>
-      <button class="dtool" onclick="setDrawTool('hline')">── H-Line</button>
-      <button class="dtool" onclick="setDrawTool('ray')">→ Ray</button>
-      <button class="dtool" onclick="setDrawTool('rect')">▭ Zone</button>
-      <button class="dtool" onclick="setDrawTool('fib')">🌀 Fib</button>
-      <button class="dtool" onclick="setDrawTool('note')">📝 Note</button>
-      <button class="draw-divider"></button>
-      <div class="draw-color on" id="dcAqua2"   onclick="setDrawColor('#00d4ff','dcAqua')"   style="background:#00d4ff;" title="Cyan"></div>
-      <div class="draw-color"    id="dcGreen2"  onclick="setDrawColor('#00ff88','dcGreen')"  style="background:#00ff88;" title="Green"></div>
-      <div class="draw-color"    id="dcRed2"    onclick="setDrawColor('#ff3366','dcRed')"    style="background:#ff3366;" title="Red"></div>
-      <div class="draw-color"    id="dcYellow2" onclick="setDrawColor('#ffc800','dcYellow')" style="background:#ffc800;" title="Yellow"></div>
-      <div class="draw-color"    id="dcPurple2" onclick="setDrawColor('#9664ff','dcPurple')" style="background:#9664ff;" title="Purple"></div>
-      <button class="dtool" onclick="undoDraw()">↩ Undo</button>
-      <button class="dtool danger" onclick="clearDrawings()">🗑 Clear</button>
-      <button class="dtool on" onclick="setDrawTool(null)">↖ Pointer</button>
-      <span class="draw-count" id="drawCountMobile"></span>
+    <!-- MOBILE PANELS CONTAINER (INDICATORS & DRAWING TOOLS) -->
+    <div class="mobile-tools-bar" id="mobileToolsBar">
+      <div class="ind-panel">
+        <span class="ind-lbl">INDICATORS</span>
+        <button class="ind ma" onclick="toggleInd('ma')">MA(20)</button>
+        <button class="ind ema" onclick="toggleInd('ema')">EMA(50)</button>
+        <button class="ind bb" onclick="toggleInd('bb')">Bollinger</button>
+        <button class="ind vwap" onclick="toggleInd('vwap')">VWAP</button>
+        <button class="ind rsi" onclick="toggleInd('rsi')">RSI(14)</button>
+        <button class="ind macd" onclick="toggleInd('macd')">MACD</button>
+      </div>
+      <div class="draw-panel" id="drawPanel">
+        <span class="draw-lbl">DRAW</span>
+        <button class="dtool" onclick="setDrawTool('line')">📏 Line</button>
+        <button class="dtool" onclick="setDrawTool('hline')">── H-Line</button>
+        <button class="dtool" onclick="setDrawTool('ray')">→ Ray</button>
+        <button class="dtool" onclick="setDrawTool('rect')">▭ Zone</button>
+        <button class="dtool" onclick="setDrawTool('fib')">🌀 Fib</button>
+        <button class="dtool" onclick="setDrawTool('note')">📝 Note</button>
+        <button class="draw-divider"></button>
+        <div class="draw-color on" id="dcAqua2"   onclick="setDrawColor('#00d4ff','dcAqua')"   style="background:#00d4ff;" title="Cyan"></div>
+        <div class="draw-color"    id="dcGreen2"  onclick="setDrawColor('#00ff88','dcGreen')"  style="background:#00ff88;" title="Green"></div>
+        <div class="draw-color"    id="dcRed2"    onclick="setDrawColor('#ff3366','dcRed')"    style="background:#ff3366;" title="Red"></div>
+        <div class="draw-color"    id="dcYellow2" onclick="setDrawColor('#ffc800','dcYellow')" style="background:#ffc800;" title="Yellow"></div>
+        <div class="draw-color"    id="dcPurple2" onclick="setDrawColor('#9664ff','dcPurple')" style="background:#9664ff;" title="Purple"></div>
+        <button class="dtool" onclick="undoDraw()">↩ Undo</button>
+        <button class="dtool danger" onclick="clearDrawings()">🗑 Clear</button>
+        <button class="dtool on" onclick="setDrawTool(null)">↖ Pointer</button>
+        <span class="draw-count" id="drawCountMobile"></span>
+      </div>
     </div>
 
     <!-- COMPACT BOTTOM TOOLS ROW: PRICE ALERTS + TIME MACHINE -->
