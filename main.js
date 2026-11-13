@@ -8088,6 +8088,13 @@ function toggleTheme(){
   v('--pink','#ec4899','#db2777');
   v('--cyan','#00e5ff','#0284c7');
   document.documentElement.setAttribute('data-theme', lm?'light':'dark');
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if(metaTheme) metaTheme.setAttribute('content', lm ? '#f0f4fa' : '#060a14');
+  const tbtn = document.querySelector('.theme-btn');
+  if(tbtn){
+    tbtn.setAttribute('aria-pressed', lm ? 'true' : 'false');
+    tbtn.setAttribute('title', lm ? 'Switch to Dark Mode' : 'Switch to Light Mode');
+  }
   const tog = document.getElementById('smThemeToggle');
   if(tog) tog.checked = lm;
   if(typeof _lastFG === 'object' && _lastFG) drawFGGauge(_lastFG.score, _lastFG.col);
